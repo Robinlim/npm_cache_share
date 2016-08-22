@@ -1,0 +1,44 @@
+{
+    "name": "npm_cache_share",
+    "version": "1.0.0",
+    "description": "npm cache by npm-shrinkwrap.json",
+    "license": "MIT",
+    "main": "index.js",
+    "bin": "./bin/client",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Robinlim/npm_cache_share.git"
+    },
+    "keywords": [
+        "npm cache",
+        "npm_cache",
+        "npm-cache",
+        "module cache"
+    ],
+    "author": {
+        "name": "robin",
+        "email": "robinlim9@aliyun.com"
+    },
+    "engines": [
+      "node"
+    ],
+    "dependencies": {
+        "async": "^2.0.1",
+        "body-parser": "~1.15.2",
+        "compression": "~1.5.0",
+        "cookie-parser": "~1.4.3",
+        "debug": "~2.2.0",
+        "express": "~4.13.3",
+        "fs-extra": "^0.30.0",
+        "fstream": "^1.0.10",
+        "lodash": "^4.14.2",
+        "multiparty": "^4.1.2",
+        "node-annotation": "^0.0.*",
+        "node-annotation-extend": "^0.0.*",
+        "nomnom": "^1.8.1",
+        "request": "^2.74.0",
+        "serve-favicon": "~2.3.0",
+        "shelljs": "^0.7.3",
+        "tar.gz": "^1.0.5"
+    }
+}
