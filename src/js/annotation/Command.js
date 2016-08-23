@@ -4,7 +4,7 @@
 * @Date:   2016-08-08 17:29:59
 * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-22 20:02:24
+* @Last modified time: 2016-08-23 17:32:51
 */
 
 'use strict';
@@ -39,12 +39,11 @@ var nomnom = require("nomnom")
         },
         production: {
             flag: true,
-            default: true,
-            help: 'will not install modules listed in devDependencies, default has'
+            help: 'will not install modules listed in devDependencies'
         },
-        "no-optional": {
+        noOptional: {
             flag: true,
-            help: 'argument will prevent optional dependencies from being installed, default has'
+            help: 'argument will prevent optional dependencies from being installed'
         },
         forServer:{
             flag: true,

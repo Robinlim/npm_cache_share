@@ -3,7 +3,7 @@
 * @Date:   2016-08-08 17:30:24
 * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-22 13:20:43
+* @Last modified time: 2016-08-23 18:04:26
 */
 
 'use strict'
@@ -63,7 +63,7 @@ module.exports = {
             callback('没有依赖！');
             return;
         }
-        installUtils.parse(rs.parse, this.opts);
+        installUtils.parse(rs.parse, this.opts, callback);
     },
     /*@Done*/
     done: function(err, results){

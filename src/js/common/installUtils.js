@@ -3,7 +3,7 @@
  * @Date:   2016-08-08 17:30:24
  * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-22 19:50:51
+* @Last modified time: 2016-08-23 19:51:09
  */
 
 'use strict'
@@ -22,7 +22,8 @@ var LIBNAME = 'node_modules',
     SPLIT = '@@@',
     fileExt = '.tar.gz',
     __cwd = process.cwd(),
-    __cache = utils.getCachePath();
+    __cache = utils.getCachePath(),
+    cache = {};
 
 var arch = process.arch,
     platform = process.platform,
@@ -33,22 +34,27 @@ module.exports = {
      * 分析依赖
      * @param  {[type]} dependencies [description]
      * @param  {[type]} opts         [description]
+     * @param  {[type]} callback     [description]
      * @return {[type]}              [description]
      */
-    parse: function(dependencies, opts) {
+    parse: function(dependencies, opts, callback) {
+        if (opts.noOptional) {
+            delete opts.noOptional;
+            opts["no-optional"] = true;
+        }
+        this.server = opts.service;
+        delete opts.service;
         this.opts = utils.toString(opts);
-        console.info(this.opts);
-        this.server = opts.server;
         //确保文件夹存在
         fsExtra.ensureDirSync(__cache);
 
         console.info('开始解析');
-        this.checkServer(_.bind(function(){
-            this.parseModule(dependencies);
+        this.checkServer(_.bind(function() {
+            this.parseModule(dependencies, callback);
         }, this));
     },
     /*@Async*/
-    parseModule: function(dependencies){
+    parseModule: function(dependencies, callback) {
         //解析模块依赖
         _.each(dependencies, _.bind(function(v, k) {
             console.info('检测' + [k, v.version].join('@'));
@@ -61,6 +67,7 @@ module.exports = {
             //删除缓存的node_modules目录
             console.info('删除临时目录');
             rm('-rf', path.resolve(__cache, LIBNAME));
+            callback();
         });
     },
     /**
@@ -116,7 +123,7 @@ module.exports = {
         }
         var target = path.resolve(modulePath, name);
         fsExtra.ensureDirSync(target);
-        if(test('-d', oriModulePath)){
+        if (test('-d', oriModulePath)) {
             cp('-rf', oriModulePath + path.sep + '*', target);
         }
         dependencies && _.each(dependencies, _.bind(function(v, k) {
@@ -146,12 +153,13 @@ module.exports = {
                     response.pipe(fs.createWriteStream(target));
                     targz().extract(target, __cache, function(err) {
                         rm('-f', target);
-                        if (err){
-                            console.error( target + ' extract is wrong ', err.stack);
+                        if (err) {
+                            console.error(target + ' extract is wrong ', err.stack);
                             cb(null, false);
                             return;
                         }
                         console.info(target + ' extract done!');
+                        target = path.resolve(__cache, response.headers.modulename);
                         cb(null, fs.existsSync(target) && target);
                     });
                     return;
@@ -179,20 +187,24 @@ module.exports = {
             throw npmName + ' install failed, please try by yourself!!';
         }
         //递归依赖，从里往外进行迁移
-        this.traverseModule(__cache, _.bind(function(modulePath) {
-            var packagePath = path.resolve(modulePath, 'package.json');
+        var packagePath, moduleTmp;
+        this.traverseModule(__cache, _.bind(function(modulePath, top) {
+            packagePath = path.resolve(modulePath, 'package.json');
             if (!test('-f', packagePath)) {
                 return;
             }
             var des = fsExtra.readJsonSync(packagePath);
-            if(test('-f', modulePath)){
-                cp('-rf', modulePath, path.resolve(__cache, LIBNAME, this.getModuleName(des.name, des.version, des.dependencies, modulePath)));
-                rm('-rf', modulePath);
+            if (test('-d', modulePath)) {
+                moduleTmp = path.resolve(__cache, LIBNAME, this.getModuleName(des.name, des.version, des.dependencies, modulePath));
+                //创建目录
+                fsExtra.ensureDirSync(moduleTmp);
+                modulePath != moduleTmp && cp('-rf', modulePath + path.sep + '*', moduleTmp);
+                !top && rm('-rf', modulePath);
             }
-        }, this));
+        }, this), null, true);
         //同步模块到缓存中
-        if(!test('-f', path.resolve(__cache, LIBNAME))){
-            cp('-rf', path.resolve(__cache, LIBNAME) + path.sep + '*', __cache);
+        if (test('-d', moduleTmp = path.resolve(__cache, LIBNAME))) {
+            cp('-rf', moduleTmp + path.sep + '*', __cache);
         }
     },
     /**
@@ -243,18 +255,20 @@ module.exports = {
      * @param  {[type]}   curPath  [description]
      * @param  {Function} callback [description]
      * @param  {[type]}   name     [description]
+     * @param  {[type]}   top      [description]
      * @return {[type]}            [description]
      */
-    traverseModule: function(curPath, callback, name) {
+    traverseModule: function(curPath, callback, name, top) {
         if (!(name && name.indexOf('@') == 0)) {
             curPath = path.resolve(curPath, LIBNAME);
         }
         if (!test('-d', curPath)) {
             return;
         }
+
         ls(curPath).forEach(_.bind(function(file) {
             this.traverseModule(path.resolve(curPath, file), callback, file);
-            callback(path.resolve(curPath, file));
+            callback(path.resolve(curPath, file), top);
         }, this));
     },
     /**
@@ -288,7 +302,7 @@ module.exports = {
      * @return {[type]} [description]
      */
     checkServer: function(cb) {
-        if (!this.server){
+        if (!this.server) {
             cb();
             return;
         }
