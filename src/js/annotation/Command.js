@@ -4,7 +4,7 @@
 * @Date:   2016-08-08 17:29:59
 * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-23 17:32:51
+* @Last modified time: 2016-08-24 16:50:28
 */
 
 'use strict';
@@ -13,41 +13,40 @@ var nomnom = require("nomnom")
     .options({
         clean: {
             position: 1,
-            abbr: 'c',
             help: "Clear the local npm module cache"
         },
         server: {
             position: 2,
-            abbr: 's',
             help: "Start a server to store the npm module cache"
         },
         install: {
             position: 3,
-            abbr: 'i',
             help: "Install the module by npm-shrinkwrap.json"
         },
         help: {
             position: 4,
-            abbr: 'h',
             help: "Helper"
         },
+        port: {
+            help: 'specify the port for server command'
+        },
         service: {
-            help: 'specify the server, like IP:PORT format'
+            help: 'specify the server, like IP:PORT format, for install command'
         },
         register: {
-            help: 'specify the npm origin'
+            help: 'specify the npm origin, for install command'
         },
         production: {
             flag: true,
-            help: 'will not install modules listed in devDependencies'
+            help: 'will not install modules listed in devDependencies, for install command'
         },
         noOptional: {
             flag: true,
-            help: 'argument will prevent optional dependencies from being installed'
+            help: 'argument will prevent optional dependencies from being installed, for install command'
         },
         forServer:{
             flag: true,
-            help: 'use for clean command, default clean the npm cache in client, if the value is false, clean the npm cache in server'
+            help: 'use for clean command, default clean the npm cache in client, if the value is false, clean the npm cache in server, for clean command'
         }
     });
 /*@AutoLoad*/
