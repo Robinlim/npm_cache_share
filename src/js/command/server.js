@@ -3,12 +3,12 @@
  * @Date:   2016-08-17 17:30:24
  * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-19 12:59:16
+* @Last modified time: 2016-08-29 13:02:09
  */
 
 'use strict'
 var path = require('path'),
-    targz = require('tar.gz'),
+    utils = require('../common/utils'),
     fsExtra = require('fs-extra');
 
 require('shelljs/global');
@@ -60,10 +60,10 @@ module.exports = {
                 var file = files.modules[0].path,
                     target = path.resolve(modulesCachePath, String(Date.now()));
                 console.info('开始接收文件！' + files.modules[0].originalFilename);
-
-                targz().extract(file, target, function(err) {
+                //解压文件
+                utils.extract(file, target, function(err) {
                     if (err) {
-                        console.error('extract targz is wrong ', err.stack);
+                        console.error('extract is wrong ', err.stack);
                         return;
                     }
                     //删除压缩文件
@@ -74,12 +74,13 @@ module.exports = {
                     modules.forEach(function(file) {
                         var tarfile = path.resolve(modulesCachePath, file + fileExt);
                         // compress
-                        targz().compress(path.resolve(target, LIBNAME, file), tarfile, function(err) {
+                        utils.compress(path.resolve(target, LIBNAME, file), tarfile, function(err) {
                             count++;
                             if (count == modules.length) {
                                 //删除临时目录
                                 process.nextTick(function() {
                                     rm('-rf', target);
+                                    console.info('upload done!!');
                                 });
                             }
                             if (err) {

@@ -3,19 +3,20 @@
 * @Date:   2016-08-08 17:30:24
 * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-23 18:04:26
+* @Last modified time: 2016-08-29 11:40:34
 */
 
 'use strict'
-var fs = require('fs');
-var fsExtra = require('fs-extra');
-var path = require('path');
+var fs = require('fs'),
+    fsExtra = require('fs-extra'),
+    path = require('path');
 
-var __cwd = process.cwd();
-var NPMSHRINKWRAP = 'npm-shrinkwrap.json';
-var npmShrinkwrapPath = path.resolve(__cwd, NPMSHRINKWRAP);
+var __cwd = process.cwd(),
+    NPMSHRINKWRAP = 'npm-shrinkwrap.json',
+    npmShrinkwrapPath = path.resolve(__cwd, NPMSHRINKWRAP);
 
 var installUtils = require('../common/installUtils');
+
 /*@Flow*/
 /*@Command("install")*/
 module.exports = {
