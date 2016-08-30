@@ -66,9 +66,9 @@ module.exports = {
             callback(err);
         }
 
-        //处理结束
+        //压缩结束
         function onEnd() {
-            callback();
+            console.info('compress done!');
         }
 
         var packer = tar.Pack({
@@ -82,9 +82,10 @@ module.exports = {
                 path: dir,
                 type: "Directory"
             })
-            .on('error', onError)
             .pipe(packer)
             .pipe(dirDest)
+            .on('error', onError)
+            .on('close', callback)
     },
     /**
      * 解压处理
