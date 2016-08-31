@@ -11,6 +11,7 @@ var path = require('path'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
     request = require('request'),
+    tar = require('tar'),
     _ = require('lodash');
 
 require('shelljs/global');
@@ -167,21 +168,23 @@ module.exports = {
             .get(['http:/', this.server, 'fetch', moduleName, moduleNameForPlatform].join('/'))
             .on('response', function(response) {
                 if (response.statusCode == 200) {
-                    //获取文件名称
+                    // 获取文件名称
                     var target = path.resolve(__cache, response.headers.modulename + fileExt);
-                    response.pipe(fs.createWriteStream(target));
-                    //解压文件
-                    utils.extract(target, __cache, function(err) {
-                        rm('-f', target);
-                        if (err) {
+                    // 解压文件操作
+                    var extractor = tar.Extract({
+                            path: __cache
+                        })
+                        .on('error', function(err){
                             console.error(target + ' extract is wrong ', err.stack);
                             cb(null, false);
-                            return;
-                        }
-                        console.info(target + ' extract done!');
-                        target = path.resolve(__cache, response.headers.modulename);
-                        cb(null, fs.existsSync(target) && target);
-                    });
+                        })
+                        .on('end', function(){
+                            console.info(target + ' extract done!');
+                            target = path.resolve(__cache, response.headers.modulename);
+                            cb(null, fs.existsSync(target) && target);
+                        });
+                    // 请求返回流通过管道流入解压流
+                    response.pipe(extractor);
                     return;
                 }
                 cb(null, false);
@@ -246,37 +249,29 @@ module.exports = {
             server = this.server;
         console.info('开始压缩需要上传模块');
         // compress
-        utils.compress(modulePath, target, function(err) {
-            if (err) {
-                console.error('compress wrong ', err.stack);
-                callback();
-                return;
-            }
-            console.info('compress done!');
-            setTimeout(function(){
-                upload();
-            }, 1000);
-
-        });
-
-        function upload() {
-            console.info('同步模块至服务http://' + server);
-            request.post({
-                url: 'http://' + server + '/upload',
-                formData: {
-                    modules: fs.createReadStream(target)
-                }
-            }, function(err) {
-                rm('-f', target);
-                if (err) {
-                    console.error('上传失败:', err);
-                    callback();
-                    return;
-                }
-                console.info('上传成功');
-                callback();
-            });
-        }
+       utils.compress(modulePath, target, function(err) {
+           if (err) {
+               console.error('compress wrong ', err.stack);
+               callback();
+               return;
+           }
+           console.info('同步模块至服务http://' + server);
+           request.post({
+               url: 'http://' + server + '/upload',
+               formData: {
+                   modules: fs.createReadStream(target)
+               }
+           }, function(err) {
+               rm('-f', target);
+               if (err) {
+                   console.error('上传失败:', err);
+                   callback();
+                   return;
+               }
+               console.info('上传成功');
+               callback();
+           });
+       });
     },
     /**
      * 深度遍历模块依赖
