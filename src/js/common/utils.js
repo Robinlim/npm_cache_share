@@ -9,6 +9,7 @@ var path = require('path'),
     _ = require('lodash'),
     tar = require('tar'),
     fs = require('fs'),
+    fsExtra = require('fs-extra'),
     fstream = require('fstream');
 
 module.exports = {
@@ -113,5 +114,19 @@ module.exports = {
         fs.createReadStream(target)
             .on('error', onError)
             .pipe(extractor);
+    },
+    /**
+     * 确保一个文件夹存在并且可写入
+     * @param  {Path} dir 文件夹路径
+     * @return {void}
+     */
+    ensureDirWriteablSync: function(dir) {
+        try {
+            fsExtra.ensureDirSync(dir);
+            fs.accessSync(dir, fs.W_OK);
+        } catch (e) {
+            console.error('Cannnot write into '+dir+', Please try running this command again as root/Administrator.');
+            throw e;
+        }
     }
 };

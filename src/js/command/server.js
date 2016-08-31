@@ -15,7 +15,7 @@ require('shelljs/global');
 
 var modulesCachePath = path.resolve(process.cwd(), 'npm_cache_share'),
     fileExt = require('../common/utils').getFileExt(),
-    LIBNAME = 'node_modules';
+    UPLOADDIR = 'upload_dir';
 
 /*@Command("server")*/
 /*@Controller*/
@@ -69,12 +69,12 @@ module.exports = {
                     //删除压缩文件
                     rm('-f', file);
                     //压缩每个模块
-                    var modules = ls(path.resolve(target, LIBNAME)),
+                    var modules = ls(path.resolve(target, UPLOADDIR)),
                         count = 0;
                     modules.forEach(function(file) {
                         var tarfile = path.resolve(modulesCachePath, file + fileExt);
                         // compress
-                        utils.compress(path.resolve(target, LIBNAME, file), tarfile, function(err) {
+                        utils.compress(path.resolve(target, UPLOADDIR, file), tarfile, function(err) {
                             count++;
                             if (count == modules.length) {
                                 //删除临时目录

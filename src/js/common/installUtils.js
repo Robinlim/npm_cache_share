@@ -19,6 +19,7 @@ require('shelljs/global');
 var utils = require('./utils');
 
 var LIBNAME = 'node_modules',
+    UPLOADDIR = 'upload_dir',
     SPLIT = '@@@',
     fileExt = '.tar',
     __cwd = process.cwd(),
@@ -47,8 +48,9 @@ module.exports = {
         delete opts.service;
         //构建安装参数
         this.opts = utils.toString(opts);
-        //确保文件夹存在
-        fsExtra.ensureDirSync(__cache);
+        //确保文件夹存在并可写入
+        utils.ensureDirWriteablSync(__cache);
+        utils.ensureDirWriteablSync(path.resolve(__cwd, LIBNAME));
 
         console.info('开始解析');
         //判断公共缓存是否存在
@@ -74,7 +76,7 @@ module.exports = {
         }, this));
 
         //需要将新的模块同步到远程服务
-        this.syncRemote(path.resolve(__cache, LIBNAME), function() {
+        this.syncRemote(path.resolve(__cache, UPLOADDIR), function() {
             //删除缓存的node_modules目录
             console.info('删除临时目录');
             rm('-rf', path.resolve(__cache, LIBNAME));
@@ -205,7 +207,7 @@ module.exports = {
         cd(__cache);
 
         //执行安装
-        fsExtra.ensureDirSync(path.resolve(__cache, LIBNAME));
+        utils.ensureDirWriteablSync(path.resolve(__cache, LIBNAME));
         var npmName = [name, version].join('@');
         console.info('安装' + npmName);
         if (exec('npm install ' + npmName + ' ' + this.opts).code !== 0) {
@@ -221,7 +223,7 @@ module.exports = {
             }
             var des = fsExtra.readJsonSync(packagePath);
             if (test('-d', modulePath)) {
-                moduleTmp = path.resolve(__cache, LIBNAME, this.getModuleName(des.name, des.version, des.dependencies, modulePath));
+                moduleTmp = path.resolve(__cache, UPLOADDIR, this.getModuleName(des.name, des.version, des.dependencies, modulePath));
                 //创建目录
                 fsExtra.ensureDirSync(moduleTmp);
                 modulePath != moduleTmp && cp('-rf', modulePath + path.sep + '*', moduleTmp);
@@ -229,7 +231,7 @@ module.exports = {
             }
         }, this), null, true);
         //同步模块到缓存中
-        moduleTmp = path.resolve(__cache, LIBNAME);
+        moduleTmp = path.resolve(__cache, UPLOADDIR);
         if (test('-d', moduleTmp)  && ls(moduleTmp).length > 0) {
             cp('-rf', moduleTmp + path.sep + '*', __cache);
         }
