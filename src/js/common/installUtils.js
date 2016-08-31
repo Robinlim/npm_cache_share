@@ -77,9 +77,9 @@ module.exports = {
 
         //需要将新的模块同步到远程服务
         this.syncRemote(path.resolve(__cache, UPLOADDIR), function() {
-            //删除缓存的UPLOADDIR目录
+            //删除缓存的node_modules目录
             console.info('删除临时目录');
-            rm('-rf', path.resolve(__cache, UPLOADDIR));
+            rm('-rf', path.resolve(__cache, LIBNAME));
             callback();
         });
     },
@@ -231,7 +231,7 @@ module.exports = {
             }
         }, this), null, true);
         //同步模块到缓存中
-        moduleTmp = path.resolve(__cache, LIBNAME);
+        moduleTmp = path.resolve(__cache, UPLOADDIR);
         if (test('-d', moduleTmp)  && ls(moduleTmp).length > 0) {
             cp('-rf', moduleTmp + path.sep + '*', __cache);
         }
