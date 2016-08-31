@@ -19,8 +19,8 @@ nodeAnnotation.setGlobalErrorHandler(function(err){
  * [String] "error/warn/info/log" 输出日至级别，默认warn
  * [Function/LoggerObject] 日志处理函数或对象(类似log4js的Logger对象)，默认为console
  */
-nodeAnnotation.setLogger(true, 'warn', function(str, level) {
-    console.log('[Node-Annotation]', str);
+nodeAnnotation.setLogger(true, 'error', function(str, level) {
+    console.error('[ERROR]', str);
 });
 
 nodeAnnotation.start(path.resolve(__dirname,'..', 'src'), function(){
