@@ -12,19 +12,15 @@ var nomnom = require("nomnom")
     .script("npm_cache_share")
     .options({
         clean: {
-            position: 1,
             help: "Clear the local npm module cache"
         },
         server: {
-            position: 2,
             help: "Start a server to store the npm module cache"
         },
         install: {
-            position: 3,
             help: "Install the module by npm-shrinkwrap.json"
         },
         help: {
-            position: 4,
             help: "Helper"
         },
         port: {

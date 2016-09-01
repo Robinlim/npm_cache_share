@@ -7,94 +7,47 @@
  */
 
 'use strict'
-var path = require('path'),
+var _ = require('lodash'),
+    path = require('path'),
     utils = require('../common/utils'),
-    fsExtra = require('fs-extra');
+    childProcess = require('child_process');
 
 require('shelljs/global');
 
-var modulesCachePath = path.resolve(process.cwd(), 'npm_cache_share'),
-    fileExt = require('../common/utils').getFileExt(),
-    UPLOADDIR = 'upload_dir';
+var app = path.join(__dirname, '../app');
 
 /*@Command("server")*/
-/*@Controller*/
 module.exports = {
     run: function(opts) {
-        var nodeAnnotation = require('node-annotation');
-        var app = require('../app');
-        nodeAnnotation.app(app);
-        var server = app.listen(opts.port || '8888', function() {
-            console.log('Express server listening on port %d', server.address().port);
-            fsExtra.ensureDirSync(modulesCachePath);
-        });
-    },
-    /*@RequestMapping("/fetch/{moduleName}/{moduleNameForPlatform}")*/
-    fetch: function(req, res, moduleName, moduleNameForPlatform) {
-        var modulePath = path.resolve(modulesCachePath, moduleName + fileExt);
-        if (!test('-f', modulePath)) {
-            modulePath = path.resolve(modulesCachePath, moduleNameForPlatform + fileExt);
-            if (!test('-f', modulePath)) {
-                // 不存在或不可读返回404
-                res.statusCode = 404;
-                res.end();
-                return;
-            }
-            moduleName = moduleNameForPlatform;
-        }
-        res.setHeader('modulename', moduleName);
-        res.download(modulePath);
-    },
-    /*@RequestMapping("/upload")*/
-    /*@ResponseBody*/
-    upload: function(req, res) {
-        var multiparty = require('multiparty');
-        // parse a file upload
-        var form = new multiparty.Form({
-            encoding: 'utf-8',
-            uploadDir: modulesCachePath
-        });
-
-        form.parse(req, function(err, fields, files) {
-            if (files.modules.length != 0) {
-                var file = files.modules[0].path,
-                    target = path.resolve(modulesCachePath, String(Date.now()));
-                console.info('开始接收文件！' + files.modules[0].originalFilename);
-                //解压文件
-                utils.extract(file, target, function(err) {
-                    if (err) {
-                        console.error('extract is wrong ', err.stack);
-                        return;
-                    }
-                    //删除压缩文件
-                    rm('-f', file);
-                    //压缩每个模块
-                    var modules = ls(path.resolve(target, UPLOADDIR)),
-                        count = 0;
-                    modules.forEach(function(file) {
-                        var tarfile = path.resolve(modulesCachePath, file + fileExt);
-                        // compress
-                        utils.compress(path.resolve(target, UPLOADDIR, file), tarfile, function(err) {
-                            count++;
-                            if (count == modules.length) {
-                                //删除临时目录
-                                process.nextTick(function() {
-                                    rm('-rf', target);
-                                    console.info('upload done!!');
-                                });
-                            }
-                            if (err) {
-                                console.error('compress wrong ', err.stack);
-                                return;
-                            }
-                            mv('-f', tarfile, modulesCachePath);
-                        });
-                    });
-                });
-            }
-            res.end({
-                message: 'success'
+        var pm2 = which('pm2');
+        var env = _.extend({
+            port: opts.port || '8888'
+        }, process.env);
+        // 没有pm2或者指定了useFork就使用fork子进程方式
+        if (!pm2 || opts.useFork) {
+            console.info('Connot find pm2, will start server with fork.');
+            childProcess.fork(app, {
+                env: env
+            })
+        } else {
+        // 使用pm2管理server
+            console.info(
+                'Will start server with PM2. \n' +
+                '- If you want to just start with fork ,use "--useFork true" option. \n' +
+                '- You can append actions like "start/stop/list" and options like "--instances 4,etc." after.\n'
+            );
+            var action = opts[1] || 'start';  // 指令的第二个参数标示pm2的动作，默认start
+            var options =[]; // 指令中的_，数字以及port参数之外的参数全部传给pm2
+            _.forIn(opts, function(value ,key){
+                if(key !== 'port' && key!== '_' && _.isNaN(_.toNumber(key))){
+                    options.push((key.length==1?'-':'--')+key+' '+value);
+                }
             });
-        });
+            var cmd = [pm2, action, app].concat(options).join(' ');
+            console.info('exec:',cmd);
+            exec(cmd, {
+                env: env
+            });
+        }
     }
 }
