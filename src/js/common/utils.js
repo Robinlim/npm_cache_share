@@ -37,6 +37,15 @@ module.exports = {
         return '.tar.gz';
     },
     /**
+     * 获取服务器端缓存cache的目录
+     * @return {path} [description]
+     */
+    getServerCachePath: function(){
+        var dir = path.resolve(process.cwd(), 'npm_cache_share');
+        fsExtra.ensureDirSync(dir);
+        return dir;
+    },
+    /**
      * 将参数序列化
      * @param  {Object} nomnomOpts options object, nomnom module parse the command
      * @return {String}            生成 --option 这样的字符串拼接
