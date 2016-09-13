@@ -1,12 +1,14 @@
 'use strict'
 var path = require('path'),
+    fsExtra = require('fs-extra'),
     utils = require('../../common/utils');
 
 require('shelljs/global');
 
 var modulesCachePath = utils.getServerCachePath(),
     fileExt = utils.getFileExt(),
-    UPLOADDIR = 'upload_dir';
+    UPLOADDIR = 'upload_dir',
+    TOKENPATH = utils.getTokenPath();
 /*@Controller*/
 module.exports = {
     /*@RequestMapping("/fetch/{moduleName}/{moduleNameForPlatform}")*/
@@ -28,6 +30,16 @@ module.exports = {
     /*@RequestMapping("/upload")*/
     /*@ResponseBody*/
     upload: function(req, res) {
+        var token = fsExtra.readJsonSync(TOKENPATH).token;
+        console.log(token, req.headers.token)
+        // check token for permission
+        if(token !== req.headers.token){
+            res.status(404).end({
+                message: 'Token missing or wrong! Forbid uploading without token.'
+            });
+            return;
+        }
+
         var multiparty = require('multiparty');
         // parse a file upload
         var form = new multiparty.Form({
@@ -76,5 +88,10 @@ module.exports = {
                 message: 'success'
             });
         });
+    },
+    /*@ExceptionHandler*/
+    /*@ResponseBody*/
+    error: function(err, req, res){
+        res.status(500).end(err.message || err);
     }
 }

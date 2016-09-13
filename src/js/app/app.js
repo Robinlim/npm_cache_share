@@ -13,9 +13,11 @@ var favicon = require('serve-favicon');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var compression = require('compression');
-
+var serveIndex = require('serve-index');
+var utils = require('../common/utils');
 // 初始化express
 var app = express();
+
 
 // 如果存在版本文件,则初始化版本号，ref/ver为版本号存放目录,版本文件形式与fekit保持一致
 var versionPath = path.join(__dirname, 'ref/ver/versions.mapping'),
@@ -57,4 +59,5 @@ app.get('/healthcheck.html', function(req, res) {
     res.end(cont);
 });
 
+app.use('/view', serveIndex(utils.getServerCachePath(), {'icons': true}))
 module.exports = app;

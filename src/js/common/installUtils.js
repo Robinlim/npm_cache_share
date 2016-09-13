@@ -16,7 +16,8 @@ var path = require('path'),
 
 require('shelljs/global');
 
-var utils = require('./utils');
+var utils = require('./utils'),
+    registryAdapter = require('./registryAdapter');
 
 var LIBNAME = 'node_modules',
     UPLOADDIR = 'upload_dir',
@@ -44,8 +45,7 @@ module.exports = {
             delete opts.noOptional;
             opts["no-optional"] = true;
         }
-        this.server = opts.service;
-        delete opts.service;
+        this.registry = registryAdapter(opts);
         //构建安装参数
         this.opts = utils.toString(opts);
         //确保文件夹存在并可写入
@@ -54,9 +54,14 @@ module.exports = {
 
         console.info('开始解析');
         //判断公共缓存是否存在
-        this.checkServer(_.bind(function() {
+        if(this.registry && this.registry.check){
+            this.registry.check(_.bind(function() {
+                this.parseModule(dependencies, callback);
+            }, this));
+        } else {
+            delete this.registry;
             this.parseModule(dependencies, callback);
-        }, this));
+        }
     },
     /**
      * 解析模块
@@ -76,11 +81,11 @@ module.exports = {
         }, this));
 
         //需要将新的模块同步到远程服务
-        this.syncRemote(path.resolve(__cache, UPLOADDIR), function() {
+        this.syncRemote(path.resolve(__cache, UPLOADDIR), function(err) {
             //删除缓存的node_modules目录
             console.info('删除临时目录');
             rm('-rf', path.resolve(__cache, LIBNAME));
-            callback();
+            callback(err);
         });
     },
     /**
@@ -100,7 +105,7 @@ module.exports = {
             cacheModulePath = this.fromCache(this.getModuleNameForPlatform(name, version));
         }
         //如果本地不存在，尝试从公共服务缓存中获取
-        if (!cacheModulePath && this.serverReady()) {
+        if (!cacheModulePath && this.registry) {
             cacheModulePath = this.fromRemoteToCache(npmModule, this.getModuleNameForPlatform(name, version)).await();
         }
         //本地和服务端都不存在，则安装该模块
@@ -166,35 +171,7 @@ module.exports = {
     */
     /*@AsyncWrap*/
     fromRemoteToCache: function(moduleName, moduleNameForPlatform, cb) {
-        request
-            .get(['http:/', this.server, 'fetch', moduleName, moduleNameForPlatform].join('/'))
-            .on('response', function(response) {
-                if (response.statusCode == 200) {
-                    // 获取文件名称
-                    var target = path.resolve(__cache, response.headers.modulename + fileExt);
-                    // 解压文件操作
-                    var extractor = tar.Extract({
-                            path: __cache
-                        })
-                        .on('error', function(err){
-                            console.error(target + ' extract is wrong ', err.stack);
-                            cb(null, false);
-                        })
-                        .on('end', function(){
-                            console.info(target + ' extract done!');
-                            target = path.resolve(__cache, response.headers.modulename);
-                            cb(null, fs.existsSync(target) && target);
-                        });
-                    // 请求返回流通过管道流入解压流
-                    response.pipe(extractor);
-                    return;
-                }
-                cb(null, false);
-            })
-            .on('error', function(err) {
-                cb(null, false);
-                console.error(err);
-            });
+        this.registry.get(moduleName, moduleNameForPlatform, __cache, cb);
     },
     /**
      * 本地安装模块，依赖扁平化
@@ -243,37 +220,7 @@ module.exports = {
      * @return {void}
      */
     syncRemote: function(modulePath, callback) {
-        if (!this.serverReady() || !fs.existsSync(modulePath)) {
-            callback();
-            return;
-        }
-        var target = path.resolve(__cache, Date.now() + fileExt),
-            server = this.server;
-        console.info('开始压缩需要上传模块');
-        // compress
-       utils.compress(modulePath, target, function(err) {
-           if (err) {
-               console.error('compress wrong ', err.stack);
-               callback();
-               return;
-           }
-           console.info('同步模块至服务http://' + server);
-           request.post({
-               url: 'http://' + server + '/upload',
-               formData: {
-                   modules: fs.createReadStream(target)
-               }
-           }, function(err) {
-               rm('-f', target);
-               if (err) {
-                   console.error('上传失败:', err);
-                   callback();
-                   return;
-               }
-               console.info('上传成功');
-               callback();
-           });
-       });
+        this.registry.put(modulePath, callback);
     },
     /**
      * 深度遍历模块依赖
@@ -321,35 +268,6 @@ module.exports = {
             return this.getModuleNameForPlatform(name, version);
         }
         return [name, version].join('@').replace(RegExp('/', 'g'), SPLIT);
-    },
-    /**
-     * 判断服务是否正常
-     * @return {[type]} [description]
-     */
-    checkServer: function(cb) {
-        if (!this.server) {
-            cb();
-            return;
-        }
-        request
-            .get('http://' + this.server + '/healthcheck.html')
-            .on('response', _.bind(function() {
-                cb(this.serverHealth = true);
-            }, this))
-            .on('error', _.bind(function(err) {
-                console.error(this.server + '该服务不可正常访问，请检查服务！');
-                cb(this.serverHealth = false);
-            }, this));
-    },
-    /**
-     * 判断服务是否正常
-     * @return {[type]} [description]
-     */
-    serverReady: function() {
-        if (!this.server) return false;
-        if (this.serverHealth) return true;
-        if (this.serverHealth === false) return false;
-        return false;
     },
     /**
      * 获得缓存路径

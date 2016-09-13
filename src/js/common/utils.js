@@ -34,7 +34,16 @@ module.exports = {
      * @return {[type]} [description]
      */
     getFileExt: function() {
-        return '.tar.gz';
+        return '.tar';
+    },
+    /**
+     * 获取存储token的文件路径
+     * @return {path} [description]
+     */
+    getTokenPath: function() {
+        var file = path.resolve(process.cwd(), 'token.json');
+        fsExtra.ensureFileSync(file);
+        return file;
     },
     /**
      * 获取服务器端缓存cache的目录

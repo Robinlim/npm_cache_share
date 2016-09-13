@@ -10,15 +10,28 @@
 var _ = require('lodash'),
     path = require('path'),
     utils = require('../common/utils'),
+    fsExtra = require('fs-extra'),
     childProcess = require('child_process');
 
 require('shelljs/global');
 
-var app = path.join(__dirname, '../app');
+var app = path.join(__dirname, '../app'),
+    tokenPath = utils.getTokenPath();
 
 /*@Command("server")*/
 module.exports = {
     run: function(opts) {
+        // 设置上传token
+        var token = 'npm_cache_share'; // default token
+        if(opts.token){
+            token = opts.token;
+            delete opts.token;
+        }
+        fsExtra.writeJsonSync(tokenPath, {
+            token: token
+        });
+        console.log(tokenPath, token)
+
         var pm2 = which('pm2');
         var env = _.extend({
             port: opts.port || '8888'
