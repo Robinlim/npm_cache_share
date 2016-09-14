@@ -149,4 +149,21 @@ nexusRegistry.prototype.put = function(dir, callback){
     });
 };
 
+/**
+ * 校验nexus服务是否可用
+ * @param  {Function} cb 检查完后的回调
+ * @return {void}      [description]
+ */
+nexusRegistry.prototype.check = function(cb){
+    //TODO 目前仅检查了可以访问，还需更精确的确定源可用，用户密码可用
+    request.get(this.repository)
+    .on('response', _.bind(function() {
+        cb(this.serverHealth = true);
+    }, this))
+    .on('error', _.bind(function(err) {
+        console.error(this.repository + '该服务不可正常访问，请检查服务！', err);
+        cb(this.serverHealth = false);
+    }, this));
+};
+
 module.exports = nexusRegistry;

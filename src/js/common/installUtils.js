@@ -55,8 +55,14 @@ module.exports = {
         console.info('开始解析');
         //判断公共缓存是否存在
         if(this.registry && this.registry.check){
-            this.registry.check(_.bind(function() {
-                this.parseModule(dependencies, callback);
+            this.registry.check(_.bind(function(avaliable) {
+                // 公共缓存是否可用
+                if(avaliable){
+                    this.parseModule(dependencies, callback);
+                } else {
+                    delete this.registry;
+                    this.parseModule(dependencies, callback);
+                }
             }, this));
         } else {
             delete this.registry;
