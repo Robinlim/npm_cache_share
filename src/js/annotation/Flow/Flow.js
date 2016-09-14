@@ -43,10 +43,6 @@ var Flow = module.exports = require('node-annotation').Annotation.extend({
         //添加启动方法
         instance.start = function(){
             async.auto(steps, function(err, results){
-                if(err){
-                    console.error(err);
-                    return;
-                }
                 _.each(done, function(cb){
                     cb.call(instance, err, results);
                 });

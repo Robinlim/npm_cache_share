@@ -70,17 +70,17 @@ module.exports = {
     done: function(err, results){
         if(err){
             console.error(err);
-            this.exit();
+            this.exit(1);
             return;
         }
-        this.exit();
+        this.exit(0);
     },
     /**
      * 退出
      * @return {[type]} [description]
      */
-    exit: function(){
+    exit: function(code){
         console.info('******************安装结束******************');
-        process.exit();
+        process.exit(code);
     }
 }

@@ -38,6 +38,7 @@
     "nomnom": "^1.8.1",
     "request": "^2.74.0",
     "serve-favicon": "~2.3.0",
+    "serve-index": "^1.8.0",
     "shelljs": "^0.7.3",
     "tar": "^2.2.1"
   }
