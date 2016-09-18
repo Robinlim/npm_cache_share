@@ -1,3 +1,11 @@
+/**
+* @Author: robin
+* @Date:   2016-09-14 14:31:25
+* @Email:  xin.lin@qunar.com
+* @Last modified by:   robin
+* @Last modified time: 2016-09-14 17:09:31
+*/
+
 'use strict'
 var path = require('path'),
     fsExtra = require('fs-extra'),
@@ -8,7 +16,7 @@ require('shelljs/global');
 var modulesCachePath = utils.getServerCachePath(),
     fileExt = utils.getFileExt(),
     UPLOADDIR = 'upload_dir',
-    TOKENPATH = utils.getTokenPath();
+    token = process.env.token;
 /*@Controller*/
 module.exports = {
     /*@RequestMapping("/fetch/{moduleName}/{moduleNameForPlatform}")*/
@@ -30,10 +38,8 @@ module.exports = {
     /*@RequestMapping("/upload")*/
     /*@ResponseBody*/
     upload: function(req, res) {
-        var token = fsExtra.readJsonSync(TOKENPATH).token;
-        console.log(token, req.headers.token)
-        // check token for permission
-        if(token !== req.headers.token){
+        // check token for permission,if token exists
+        if(token && token !== req.headers.token){
             res.status(404).end({
                 message: 'Token missing or wrong! Forbid uploading without token.'
             });

@@ -3,7 +3,7 @@
 * @Date:   2016-08-08 17:30:24
 * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-29 11:40:34
+* @Last modified time: 2016-09-18 17:09:28
 */
 
 'use strict'
@@ -18,12 +18,12 @@ var __cwd = process.cwd(),
 var installUtils = require('../common/installUtils');
 
 /*@Flow*/
-/*@Command("install")*/
+/*@Command({"name": "install [module]", "alias":"i", "des":"Install the module", options:[["-c, --type [type]", "server type, default is node", "node"],["-s, --server [server]", "specify the npm_cache_share server, like IP:PORT format"],["-d, --repository [repository]", "specify the repository, default is snapshop"],["-r, --registry [registry]", "specify the npm origin"],["-t, --token [token]", "use the token to access the npm_cache_share server"],["-a, --auth [auth]", "use auth to access the Nexus Server, like username:password format"],["-p, --production", "will not install modules listed in devDependencies"],["--noOptional", "will prevent optional dependencies from being installed"], ["--save","module will be added to the package.json as dependencies"], ["--save-dev", "module will be added to the package.json as devDependencies"]]})*/
 module.exports = {
-
-    run: function(opts) {
+    run: function(module, options) {
         console.info('******************开始安装******************');
-        this.opts = opts;
+        this.module = module;
+        this.opts = options;
         this.start();
     },
     /**
@@ -64,7 +64,7 @@ module.exports = {
             callback('没有依赖！');
             return;
         }
-        installUtils.parse(rs.parse, this.opts, callback);
+        installUtils.parse(rs.parse, this.opts, callback, this.module);
     },
     /*@Done*/
     done: function(err, results){

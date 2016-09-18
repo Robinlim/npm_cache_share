@@ -38,3 +38,4 @@ Thumbs.db
 .npm-cache-share
 /npm_cache_share
 /test
+token.json

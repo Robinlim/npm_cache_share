@@ -1,10 +1,10 @@
 /**
-* @Author: wyw.wang <wyw>
-* @Date:   2016-09-09 16:09
-* @Email:  wyw.wang@qunar.com
-* @Last modified by:   wyw
-* @Last modified time: 2016-09-09 16:11
-*/
+ * @Author: wyw.wang <wyw>
+ * @Date:   2016-09-09 16:09
+ * @Email:  wyw.wang@qunar.com
+* @Last modified by:   robin
+* @Last modified time: 2016-09-14 19:34:14
+ */
 
 var path = require('path'),
     fs = require('fs'),
@@ -16,13 +16,12 @@ var path = require('path'),
     _ = require('lodash');
 
 var utils = require('../common/utils');
-
-function nodeRegistry(config){
+/*@Factory("node")*/
+function nodeRegistry(config) {
     this.server = config.server;
     this.token = config.token;
     this.fileExt = utils.getFileExt();
 }
-
 
 /**
  * 从公共缓存拉取模块
@@ -43,11 +42,11 @@ nodeRegistry.prototype.get = function(moduleName, moduleNameForPlatform, dir, cb
                 var extractor = tar.Extract({
                         path: dir
                     })
-                    .on('error', function(err){
+                    .on('error', function(err) {
                         console.error(target + ' extract is wrong ', err.stack);
                         cb(null, false);
                     })
-                    .on('end', function(){
+                    .on('end', function() {
                         console.info(target + ' extract done!');
                         target = path.resolve(__cache, response.headers.modulename);
                         cb(null, fs.existsSync(target) && target);
@@ -71,7 +70,7 @@ nodeRegistry.prototype.get = function(moduleName, moduleNameForPlatform, dir, cb
  * @param  {Function} callback [description]
  * @return {void}            [description]
  */
-nodeRegistry.prototype.put = function(dir, callback){
+nodeRegistry.prototype.put = function(dir, callback) {
     if (!this.serverReady() || !fs.existsSync(dir)) {
         callback();
         return;
@@ -80,11 +79,11 @@ nodeRegistry.prototype.put = function(dir, callback){
     var self = this;
     var packer = tar.Pack({
             noProprietary: true
-        }).on('error', function(err){
+        }).on('error', function(err) {
             console.error(dir + ' pack is wrong ', err.stack);
             callback(err);
         })
-        .on('end', function(){
+        .on('end', function() {
             console.info(dir + ' pack done!');
         });
     // TODO stream.PassThrough() donnot work!
@@ -92,10 +91,10 @@ nodeRegistry.prototype.put = function(dir, callback){
     var tmpFile = path.resolve(path.dirname(dir), Date.now() + self.fileExt),
         river = fs.createWriteStream(tmpFile);
 
-    river.on('error', function(err){
+    river.on('error', function(err) {
         console.error(err);
         callback(err);
-    }).on('finish', function(){
+    }).on('finish', function() {
         console.info('同步模块至服务http://' + self.server);
         request.post({
             headers: {
@@ -104,22 +103,22 @@ nodeRegistry.prototype.put = function(dir, callback){
             url: 'http://' + self.server + '/upload',
             formData: {
                 modules: fs.createReadStream(tmpFile)
-                // modules: {
-                //     value: river,
-                //     options: {
-                //         filename: Date.now() + self.fileExt,
-                //         contentType: 'application/x-tar'
-                //     }
-                // }
+                    // modules: {
+                    //     value: river,
+                    //     options: {
+                    //         filename: Date.now() + self.fileExt,
+                    //         contentType: 'application/x-tar'
+                    //     }
+                    // }
             }
         }, function(err, res, body) {
-           if (err || res.statusCode !== 200) {
-               console.error('上传失败:', err || body);
-               callback();
-               return;
-           }
-           console.info('上传成功');
-           callback();
+            if (err || res.statusCode !== 200) {
+                console.error('上传失败:', err || body);
+                callback();
+                return;
+            }
+            console.info('上传成功');
+            callback();
         });
     });
     fstream.Reader(dir).pipe(packer).pipe(river);
@@ -144,17 +143,17 @@ nodeRegistry.prototype.check = function(cb) {
             console.error(this.server + '该服务不可正常访问，请检查服务！', err);
             cb(this.serverHealth = false);
         }, this));
-}
+};
 
 /**
  * 判断服务是否正常
  * @return {[type]} [description]
  */
-nodeRegistry.prototype.serverReady = function(){
+nodeRegistry.prototype.serverReady = function() {
     if (!this.server) return false;
     if (this.serverHealth) return true;
     if (this.serverHealth === false) return false;
     return false;
-}
+};
 
 module.exports = nodeRegistry;
