@@ -59,5 +59,4 @@ app.get('/healthcheck.html', function(req, res) {
     res.end(cont);
 });
 
-app.use('/view', serveIndex(utils.getServerCachePath(), {'icons': true}))
 module.exports = app;
