@@ -3,7 +3,7 @@
  * @Date:   2016-08-18 14:18:18
  * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-29 12:05:23
+* @Last modified time: 2016-08-31 17:15:57
  */
 var path = require('path'),
     _ = require('lodash'),
@@ -87,7 +87,7 @@ module.exports = {
 
         //压缩结束
         function onEnd() {
-            console.info('compress done!');
+            // console.info('compress done!');
         }
 
         var packer = tar.Pack({

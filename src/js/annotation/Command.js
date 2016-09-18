@@ -4,7 +4,7 @@
 * @Date:   2016-08-08 17:29:59
 * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-24 16:50:28
+* @Last modified time: 2016-09-02 10:25:44
 */
 
 'use strict';
@@ -43,6 +43,10 @@ var nomnom = require("nomnom")
         forServer:{
             flag: true,
             help: 'use for clean command, default clean the npm cache in client, if the value is false, clean the npm cache in server, for clean command'
+        },
+        useFork:{
+            flag: true,
+            help: 'will start server with fork, for server command'
         }
     });
 /*@AutoLoad*/

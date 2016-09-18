@@ -3,7 +3,7 @@
  * @Date:   2016-08-17 17:30:24
  * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-29 13:02:09
+* @Last modified time: 2016-09-02 10:28:50
  */
 
 'use strict'
@@ -43,7 +43,7 @@ module.exports = {
                 env: env
             })
         } else {
-        // 使用pm2管理server
+            // 使用pm2管理server
             console.info(
                 'Will start server with PM2. \n' +
                 '- If you want to just start with fork ,use "--useFork true" option. \n' +
