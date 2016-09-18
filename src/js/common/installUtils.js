@@ -3,7 +3,7 @@
  * @Date:   2016-08-08 17:30:24
  * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-29 13:33:19
+* @Last modified time: 2016-09-18 19:21:29
  */
 
 'use strict'
@@ -12,61 +12,75 @@ var path = require('path'),
     fsExtra = require('fs-extra'),
     request = require('request'),
     tar = require('tar'),
-    _ = require('lodash');
+    _ = require('lodash'),
+    rpt = require('read-package-tree');
 
 require('shelljs/global');
 
 var utils = require('./utils'),
-    registryAdapter = require('./registryAdapter');
+    Factory = require('../annotation/Factory'),
+    constant = require('./constant');
 
-var LIBNAME = 'node_modules',
-    UPLOADDIR = 'upload_dir',
-    SPLIT = '@@@',
-    fileExt = '.tar',
+var LIBNAME = constant.LIBNAME,
+    UPLOADDIR = constant.UPLOADDIR,
     __cwd = process.cwd(),
     __cache = utils.getCachePath(),
     cache = {};
-
-var arch = process.arch,
-    platform = process.platform,
-    v8 = /[0-9]+\.[0-9]+/.exec(process.versions.v8)[0];
 
 module.exports = {
     /**
      * 分析依赖
      * @param  {Object} dependencies 模块依赖
      * @param  {Object} opts         指令参数
-     * @param  {Function} callback     回调
+     * @param  {Function} callback   回调
+     * @param  {String} modulename   指定安装的模块名
      * @return {void}
      */
-    parse: function(dependencies, opts, callback) {
-        //参数处理
-        if (opts.noOptional) {
-            delete opts.noOptional;
-            opts["no-optional"] = true;
-        }
-        this.registry = registryAdapter(opts);
+    parse: function(dependencies, opts, callback, modulename) {
+        //初始化参数
+        this.registry = Factory.instance(opts.type, opts);
         //构建安装参数
-        this.opts = utils.toString(opts);
-        //确保文件夹存在并可写入
+        this.opts = utils.toString(opts, constant.NPMOPS);
+
+        //确保本地缓存文件夹及node_modules存在并可写入
         utils.ensureDirWriteablSync(__cache);
+        utils.ensureDirWriteablSync(path.resolve(__cache, LIBNAME));
+        utils.ensureDirWriteablSync(path.resolve(__cache, UPLOADDIR));
+        //确保工程目录node_modules存在并可写入
         utils.ensureDirWriteablSync(path.resolve(__cwd, LIBNAME));
 
+        //创建package.json，否则安装会报warning
+        // fsExtra
+        //     .writeJson(path.resolve(__cache, 'package.json'), require('../../resource/package.js'), function(err){
+        //         console.error(err);
+        //     });
+
+        //获取当前缓存模块
+        this.localCache = utils.lsDirectory(__cache);
+        this.serverCache = {};
+
         console.info('开始解析');
+        var self = this;
         //判断公共缓存是否存在
-        if(this.registry && this.registry.check){
+        if (this.registry && this.registry.check) {
             this.registry.check(_.bind(function(avaliable) {
                 // 公共缓存是否可用
-                if(avaliable){
-                    this.parseModule(dependencies, callback);
+                if (avaliable) {
+                    parse();
                 } else {
                     delete this.registry;
-                    this.parseModule(dependencies, callback);
+                    parse();
                 }
             }, this));
         } else {
             delete this.registry;
-            this.parseModule(dependencies, callback);
+            parse();
+        }
+
+        function parse() {
+            self.parseModule(dependencies, callback).catch(function(err) {
+                console.error(err);
+            });
         }
     },
     /**
@@ -75,109 +89,48 @@ module.exports = {
      * @param  {Function} callback     回调
      * @return {void}
      */
-     /*@Async*/
+    /*@Async*/
     parseModule: function(dependencies, callback) {
-        //解析模块依赖
-        _.each(dependencies, _.bind(function(v, k) {
-            console.info('检测' + [k, v.version].join('@'));
-            //安装模块
-            this.fetchModule(k, v.version, v.dependencies).await();
-            //同步打包
-            this.package(k, v.version, v.dependencies).await();
-        }, this));
+        console.info('匹配缓存模块');
+        //对比本地未安装的模块
+        var news = this.compareLocal(dependencies);
+
+        //对比公共缓存未安装的模块
+        news = this.compareServer(news);
+
+        if (_.keys(news).length > 0) {
+            console.info('安装模块');
+            //安装缺失模块
+            this.installNews(news).await();
+        }
+        console.info('开始打包模块');
+        //打包模块至工程目录
+        this.package(dependencies);
 
         //需要将新的模块同步到远程服务
         this.syncRemote(path.resolve(__cache, UPLOADDIR), function(err) {
             //删除缓存的node_modules目录
             console.info('删除临时目录');
-            rm('-rf', path.resolve(__cache, LIBNAME));
+            rm('-rf', path.resolve(__cache, UPLOADDIR));
             callback(err);
         });
     },
     /**
-     * 获取模块
-     * @param  {String} name            模块名称
-     * @param  {String} version         模块版本
-     * @param  {Object} dependencies    模块依赖
+     * 安装缺失模块
+     * @param  {JSON} modules   模块
      * @return {void}
      */
     /*@Async*/
-    fetchModule: function(name, version, dependencies) {
-        var npmModule = this.getModuleName(name, version, dependencies),
-            cacheModulePath = this.fromCache(npmModule);
-
-        //如果模块不存在，尝试使用与系统相关版本
-        if (!cacheModulePath) {
-            cacheModulePath = this.fromCache(this.getModuleNameForPlatform(name, version));
-        }
-        //如果本地不存在，尝试从公共服务缓存中获取
-        if (!cacheModulePath && this.registry) {
-            cacheModulePath = this.fromRemoteToCache(npmModule, this.getModuleNameForPlatform(name, version)).await();
-        }
-        //本地和服务端都不存在，则安装该模块
-        if (!cacheModulePath) {
-            this.install(name, version);
-        }
-    },
-    /**
-     * 组装模块
-     * @param  {String} name         模块名称
-     * @param  {String} version      模块版本
-     * @param  {Object} dependencies 模块依赖
-     * @param  {String} modulePath   模块当前路径
-     * @return {void}
-     */
-    /*@Async*/
-    package: function(name, version, dependencies, modulePath) {
-        var moduleName = [name, version].join('@');
-        modulePath = modulePath || path.resolve(__cwd, LIBNAME);
-        //确保文件路径存在
-        fsExtra.ensureDirSync(modulePath);
-
-        var oriModulePath = path.resolve(__cache, this.getModuleName(name, version, dependencies));
-        console.info('开始打包模块' + moduleName);
-        //判断模块是否存在，不存在则尝试获取或安装模块
-        if (!test('-d', oriModulePath)) {
-            //是否存在系统相关版本
-            var moduleNameForPlatform = this.getModuleNameForPlatform(name, version),
-                oriModulePathForPlatform = path.resolve(__cache, moduleNameForPlatform);
-
-            if (!test('-d', oriModulePathForPlatform)) {
-                this.fetchModule(name, version, dependencies).await();
-            } else {
-                oriModulePath = oriModulePathForPlatform;
+    installNews: function(modules) {
+        _.each(modules, _.bind(function(v, k) {
+            if (!this.localCache[utils.getModuleName(k, v.version)] &&
+                !this.localCache[utils.getModuleNameForPlatform(k, v.version)]) {
+                //安装模块
+                this.install(k, v.version);
+                //同步本地模块
+                this.syncLocal().await();
             }
-        }
-        //同步模块至项目工程
-        var target = path.resolve(modulePath, name);
-        fsExtra.ensureDirSync(target);
-        if (test('-d', oriModulePath)) {
-            cp('-rf', oriModulePath + path.sep + '*', target);
-        }
-        //循环同步依赖模块
-        dependencies && _.each(dependencies, _.bind(function(v, k) {
-            this.package(k, v.version, v.dependencies, path.resolve(modulePath, name, LIBNAME)).await();
         }, this));
-    },
-    /**
-     * 从本地缓存中读取
-     * @param  {String} npmModule 模块唯一名称，一般为名称+版本+[系统版本]
-     * @return {Boolean}        存在为true, 否则为false
-     */
-    fromCache: function(npmModule) {
-        npmModule = path.resolve(__cache, npmModule);
-        return fs.existsSync(npmModule) && npmModule;
-    },
-    /**
-    * 从远端服务中读取
-    * @param  {String}   moduleName            模块唯一名称
-    * @param  {String}   moduleNameForPlatform 模块与系统相关唯一名称
-    * @param  {Function} cb                    回调
-    * @return {[void]}
-    */
-    /*@AsyncWrap*/
-    fromRemoteToCache: function(moduleName, moduleNameForPlatform, cb) {
-        this.registry.get(moduleName, moduleNameForPlatform, __cache, cb);
     },
     /**
      * 本地安装模块，依赖扁平化
@@ -189,35 +142,103 @@ module.exports = {
         //抵达缓存目录
         cd(__cache);
 
-        //执行安装
-        utils.ensureDirWriteablSync(path.resolve(__cache, LIBNAME));
         var npmName = [name, version].join('@');
+
         console.info('安装' + npmName);
+
         if (exec('npm install ' + npmName + ' ' + this.opts).code !== 0) {
             throw npmName + ' install failed, please try by yourself!!';
         }
-        //递归依赖，层次扁平化
-        var packagePath, moduleTmp;
-        this.traverseModule(__cache, _.bind(function(modulePath, top) {
-            //文件名＋版本号
-            packagePath = path.resolve(modulePath, 'package.json');
-            if (!test('-f', packagePath)) {
-                return;
+    },
+    /**
+     * 同步本地模块
+     * @return {void}
+     */
+    /*@AsyncWrap*/
+    syncLocal: function(cb) {
+        var files = ls(path.resolve(__cache, LIBNAME)),
+            self = this,
+            pcks = [],
+            filesArr = [],
+            count;
+        files.forEach(function(file, i) {
+            var filePath = path.resolve(__cache, LIBNAME, file);
+            //存在私有域@开头的，只会存在一级
+            if (!test('-f', path.resolve(filePath, 'package.json'))) {
+                ls(filePath).forEach(function(file, j) {
+                    filesArr.push(path.resolve(filePath, file));
+                });
+            } else {
+                filesArr.push(filePath);
             }
-            var des = fsExtra.readJsonSync(packagePath);
-            if (test('-d', modulePath)) {
-                moduleTmp = path.resolve(__cache, UPLOADDIR, this.getModuleName(des.name, des.version, des.dependencies, modulePath));
-                //创建目录
-                fsExtra.ensureDirSync(moduleTmp);
-                modulePath != moduleTmp && cp('-rf', modulePath + path.sep + '*', moduleTmp);
-                !top && rm('-rf', modulePath);
+        });
+
+        count = filesArr.length;
+
+        filesArr.forEach(function(filePath) {
+            rpt(filePath, function(err, data) {
+                if (err) {
+                    throw err;
+                }
+                pcks.push(data);
+                if (--count == 0) {
+                    //temporary path for module cache
+                    var tpmc;
+                    utils.traverseTree(pcks, function(v, i, len) {
+                        tpmc = utils.getModuleName(v.package.name, v.package.version, v.package.dependencies, v.realpath);
+                        self.localCache[tpmc] = 1;
+                        if (self.serverCache[tpmc]) {
+                            if (!self.localCache[tpmc]) {
+                                //如果本地缓存不存在，而公共缓存存在，则移动至本地缓存目录
+                                tpmc = path.resolve(__cache, tpmc);
+                            }
+                        } else {
+                            //如果公共缓存不存在该模块，则移动至上传目录
+                            tpmc = path.resolve(__cache, UPLOADDIR, tpmc);
+                        }
+                        fsExtra.ensureDirSync(tpmc);
+                        cp('-rf', path.resolve(v.realpath, '*'), tpmc);
+                        //删除多余的node_modules空文件夹
+                        if (i == len - 1 && v.parent) {
+                            rm('-rf', path.resolve(v.parent.realpath, LIBNAME));
+                        }
+                    });
+                    //同步上传目录至缓存目录
+                    cp('-rf', path.resolve(__cache, UPLOADDIR, '*'), __cache);
+                    //删除安装目录
+                    rm('-rf', path.resolve(__cache, LIBNAME));
+                    cb();
+                }
+            });
+        });
+    },
+    /**
+     * 组装模块
+     * @param  {Object} dependencies 模块依赖
+     * @return {void}
+     */
+    package: function(dependencies) {
+        //project module path
+        var pmp = path.resolve(__cwd, LIBNAME),
+            cache = this.localCache,
+            mn, tmp;
+        //确保文件路径存在
+        fsExtra.ensureDirSync(pmp);
+
+        //循环同步依赖模块
+        utils.traverseDependencies(dependencies, function(v, k, modulePath) {
+            mn = utils.getModuleName(k, v.version);
+            if (!cache[mn]) {
+                mn = utils.getModuleNameForPlatform(k, v.version);
             }
-        }, this), null, true);
-        //同步模块到缓存中
-        moduleTmp = path.resolve(__cache, UPLOADDIR);
-        if (test('-d', moduleTmp)  && ls(moduleTmp).length > 0) {
-            cp('-rf', moduleTmp + path.sep + '*', __cache);
-        }
+            if (modulePath) {
+                tmp = path.resolve(pmp, modulePath, LIBNAME, k);
+            } else {
+                tmp = path.resolve(pmp, k);
+            }
+            fsExtra.ensureDirSync(tmp);
+            cp('-rf', path.resolve(__cache, mn, '*'), tmp);
+        });
     },
     /**
      * 同步远程服务
@@ -226,60 +247,26 @@ module.exports = {
      * @return {void}
      */
     syncRemote: function(modulePath, callback) {
+        if (!this.registry) {
+            callback();
+            return;
+        }
         this.registry.put(modulePath, callback);
     },
     /**
-     * 深度遍历模块依赖
-     * @param  {String}   curPath  当前路径
-     * @param  {Function} callback 回调
-     * @param  {String}   name     文件夹名称
-     * @param  {Boolean}   top     是否为第一级目录
-     * @return {void}
+     * 对比本地未安装模块
+     * @param  {JSON} dependencies   模块依赖
+     * @return {JSON}
      */
-    traverseModule: function(curPath, callback, name, top) {
-        if (!(name && name.indexOf('@') == 0)) {
-            curPath = path.resolve(curPath, LIBNAME);
-        }
-        if (!test('-d', curPath)) {
-            return;
-        }
-
-        ls(curPath).forEach(_.bind(function(file) {
-            this.traverseModule(path.resolve(curPath, file), callback, file);
-            callback(path.resolve(curPath, file), top);
-        }, this));
+    compareLocal: function(dependencies) {
+        return utils.compareCache(dependencies, this.localCache);
     },
     /**
-     * 生成和环境相关的名称
-     * @param  {String} name         模块名称
-     * @param  {String} version      模块版本
-     * @return {String}
+     * 对比公共缓存服务未安装的模块
+     * @param  {JSON} dependencies 模块依赖，打平后只有一级
+     * @return {JSON}
      */
-    getModuleNameForPlatform: function(name, version) {
-        return [name, version, platform + '-' + arch + '-v8-' + v8].join('@').replace(RegExp('/', 'g'), SPLIT);
-    },
-    /**
-     * 生成带版本的模块名
-     * @param  {String} name         模块名称
-     * @param  {String} version      模块版本
-     * @param  {Object} dependencies 模块依赖
-     * @return {String}
-     */
-    getModuleName: function(name, version, dependencies, modulePath) {
-        //for <= node v0.8 use node-waf to build native programe with wscript file
-        //for > node v0.8 use node-gyp to build with binding.gyp
-        //see also: https://www.npmjs.com/package/node-gyp
-        if ((dependencies && dependencies['node-gyp']) ||
-            (modulePath && (test('-f', path.resolve(modulePath, 'binding.gyp')) || test('-f', path.resolve(modulePath, 'wscript'))))) {
-            return this.getModuleNameForPlatform(name, version);
-        }
-        return [name, version].join('@').replace(RegExp('/', 'g'), SPLIT);
-    },
-    /**
-     * 获得缓存路径
-     * @return {[type]} [description]
-     */
-    getCachePath: function() {
-        return __cache;
+    compareServer: function(dependencies) {
+        return utils.compareCache(dependencies, this.serverCache);
     }
 };

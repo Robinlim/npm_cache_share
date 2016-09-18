@@ -3,7 +3,7 @@
  * @Date:   2016-08-17 17:30:24
  * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-09-02 10:28:50
+* @Last modified time: 2016-09-18 11:06:07
  */
 
 'use strict'
@@ -15,48 +15,42 @@ var _ = require('lodash'),
 
 require('shelljs/global');
 
-var app = path.join(__dirname, '../app'),
-    tokenPath = utils.getTokenPath();
+var constant = require('../common/constant'),
+    app = path.join(__dirname, '../app'),
+    tokenPath = utils.getTokenPath(),
+    pm2OpsMap = constant.PM2OPS;
 
-/*@Command("server")*/
+/*@Command({"name": "server [command] [name]", "alias":"s", "des":"Start a server to store the npm module cache", options:[["-p, --port [port]", "specify the port of the service, default is 8888"],["-f, --useFork", "start with fork"],["-t, --token [token]", "control the auth to access the server"],["-i, --i [i]", "thread count only for pm2"],["-n --name [name]", "app name only for pm2"]]})*/
 module.exports = {
-    run: function(opts) {
-        // 设置上传token
-        var token = 'npm_cache_share'; // default token
-        if(opts.token){
-            token = opts.token;
-            delete opts.token;
-        }
-        fsExtra.writeJsonSync(tokenPath, {
-            token: token
-        });
-        console.log(tokenPath, token)
+    run: function(command, name, opts) {
+        var pm2 = which('pm2'),
+            env = _.extend({        //进程传递参数
+                port: opts.port || '8888',
+                token: opts.token   //请求校验
+            }, process.env);
 
-        var pm2 = which('pm2');
-        var env = _.extend({
-            port: opts.port || '8888'
-        }, process.env);
         // 没有pm2或者指定了useFork就使用fork子进程方式
         if (!pm2 || opts.useFork) {
             console.info('Connot find pm2, will start server with fork.');
             childProcess.fork(app, {
                 env: env
-            })
+            });
         } else {
             // 使用pm2管理server
             console.info(
                 'Will start server with PM2. \n' +
-                '- If you want to just start with fork ,use "--useFork true" option. \n' +
+                '- If you want to just start with fork ,use "--useFork" or "-f" option. \n' +
                 '- You can append actions like "start/stop/list" and options like "--instances 4,etc." after.\n'
             );
-            var action = opts[1] || 'start';  // 指令的第二个参数标示pm2的动作，默认start
-            var options =[]; // 指令中的_，数字以及port参数之外的参数全部传给pm2
+            // 指令中的_，数字以及port参数之外的参数全部传给pm2
+            var options =[];
             _.forIn(opts, function(value ,key){
-                if(key !== 'port' && key!== '_' && _.isNaN(_.toNumber(key))){
-                    options.push((key.length==1?'-':'--')+key+' '+value);
+                if(key[0] != '_' && typeof value != 'object' && typeof value != 'function' && typeof value != 'undefined' && pm2OpsMap[key]){
+                    options.push((key.length == 1 ? '-' : '--') + key + ' ' + value);
                 }
             });
-            var cmd = [pm2, action, app].concat(options).join(' ');
+            // 指令的第二个参数标示pm2的动作，默认start
+            var cmd = [pm2,  command || 'start', name || app].concat(options).join(' ');
             console.info('exec:',cmd);
             exec(cmd, {
                 env: env
