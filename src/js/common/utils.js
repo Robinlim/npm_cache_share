@@ -226,6 +226,35 @@ var utils = module.exports = {
         return [name, version].join('@').replace(RegExp('/', 'g'), SPLIT);
     },
     /**
+     * 从包含环境与版本的包名称中切分出模块名称
+     * @param  {string} name 包名称
+     * @return {string}      模块名称
+     */
+    splitModuleName: function(name){
+        // 处理形如下方的包名称
+        // name => moduleName
+        // five@0.0.1 ＝> five
+        // five@0.0.1.tar => five
+        // fibers@0.1.0@x64-Linux-v8 => fibers
+        // @qnpm@@@Qredis@0.0.1 => @qnpm@@@Qredis
+        var arr = name.split('@'), moduleName;
+        if(arr[0] === ''){
+            moduleName = arr.slice(0,-1).join('@');
+        } else {
+            moduleName = arr[0];
+        }
+        return moduleName;
+    },
+    /**
+     * 生成包含环境信息的包名称
+     * @param  {string} moduleName 形如five@0.0.1
+     * @param  {string} env        形如x64-Linux-v8
+     * @return {string}            [description]
+     */
+    joinPackageName: function(moduleName, env){
+        return moduleName + '@' + env;
+    },
+    /**
      * 遍历树
      * @param  {JSON}   tree        树形结构
      * @param  {Function} callback  回调函数

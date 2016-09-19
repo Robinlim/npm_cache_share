@@ -8,11 +8,12 @@
   </head>
   <body class="directory">
     <h1><%= name %></h1>
-    <table>
+    <table id="info-table">
         <tr><td>size</td><td><%= size %></td></tr>
         <tr><td>create_time</td><td><%= create_time %></td></tr>
         <tr><td>last_modified_time</td><td><%= last_modified_time %></td></tr>
-        <tr><td>download</td><td><a href="<%= download_url %>"><%= download_url %></a></td></tr>
+        <tr><td>download package</td><td><span class="button"><a href="/download/<%= repository %>/<%= name%>">download</a></span></td></tr>
+        <tr><td>delete package</td><td><span class="button"><a href="/delete/<%= repository %>/<%= name%>">delete</a></span></td></tr>
     </table>
   </body>
 </html>

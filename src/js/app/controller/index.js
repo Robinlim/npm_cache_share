@@ -9,7 +9,8 @@
 'use strict'
 var path = require('path'),
     fsExtra = require('fs-extra'),
-    utils = require('../../common/utils');
+    utils = require('../../common/utils'),
+    directory = require('../widget/directory');
 
 require('shelljs/global');
 
@@ -46,7 +47,7 @@ module.exports = {
     },
     /*@RequestMapping(["/{repository}/upload","/upload"])*/
     /*@ResponseBody*/
-    upload: function(req, res) {
+    upload: function(req, res, repository) {
         // check token for permission,if token exists
         if(token && token !== req.headers.token){
             res.status(404).end({
@@ -105,9 +106,40 @@ module.exports = {
             });
         });
     },
+    /*@RequestMapping(["/diff","/{repository}/diff"])*/
+    /*@ResponseBody*/
+    diff: function(req, res, reqData, repository){
+        var list = reqData.list,
+            env = reqData.env;
+        if(!Array.isArray(list)){
+            res.end({
+                status: -1,
+                message: 'list should be an array!'
+            });
+            return;
+        }
+        res.end({
+            status: 0,
+            message: 'success',
+            data: directory.diffPackages(repository || 'default', list, env)
+        });
+    },
+    /*@RequestMapping("/list")*/
+    /*@ResponseBody*/
+    list: function(req, res, reqData){
+        if(reqData.repository){
+            if(reqData.name){
+                res.end(directory.listPackages(repository,name));
+            } else {
+                res.end(directory.listModules(repository));
+            }
+        } else {
+            res.end(directory.listAll());
+        }
+    },
     /*@ExceptionHandler*/
     /*@ResponseBody*/
     error: function(err, req, res){
-        res.status(500).end(err.message || err);
+        res.status(500).end(err.stack || err);
     }
 }

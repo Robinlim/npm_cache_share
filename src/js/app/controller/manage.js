@@ -48,7 +48,8 @@ module.exports = {
     },
     /*@RequestMapping("/repository/{repository}/{name}")*/
     packages: function(req, res, repository, name){
-        var fileList = _.map(directory.listPackages(repository, name), function(v, k){
+        var name = decodeURIComponent(name),
+            fileList = _.map(directory.listPackages(repository, name), function(v, k){
             return {name: v, icon: 'box'}
         });
         renderTool.renderDirectory({
@@ -65,7 +66,7 @@ module.exports = {
         renderTool.renderInfo({
             name: filename,
             stat: stat,
-            download_url: '/download/' + repository + '/' + subname
+            repository: repository
         }, res);
     },
     /*@RequestMapping("/download/{repository}/{name}")*/
@@ -82,18 +83,29 @@ module.exports = {
         });
 
     },
-    /*@RequestMapping("/list")*/
+    /*@RequestMapping("/delete/{repository}/{name}")*/
     /*@ResponseBody*/
-    list: function(req, res, reqData){
-        if(reqData.repository){
-            if(reqData.name){
-                res.end(directory.listPackages(repository,name));
+    delete: function(req, res, repository, name){
+        var filepath = path.join(modulesCachePath, repository, name);
+        fs.stat(filepath, function(err, stat){
+            if(err){
+                res.end({
+                    status: -2,
+                    message: '无法访问' + filepath + ',err:' + err
+                });
             } else {
-                res.end(directory.listModules(repository));
+                fs.unlink(filepath, function(e){
+                    if(e){
+                        res.end({
+                            status: -1,
+                            message: '删除失败,err:' + e
+                        });
+                    } else {
+                        res.redirect('/repository/'+repository+'/'+utils.splitModuleName(name));
+                    }
+                })
             }
-        } else {
-            res.end(directory.listAll());
-        }
+        });
     },
     /*@ExceptionHandler*/
     /*@ResponseBody*/

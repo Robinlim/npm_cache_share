@@ -60,10 +60,10 @@ module.exports = {
         var locals = {
             style: defaultStylesheet.concat(iconStyle(['box'], true)),
             name: params.name,
+            repository: params.repository,
             size: (params.stat.size/1024).toFixed(2) + 'Kb',
             create_time: params.stat.birthtime.toLocaleString(),
-            last_modified_time: params.stat.mtime.toLocaleString(),
-            download_url: params.download_url
+            last_modified_time: params.stat.mtime.toLocaleString()
         }
         var buf = new Buffer(this.templates.info(locals), 'utf8');
         res.setHeader('Content-Type', 'text/html; charset=utf-8');

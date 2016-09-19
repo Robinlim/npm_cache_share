@@ -182,6 +182,19 @@ ul#files.view-details li.header {
   direction: rtl;
 }
 
+.button {
+    line-height: 24px;
+    padding: 2px;
+    background-color: #ddd;
+    border: 1px solid black;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#info-table td {
+    padding: 2px;
+}
+
 /*mobile*/
 @media (max-width: 768px) {
   body {

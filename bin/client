@@ -23,6 +23,8 @@ nodeAnnotation.setLogger(true, 'error', function(str, level) {
     console.error('[ERROR]', str);
 });
 
-nodeAnnotation.start(path.resolve(__dirname,'..', 'src'), function(){
+var ignoreDirs = {};
+ignoreDirs[path.resolve(__dirname, '../src/js/app')] = true;
+nodeAnnotation.start(path.resolve(__dirname,'..', 'src'), ignoreDirs, function(){
   global.run();
 });

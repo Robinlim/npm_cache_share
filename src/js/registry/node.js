@@ -18,7 +18,7 @@ var path = require('path'),
 var utils = require('../common/utils');
 /*@Factory("node")*/
 function nodeRegistry(config) {
-    this.server = config.server;
+    this.server = config.repository;
     this.token = config.token;
     this.fileExt = utils.getFileExt();
 }
