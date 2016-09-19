@@ -3,7 +3,7 @@
 * @Date:   2016-09-14 14:31:25
 * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-09-14 17:09:31
+* @Last modified time: 2016-09-19 15:53:07
 */
 
 'use strict'
@@ -23,10 +23,19 @@ var modulesCachePath = utils.getServerCachePath(),
 fsExtra.ensureDirSync(TEMPDIR);
 /*@Controller*/
 module.exports = {
-    resolveRepository: function(name){
-        var repositoryPath = path.join(modulesCachePath, name || 'default');
-        fsExtra.ensureDirSync(repositoryPath);
-        return repositoryPath;
+    /*@RequestMapping("/check")*/
+    /*@ResponseBody*/
+    check: function(req, res, reqData) {
+        var cache = utils.lsDirectory(modulesCachePath),
+            platform = reqData.platform,
+            existCache = {};
+        utils.traverseDependencies(reqData.data, function(v, k) {
+            if (cache[k])
+        });
+        res.end({
+            status: 200,
+            data: null
+        });
     },
     /*@RequestMapping(["/{repository}/fetch/{moduleName}/{moduleNameForPlatform}","/fetch/{moduleName}/{moduleNameForPlatform}"])*/
     fetch: function(req, res, repository, moduleName, moduleNameForPlatform) {
@@ -143,3 +152,8 @@ module.exports = {
         res.status(500).end(err.stack || err);
     }
 }
+function resolveRepository(name){
+    var repositoryPath = path.join(modulesCachePath, name || 'default');
+    fsExtra.ensureDirSync(repositoryPath);
+    return repositoryPath;
+},

@@ -3,7 +3,7 @@
 * @Date:   2016-08-17 19:03:55
 * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-08-18 14:53:29
+* @Last modified time: 2016-09-19 15:13:46
 */
 
 var express = require('express');
@@ -33,11 +33,9 @@ if(fs.existsSync(versionPath)){
 app.use(favicon(__dirname + '/favicon.ico'));
 app.enable('trust proxy');
 
-//支持上传文件
-app.use(bodyParser({ uploadDir: path.join(__dirname, 'filesTmp'), keepExtensions: true }));
 // 让post请求实体增大
 app.use(bodyParser.json({limit: '200mb'}));
-app.use(bodyParser.urlencoded({limit: '200mb', extended: true}));
+app.use(bodyParser.urlencoded({limit: '200mb', extended: true, parameterLimit: 20000}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(compression());

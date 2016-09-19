@@ -3,7 +3,7 @@
  * @Date:   2016-08-18 14:18:18
  * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-09-18 18:23:21
+* @Last modified time: 2016-09-19 15:21:30
  */
 var path = require('path'),
     _ = require('lodash'),
@@ -200,13 +200,21 @@ var utils = module.exports = {
         });
     },
     /**
+     * 获取平台相关参数
+     * @return {String}
+     */
+    getPlatform: function(){
+        return platform + '-' + arch + '-v8-' + v8;
+    },
+    /**
      * 生成和环境相关的名称
      * @param  {String} name         模块名称
      * @param  {String} version      模块版本
+     * @param  {String} platform     指定平台
      * @return {String}
      */
-    getModuleNameForPlatform: function(name, version) {
-        return [name, version, platform + '-' + arch + '-v8-' + v8].join('@').replace(RegExp('/', 'g'), SPLIT);
+    getModuleNameForPlatform: function(name, version, platform) {
+        return [name, version, platform || this.getPlatform()].join('@').replace(RegExp('/', 'g'), SPLIT);
     },
     /**
      * 生成带版本的模块名
@@ -265,5 +273,17 @@ var utils = module.exports = {
             v.children && v.children.length > 0 && utils.traverseTree(v.children, callback);
             callback(v, i, tree.length);
         });
+    },
+    /**
+     * map转换成array，只有一级
+     * @param  {JSON} jsonObj
+     * @return {Array}
+     */
+    toArrayByKey: function(jsonObj) {
+        var arrs = [];
+        _.each(jsonObj, function(v, k){
+            arrs.push(k);
+        });
+        return arrs;
     }
 };

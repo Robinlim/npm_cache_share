@@ -44,6 +44,7 @@
     "serve-favicon": "~2.3.0",
     "serve-index": "^1.8.0",
     "shelljs": "^0.7.3",
+    "slide": "^1.1.6",
     "tar": "^2.2.1"
   }
 }

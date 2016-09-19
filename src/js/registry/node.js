@@ -3,7 +3,7 @@
  * @Date:   2016-09-09 16:09
  * @Email:  wyw.wang@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-09-14 19:34:14
+* @Last modified time: 2016-09-19 15:20:19
  */
 
 var path = require('path'),
@@ -126,22 +126,30 @@ nodeRegistry.prototype.put = function(dir, callback) {
 
 
 /**
- * 判断服务是否正常
- * @return {[type]} [description]
+ * 判断服务是否正常,并返回服务端与当前工程模块依赖的交集
+ * @param  {Function} cb        检查完后的回调
+ * @param  {JSON} dependencies  工程的模块依赖
+ * @return {void}
  */
-nodeRegistry.prototype.check = function(cb) {
+nodeRegistry.prototype.check = function(cb, dependencies) {
     if (!this.server) {
-        cb();
+        cb(false, dependencies);
         return;
     }
     request
-        .get('http://' + this.server + '/healthcheck.html')
-        .on('response', _.bind(function() {
-            cb(this.serverHealth = true);
+        .post('http://' + this.server + '/check')
+        .form({data: dependencies, platform: utils.getPlatform()})
+        .on('response', _.bind(function(err,httpResponse,body) {
+            if(err || body.status != 200){
+                console.error(this.server + '该服务不可正常访问，请检查服务！', err || body.message);
+                cb(this.serverHealth = false, {});
+                return;
+            }
+            cb(this.serverHealth = true, body.data);
         }, this))
         .on('error', _.bind(function(err) {
             console.error(this.server + '该服务不可正常访问，请检查服务！', err);
-            cb(this.serverHealth = false);
+            cb(this.serverHealth = false, {});
         }, this));
 };
 

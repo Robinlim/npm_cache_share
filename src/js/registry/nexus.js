@@ -3,7 +3,7 @@
  * @Date:   2016-09-09 16:09
  * @Email:  wyw.wang@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-09-14 19:33:00
+* @Last modified time: 2016-09-19 11:10:28
  */
 
 var path = require('path'),
@@ -154,19 +154,20 @@ nexusRegistry.prototype.put = function(dir, callback) {
 };
 
 /**
- * 校验nexus服务是否可用
- * @param  {Function} cb 检查完后的回调
- * @return {void}      [description]
+ * 校验nexus服务是否可用,并返回服务端与当前工程模块依赖的交集
+ * @param  {Function} cb        检查完后的回调
+ * @param  {JSON} dependencies  工程的模块依赖
+ * @return {void}
  */
-nexusRegistry.prototype.check = function(cb) {
+nexusRegistry.prototype.check = function(cb, dependencies) {
     //TODO 目前仅检查了可以访问，还需更精确的确定源可用，用户密码可用
     request.get(this.repository)
         .on('response', _.bind(function() {
-            cb(this.serverHealth = true);
+            cb(this.serverHealth = true, {});
         }, this))
         .on('error', _.bind(function(err) {
             console.error(this.repository + '该服务不可正常访问，请检查服务！', err);
-            cb(this.serverHealth = false);
+            cb(this.serverHealth = false, {});
         }, this));
 };
 

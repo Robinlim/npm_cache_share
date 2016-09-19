@@ -3,7 +3,7 @@
  * @Date:   2016-08-08 17:30:24
  * @Email:  xin.lin@qunar.com
 * @Last modified by:   robin
-* @Last modified time: 2016-09-18 19:21:29
+* @Last modified time: 2016-09-19 11:21:41
  */
 
 'use strict'
@@ -13,7 +13,8 @@ var path = require('path'),
     request = require('request'),
     tar = require('tar'),
     _ = require('lodash'),
-    rpt = require('read-package-tree');
+    rpt = require('read-package-tree'),
+    asyncMap = require("slide").asyncMap;
 
 require('shelljs/global');
 
@@ -37,6 +38,7 @@ module.exports = {
      * @return {void}
      */
     parse: function(dependencies, opts, callback, modulename) {
+        console.info('初始化环境');
         //初始化参数
         this.registry = Factory.instance(opts.type, opts);
         //构建安装参数
@@ -50,28 +52,28 @@ module.exports = {
         utils.ensureDirWriteablSync(path.resolve(__cwd, LIBNAME));
 
         //创建package.json，否则安装会报warning
-        // fsExtra
-        //     .writeJson(path.resolve(__cache, 'package.json'), require('../../resource/package.js'), function(err){
-        //         console.error(err);
-        //     });
+        fsExtra
+            .writeJSONSync(path.resolve(__cache, 'package.json'), require('../../resource/package.js'));
 
         //获取当前缓存模块
         this.localCache = utils.lsDirectory(__cache);
         this.serverCache = {};
 
-        console.info('开始解析');
         var self = this;
         //判断公共缓存是否存在
         if (this.registry && this.registry.check) {
-            this.registry.check(_.bind(function(avaliable) {
+            this.registry.check(_.bind(function(avaliable, data) {
+                // 公共缓存拥有的模块
+                this.serverCache = data;
                 // 公共缓存是否可用
-                if (avaliable) {
-                    parse();
-                } else {
+                if (!avaliable) {
                     delete this.registry;
-                    parse();
                 }
-            }, this));
+                // 下载公共模块
+                this.download(function(){
+                    parse();
+                });
+            }, this), dependencies);
         } else {
             delete this.registry;
             parse();
@@ -84,6 +86,15 @@ module.exports = {
         }
     },
     /**
+     * 下载公共缓存模块
+     * @return {void}
+     */
+    download: function(cb){
+        asyncMap(utils.toArrayByKey(this.serverCache), _.bind(function(moduleName, cb){
+            this.registry.get(moduleName, moduleName, __cache, cb);
+        }, this), cb);
+    },
+    /**
      * 解析模块
      * @param  {Object}   dependencies 模块依赖
      * @param  {Function} callback     回调
@@ -91,7 +102,7 @@ module.exports = {
      */
     /*@Async*/
     parseModule: function(dependencies, callback) {
-        console.info('匹配缓存模块');
+        console.info('开始解析');
         //对比本地未安装的模块
         var news = this.compareLocal(dependencies);
 
