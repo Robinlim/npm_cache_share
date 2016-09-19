@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>package info <%= name %></title>
+    <style><%= style %></style>
+  </head>
+  <body class="directory">
+    <h1><%= name %></h1>
+    <table id="info-table">
+        <tr><td>size</td><td><%= size %></td></tr>
+        <tr><td>create_time</td><td><%= create_time %></td></tr>
+        <tr><td>last_modified_time</td><td><%= last_modified_time %></td></tr>
+        <tr><td>download package</td><td><span class="button"><a href="/download/<%= repository %>/<%= name%>">download</a></span></td></tr>
+        <tr><td>delete package</td><td><span class="button"><a href="/delete/<%= repository %>/<%= name%>">delete</a></span></td></tr>
+    </table>
+  </body>
+</html>
