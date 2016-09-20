@@ -50,7 +50,7 @@ module.exports = {
             console.info('读取npm-shrinkwrap.json文件！！');
             callback(null, fsExtra.readJsonSync(npmShrinkwrapPath).dependencies);
         }catch(e){
-            console.error(e);
+            console.error(e.stack);
             callback(e);
         }
     },

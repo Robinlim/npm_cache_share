@@ -8,6 +8,7 @@
 
 'use strict'
 var path = require('path'),
+    fs = require('fs'),
     fsExtra = require('fs-extra'),
     utils = require('../../common/utils'),
     directory = require('../widget/directory');
@@ -23,36 +24,37 @@ var modulesCachePath = utils.getServerCachePath(),
 fsExtra.ensureDirSync(TEMPDIR);
 /*@Controller*/
 module.exports = {
-    /*@RequestMapping("/check")*/
+    /*@RequestMapping(["/{repository}/check","/check"])*/
     /*@ResponseBody*/
-    check: function(req, res, reqData) {
-        var cache = utils.lsDirectory(modulesCachePath),
-            platform = reqData.platform,
-            existCache = {};
-        utils.traverseDependencies(reqData.data, function(v, k) {
-            if (cache[k])
-        });
+    check: function(req, res, reqData, repository){
+        var list = reqData.list || [],
+            platform = reqData.platform;
+        if(!Array.isArray(list)){
+            res.end({
+                status: -1,
+                message: 'list should be an array!'
+            });
+            return;
+        }
         res.end({
-            status: 200,
-            data: null
+            status: 0,
+            message: 'success',
+            data: directory.diffPackages(repository || 'default', list, platform)
         });
     },
-    /*@RequestMapping(["/{repository}/fetch/{moduleName}/{moduleNameForPlatform}","/fetch/{moduleName}/{moduleNameForPlatform}"])*/
-    fetch: function(req, res, repository, moduleName, moduleNameForPlatform) {
-        var repositoryPath = this.resolveRepository(repository),
-            modulePath = path.resolve(repositoryPath, moduleName + fileExt);
-        if (!test('-f', modulePath)) {
-            modulePath = path.resolve(repositoryPath, moduleNameForPlatform + fileExt);
-            if (!test('-f', modulePath)) {
-                // 不存在或不可读返回404
-                res.statusCode = 404;
-                res.end();
-                return;
+    /*@RequestMapping(["/{repository}/fetch/{name}","/fetch/{name}"])*/
+    fetch: function(req, res, repository, name) {
+        console.log('[fetch]', repository || 'default', name);
+        var filename = decodeURIComponent(name),
+            filepath = path.join(modulesCachePath, repository||'default', filename + fileExt);
+        fs.access(filepath, fs.R_OK, function(err){
+            if(err){
+                res.status(404).end(filename + 'not exist!')
+            } else {
+                res.setHeader('modulename', filename);
+                res.download(filepath);
             }
-            moduleName = moduleNameForPlatform;
-        }
-        res.setHeader('modulename', moduleName);
-        res.download(modulePath);
+        });
     },
     /*@RequestMapping(["/{repository}/upload","/upload"])*/
     /*@ResponseBody*/
@@ -72,7 +74,7 @@ module.exports = {
             uploadDir: TEMPDIR
         });
 
-        var repositoryPath = this.resolveRepository(repository);
+        var repositoryPath = resolveRepository(repository);
         form.parse(req, function(err, fields, files) {
             if (files.modules.length != 0) {
                 var file = files.modules[0].path,
@@ -115,32 +117,14 @@ module.exports = {
             });
         });
     },
-    /*@RequestMapping(["/diff","/{repository}/diff"])*/
-    /*@ResponseBody*/
-    diff: function(req, res, reqData, repository){
-        var list = reqData.list,
-            env = reqData.env;
-        if(!Array.isArray(list)){
-            res.end({
-                status: -1,
-                message: 'list should be an array!'
-            });
-            return;
-        }
-        res.end({
-            status: 0,
-            message: 'success',
-            data: directory.diffPackages(repository || 'default', list, env)
-        });
-    },
     /*@RequestMapping("/list")*/
     /*@ResponseBody*/
     list: function(req, res, reqData){
         if(reqData.repository){
             if(reqData.name){
-                res.end(directory.listPackages(repository,name));
+                res.end(directory.listPackages(reqData.repository,reqData.name));
             } else {
-                res.end(directory.listModules(repository));
+                res.end(directory.listModules(reqData.repository));
             }
         } else {
             res.end(directory.listAll());
@@ -149,11 +133,13 @@ module.exports = {
     /*@ExceptionHandler*/
     /*@ResponseBody*/
     error: function(err, req, res){
+        console.error(err.stack);
         res.status(500).end(err.stack || err);
     }
 }
+
 function resolveRepository(name){
     var repositoryPath = path.join(modulesCachePath, name || 'default');
     fsExtra.ensureDirSync(repositoryPath);
     return repositoryPath;
-},
+}

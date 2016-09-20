@@ -31,35 +31,37 @@ function nodeRegistry(config) {
  * @param  {Function} cb                    [description]
  * @return {void}                         [description]
  */
-nodeRegistry.prototype.get = function(moduleName, moduleNameForPlatform, dir, cb) {
+nodeRegistry.prototype.get = function(packageName, dir, cb) {
+    var fileExt = this.fileExt;
     request
-        .get(['http:/', this.server, 'fetch', moduleName, moduleNameForPlatform].join('/'))
+        .get(['http:/', this.server, 'fetch', packageName].join('/'))
         .on('response', function(response) {
             if (response.statusCode == 200) {
                 // 获取文件名称
-                var target = path.resolve(dir, response.headers.modulename + this.fileExt);
+                var target = path.resolve(dir, response.headers.modulename + fileExt);
                 // 解压文件操作
                 var extractor = tar.Extract({
                         path: dir
                     })
                     .on('error', function(err) {
                         console.error(target + ' extract is wrong ', err.stack);
-                        cb(null, false);
+                        cb(err);
                     })
                     .on('end', function() {
                         console.info(target + ' extract done!');
-                        target = path.resolve(__cache, response.headers.modulename);
+                        target = path.resolve(dir, response.headers.modulename);
                         cb(null, fs.existsSync(target) && target);
                     });
                 // 请求返回流通过管道流入解压流
                 response.pipe(extractor);
                 return;
+            } else {
+                cb(new Error('下载模块异常,statusCode:'+response.statusCode));
             }
-            cb(null, false);
         })
         .on('error', function(err) {
-            cb(null, false);
             console.error(err);
+            cb(err);
         });
 };
 
@@ -127,30 +129,42 @@ nodeRegistry.prototype.put = function(dir, callback) {
 
 /**
  * 判断服务是否正常,并返回服务端与当前工程模块依赖的交集
+ * @param  {Array} list  工程的模块依赖
  * @param  {Function} cb        检查完后的回调
- * @param  {JSON} dependencies  工程的模块依赖
  * @return {void}
  */
-nodeRegistry.prototype.check = function(cb, dependencies) {
-    if (!this.server) {
-        cb(false, dependencies);
+nodeRegistry.prototype.check = function(list, cb) {
+    var self = this;
+    if (!self.server) {
+        cb(false, null);
         return;
     }
+    var form = {
+        list: list,
+        platform: utils.getPlatform()
+    };
     request
-        .post('http://' + this.server + '/check')
-        .form({data: dependencies, platform: utils.getPlatform()})
-        .on('response', _.bind(function(err,httpResponse,body) {
-            if(err || body.status != 200){
-                console.error(this.server + '该服务不可正常访问，请检查服务！', err || body.message);
-                cb(this.serverHealth = false, {});
-                return;
+        .post({
+            url: 'http://' + self.server + '/check',
+            form: form
+        }, function(err, response, body) {
+            if(err){
+                console.error(self.server + '该服务不可正常访问，请检查服务！', err);
+                cb(self.serverHealth = false, {});
+            } else {
+                var res, error;
+                try {
+                    res = JSON.parse(body);
+                } catch (e) {
+                    error = e;
+                }
+                if(error || res.status !== 0){
+                    console.error(self.server + '服务异常，请检查服务！', error || res.message);
+                    cb(self.serverHealth = false, {});
+                }
+                cb(self.serverHealth = true, res.data);
             }
-            cb(this.serverHealth = true, body.data);
-        }, this))
-        .on('error', _.bind(function(err) {
-            console.error(this.server + '该服务不可正常访问，请检查服务！', err);
-            cb(this.serverHealth = false, {});
-        }, this));
+        });
 };
 
 /**

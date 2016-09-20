@@ -168,12 +168,15 @@ module.exports = {
      * 比较需要的模块与缓存内容，返回缓存中存在的包名称
      * @param  {string} repository 仓库名称
      * @param  {Array} list       所需的模块列表（包含版本号，不含环境）
-     * @param  {string} env        环境信息
-     * @return {Array}            缓存存在的模块列表（包含版本号和环境）
+     * @param  {string} platform   环境信息
+     * @return {HashMap}            缓存存在的模块列表（包含版本号和环境）
      */
-    diffPackages: function(repository, list, env){
+    diffPackages: function(repository, list, platform){
+        if(!cache[repository]){
+            return {};
+        }
         var modules = cache[repository].modules,
-            hit = [];
+            hit = {};
         _.forEach(list, function(name){
             var moduleName = utils.splitModuleName(name),
                 packages = modules[moduleName];
@@ -181,12 +184,12 @@ module.exports = {
                 return;
             }
             var fileExt = utils.getFileExt(),
-                packageNameForPlatform = utils.joinPackageName(name, env) + fileExt,
-                packageName = name + fileExt;
-            if(packages.indexOf(packageNameForPlatform) > -1){
-                hit.push(packageNameForPlatform);
-            } else if (packages.indexOf(packageName) > -1){
-                hit.push(packageName);
+                packageNameForPlatform = utils.joinPackageName(name, platform),
+                packageName = name;
+            if(packages.indexOf(packageNameForPlatform + fileExt) > -1){
+                hit[packageNameForPlatform] = 1;
+            } else if (packages.indexOf(packageName + fileExt) > -1){
+                hit[packageName] = 1;
             }
         });
         return hit;
