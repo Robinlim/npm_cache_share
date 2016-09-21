@@ -87,7 +87,6 @@ module.exports = {
             // 公共缓存拥有的模块
             this.serverCache = this.checkServer(this.needFetch).await();
             this.needInstall = this.compareServer(this.needFetch);
-
         } else {
             delete this.registry;
             this.needInstall = this.needFetch;

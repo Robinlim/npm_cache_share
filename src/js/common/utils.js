@@ -282,7 +282,7 @@ var utils = module.exports = {
     dependenciesTreeToArray: function(dependencies){
         var arr = [];
         this.traverseDependencies(dependencies, function(v, k){
-            arr.push(k + '@' + v.version);
+            arr.push(k.replace(RegExp('/', 'g'), SPLIT) + '@' + v.version);
         });
         return arr;
     },
