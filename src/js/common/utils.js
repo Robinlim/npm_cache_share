@@ -275,6 +275,18 @@ var utils = module.exports = {
         });
     },
     /**
+     * 遍历dependencies生成数组
+     * @param  {JSON} dependencies 树形依赖
+     * @return {Array}              生成的打平的依赖数组
+     */
+    dependenciesTreeToArray: function(dependencies){
+        var arr = [];
+        this.traverseDependencies(dependencies, function(v, k){
+            arr.push(k.replace(RegExp('/', 'g'), SPLIT) + '@' + v.version);
+        });
+        return arr;
+    },
+    /**
      * map转换成array，只有一级
      * @param  {JSON} jsonObj
      * @return {Array}

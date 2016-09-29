@@ -86,7 +86,7 @@ function createHtmlFileList(files, dir, useIcons, view) {
       + '<span class="date">Modified</span>'
       + '</li>') : '');
 
-  html += files.map(function (file) {
+  html += files.sort(fileSort).map(function (file) {
     var classes = [];
     var isDir = file.stat && file.stat.isDirectory();
     var path = dir.split('/').map(function (c) { return encodeURIComponent(c); });
@@ -107,7 +107,7 @@ function createHtmlFileList(files, dir, useIcons, view) {
       + escapeHtml(normalizeSlashes(normalize(path.join('/'))))
       + '" class="' + escapeHtml(classes.join(' ')) + '"'
       + ' title="' + escapeHtml(file.name) + '">'
-      + '<span class="name">' + escapeHtml(file.name) + '</span>'
+      + '<span class="name">' + escapeHtml(file.name.replace(/@@@/g,'\/')) + '</span>'
       + '<span class="size">' + escapeHtml(size) + '</span>'
       + '<span class="date">' + escapeHtml(date) + '</span>'
       + '</a></li>';

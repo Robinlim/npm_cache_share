@@ -81,7 +81,6 @@ module.exports = {
                 res.download(filepath);
             }
         });
-
     },
     /*@RequestMapping("/delete/{repository}/{name}")*/
     /*@ResponseBody*/
