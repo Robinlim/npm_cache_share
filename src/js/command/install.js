@@ -13,63 +13,124 @@ var fs = require('fs'),
 
 var __cwd = process.cwd(),
     NPMSHRINKWRAP = 'npm-shrinkwrap.json',
-    npmShrinkwrapPath = path.resolve(__cwd, NPMSHRINKWRAP);
+    PACKAGE = 'package.json',
+    npmShrinkwrapPath = path.resolve(__cwd, NPMSHRINKWRAP),
+    npmPackagePath = path.resolve(__cwd, PACKAGE);
 
-var installUtils = require('../common/installUtils');
+var installUtils = require('../common/installUtils'),
+    npmUtils = require('../common/npmUtils');
 
 /*@Flow*/
 /*@Command({"name": "install [module]", "alias":"i", "des":"Install the module", options:[["-c, --type [type]", "server type, default is node", "node"],["-s, --server [server]", "specify the npm_cache_share server, like IP:PORT format"],["-d, --repository [repository]", "specify the repository, default is snapshop"],["-r, --registry [registry]", "specify the npm origin"],["-t, --token [token]", "use the token to access the npm_cache_share server"],["-a, --auth [auth]", "use auth to access the Nexus Server, like username:password format"],["-p, --production", "will not install modules listed in devDependencies"],["--noOptional", "will prevent optional dependencies from being installed"], ["--save","module will be added to the package.json as dependencies"], ["--save-dev", "module will be added to the package.json as devDependencies"]]})*/
 module.exports = {
     run: function(module, options) {
         console.info('******************开始安装******************');
-        this.module = module;
+        this.moduleName = module;
+        this.forceNpm = false;
         this.opts = options;
         this.start();
     },
     /**
-     * 由于主要依赖npm-shrinkwrap.json来处理依赖，故须检测该文件
+     * 安装前分析，回调传入dependencies
      * @return {[boolean]}
      */
     /*@Step*/
-    check: function(callback){
-        var rs = fs.existsSync(npmShrinkwrapPath);
-        if(!rs){
-            var err = '缺少npm-shrinkwrap.json文件\n请在本地环境执行npm shrinkwrap指令来生成npm-shrinkwrap.json文件，上传至git库中!!';
-            callback(err);
-            return;
+    preinstall: function(callback){
+        if (this.moduleName) { // 指定了模块名称则安装特定模块
+            if (this.moduleName.indexOf('@') > -1) { // 包含版本号
+                var arr = this.moduleName.split('@'),
+                    name = arr[0],
+                    version = arr[1],
+                    dependencies = {};
+                dependencies[name] = {
+                    version: version
+                };
+                this.module = {
+                    name: name,
+                    version: version
+                };
+                callback(null, dependencies);
+            } else { // 不含版本号则通过npm获取最新版本号
+                var self = this;
+                npmUtils.getLastestVersion(this.moduleName, function(err, version){
+                    if (err) {
+                        callback(err);
+                    } else {
+                        var dependencies = {};
+                        dependencies[self.moduleName] = {
+                            version: version
+                        };
+                        self.module = {
+                            name: self.moduleName,
+                            version: version
+                        };
+                        callback(null, dependencies);
+                    }
+                });
+            }
+        } else { // 未指定模块名称则全部安装
+            var rs = fs.existsSync(npmShrinkwrapPath);
+            if(!rs){ // 不存在npm-shrinkwrap.json，直接执行npm install
+                console.warn('缺少npm-shrinkwrap.json文件，此次安装将直接使用npm install');
+                this.forceNpm = true;
+                callback(null);
+            } else { // 存在npm-shrinkwrap.json则分析其依赖进行安装
+                console.info('读取npm-shrinkwrap.json文件！！');
+                try{
+                    callback(null, fsExtra.readJsonSync(npmShrinkwrapPath).dependencies);
+                }catch(e){
+                    console.error(e.stack);
+                    callback(e);
+                }
+            }
         }
-        callback(null, true);
     },
     /**
-     * 解析npm-shrinkwrap.json文件
+     * 分析依赖并安装
      * @return {[type]} [description]
      */
-    /*@Step("check")*/
-    parse: function(rs, callback){
-        try{
-            console.info('读取npm-shrinkwrap.json文件！！');
-            callback(null, fsExtra.readJsonSync(npmShrinkwrapPath).dependencies);
-        }catch(e){
-            console.error(e.stack);
-            callback(e);
+    /*@Step("preinstall")*/
+    install: function(rs, callback){
+        var dependencies = rs.preinstall;
+        if (this.forceNpm) {
+            npmUtils.npmInstall(this.opts, callback);
+        } else {
+            installUtils.parse(dependencies, this.opts, callback, this.module);
         }
     },
-    /**
-     * 分析依赖
-     * @return {[type]} [description]
-     */
-    /*@Step("parse")*/
-    analyseDependency: function(rs, callback){
-        if(!rs){
-            callback('没有依赖！');
-            return;
+    /*@Step("install")*/
+    postinstall: function(rs, callback){
+        // 安装特定模块并指定了--save/--save-dev时写入package.json
+        if(this.module && (this.opts['save'] || this.opts['saveDev'])){
+            try {
+                var packageInfo = fsExtra.readJsonSync(npmPackagePath);
+            } catch (e) {
+                callback(e);
+                return;
+            }
+            var dependenceKey = this.opts['save'] ? 'dependencies' : 'devDependencies';
+            if(!packageInfo[dependenceKey]){
+                packageInfo[dependenceKey] = {};
+            }
+            packageInfo[dependenceKey][this.module.name] = this.module.version;
+            try {
+                fsExtra.writeJson(npmPackagePath, packageInfo);
+            } catch (e) {
+                callback(e);
+                return;
+            }
         }
-        installUtils.parse(rs.parse, this.opts, callback, this.module);
+        // 安装特定模块或者直接使用npm安装后重新npm-shrinkwrap
+        if(this.module || this.forceNpm){
+            npmUtils.npmShrinkwrap(callback);
+        } else {
+            callback(null);
+        }
     },
     /*@Done*/
     done: function(err, results){
         if(err){
-            console.error(err);
+            console.error(err.stack || err);
             this.exit(1);
             return;
         }

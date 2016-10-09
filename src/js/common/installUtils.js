@@ -41,7 +41,7 @@ module.exports = {
         //初始化参数
         this.registry = Factory.instance(opts.type, opts);
         //构建安装参数
-        this.opts = utils.toString(opts, constant.NPMOPS);
+        this.opts = utils.toString(opts, constant.NPMOPSWITHOUTSAVE);
 
         //确保本地缓存文件夹及node_modules存在并可写入
         utils.ensureDirWriteablSync(__cache);
@@ -50,16 +50,13 @@ module.exports = {
         //确保工程目录node_modules存在并可写入
         utils.ensureDirWriteablSync(path.resolve(__cwd, LIBNAME));
 
-        //创建package.json，否则安装会报warning
-        fsExtra
-            .writeJSONSync(path.resolve(__cache, 'package.json'), require('../../resource/package.js'));
-
         // 所需全部依赖
         this.dependencies = dependencies;
+        this.dependenciesArr = utils.dependenciesTreeToArray(dependencies);
         // 本地缓存模块
         this.localCache = utils.lsDirectory(__cache);
         // 需要从远程获取的模块
-        this.needFetch = this.compareLocal(this.dependencies);
+        this.needFetch = this.compareLocal(this.dependenciesArr);
         // 公共缓存模块（在公共服务check后填入）
         this.serverCache = {};
         // 需要本地安装的依赖 (在公共服务check后从needFetch中比较得出)
@@ -136,20 +133,20 @@ module.exports = {
      * @return {void}
      */
     installNews: function() {
-        if (_.keys(this.needInstall).length === 0) {
+        if (this.needInstall.length === 0) {
             console.info('没有需要安装的缺失模块');
             return;
         } else {
             console.info('从npm安装缺失模块');
         }
-        //抵达缓存目录
-        cd(__cache);
-        _.each(this.needInstall, _.bind(function(v, k) {
+        _.forEach(this.needInstall, _.bind(function(el) {
             //安装模块
-            var npmName = [k, v.version].join('@');
+            var npmName = [el.name, el.version].join('@');
             console.info('安装模块',npmName);
 
-            if (exec('npm install ' + npmName + ' ' + this.opts).code !== 0) {
+            if (exec('npm install ' + npmName + ' ' + this.opts, {
+                cwd: __cache
+            }).code !== 0) {
                 throw npmName + ' install failed, please try by yourself!!';
             }
         }, this));
@@ -235,7 +232,6 @@ module.exports = {
             mn, tmp;
         //确保文件路径存在
         fsExtra.ensureDirSync(pmp);
-
         //循环同步依赖模块
         utils.traverseDependencies(this.dependencies, function(v, k, modulePath) {
             mn = utils.getModuleName(k, v.version);
@@ -249,7 +245,7 @@ module.exports = {
             }
             fsExtra.ensureDirSync(tmp);
             cp('-rf', path.resolve(__cache, mn, '*'), tmp);
-        });
+        }, __cwd);
     },
     /**
      * 同步远程服务
@@ -280,8 +276,9 @@ module.exports = {
      */
     /*@AsyncWrap*/
     checkServer: function(dependencies, callback){
-        var self = this;
-        self.registry.check(utils.dependenciesTreeToArray(dependencies), function(avaliable, data) {
+        var self = this,
+            list = _.map(dependencies, 'full');
+        self.registry.check(list, function(avaliable, data) {
             if(!avaliable){
                 delete self.registry;
                 callback(null, {});

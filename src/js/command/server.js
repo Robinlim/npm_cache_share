@@ -17,7 +17,6 @@ require('shelljs/global');
 
 var constant = require('../common/constant'),
     app = path.join(__dirname, '../app'),
-    tokenPath = utils.getTokenPath(),
     pm2OpsMap = constant.PM2OPS;
 
 /*@Command({"name": "server [command] [name]", "alias":"s", "des":"Start a server to store the npm module cache", options:[["-p, --port [port]", "specify the port of the service, default is 8888"],["-f, --useFork", "start with fork"],["-t, --token [token]", "control the auth to access the server"],["-i, --i [i]", "thread count only for pm2"],["-n --name [name]", "app name only for pm2"]]})*/
