@@ -284,7 +284,6 @@ var utils = module.exports = {
     dependenciesTreeToArray: function(dependencies){
         var arr = [];
         this.traverseDependencies(dependencies, function(v, k){
-            console.log(k)
             arr.push({
                 name: k,
                 version: v.version,
