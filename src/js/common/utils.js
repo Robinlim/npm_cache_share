@@ -174,17 +174,16 @@ var utils = module.exports = {
     },
     /**
      * 对比依赖和缓存，返回所需模块
-     * @param  {JSON} dependencies 模块依赖
+     * @param  {Array} dependencies 模块依赖
      * @param  {JSON} cache        模块缓存
      * @return {JSON}
      */
     compareCache: function(dependencies, cache) {
-        var news = {};
-        this.traverseDependencies(dependencies, function(v, k) {
-            if (!cache[utils.getModuleName(k, v.version)] && !cache[utils.getModuleNameForPlatform(k, v.version)]) {
-                news[k] = {
-                    version: v.version
-                };
+        var news = [];
+        _.forEach(dependencies, function(el){
+            if (!cache[utils.getModuleName(el.name, el.version)]
+            && !cache[utils.getModuleNameForPlatform(el.name, el.version)]) {
+                news.push(el);
             }
         });
         return news;
@@ -285,7 +284,12 @@ var utils = module.exports = {
     dependenciesTreeToArray: function(dependencies){
         var arr = [];
         this.traverseDependencies(dependencies, function(v, k){
-            arr.push(k.replace(RegExp('/', 'g'), SPLIT) + '@' + v.version);
+            console.log(k)
+            arr.push({
+                name: k,
+                version: v.version,
+                full: k.replace(RegExp('/', 'g'), SPLIT) + '@' + v.version
+            });
         });
         return arr;
     },

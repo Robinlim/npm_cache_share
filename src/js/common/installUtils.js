@@ -52,10 +52,11 @@ module.exports = {
 
         // 所需全部依赖
         this.dependencies = dependencies;
+        this.dependenciesArr = utils.dependenciesTreeToArray(dependencies);
         // 本地缓存模块
         this.localCache = utils.lsDirectory(__cache);
         // 需要从远程获取的模块
-        this.needFetch = this.compareLocal(this.dependencies);
+        this.needFetch = this.compareLocal(this.dependenciesArr);
         // 公共缓存模块（在公共服务check后填入）
         this.serverCache = {};
         // 需要本地安装的依赖 (在公共服务check后从needFetch中比较得出)
@@ -132,15 +133,15 @@ module.exports = {
      * @return {void}
      */
     installNews: function() {
-        if (_.keys(this.needInstall).length === 0) {
+        if (this.needInstall.length === 0) {
             console.info('没有需要安装的缺失模块');
             return;
         } else {
             console.info('从npm安装缺失模块');
         }
-        _.each(this.needInstall, _.bind(function(v, k) {
+        _.forEach(this.needInstall, _.bind(function(el) {
             //安装模块
-            var npmName = [k, v.version].join('@');
+            var npmName = [el.name, el.version].join('@');
             console.info('安装模块',npmName);
 
             if (exec('npm install ' + npmName + ' ' + this.opts, {
@@ -275,8 +276,9 @@ module.exports = {
      */
     /*@AsyncWrap*/
     checkServer: function(dependencies, callback){
-        var self = this;
-        self.registry.check(utils.dependenciesTreeToArray(dependencies), function(avaliable, data) {
+        var self = this,
+            list = _.map(dependencies, 'full');
+        self.registry.check(list, function(avaliable, data) {
             if(!avaliable){
                 delete self.registry;
                 callback(null, {});

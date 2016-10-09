@@ -130,7 +130,7 @@ module.exports = {
     /*@Done*/
     done: function(err, results){
         if(err){
-            console.error(err);
+            console.error(err.stack || err);
             this.exit(1);
             return;
         }
