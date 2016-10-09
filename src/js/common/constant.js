@@ -17,8 +17,14 @@ module.exports = {
         production: 'production',
         registry: 'registry'
     },
+    NPMOPSWITHOUTSAVE: {
+        noOptional: 'no-optional',
+        production: 'production',
+        registry: 'registry'
+    },
     PM2OPS: {
         i: 1,
         name: 1
-    }
+    },
+    CONFIGKEY: ['registry','token','type','repository','port','i','name']
 }

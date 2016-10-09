@@ -35,7 +35,19 @@ var utils = module.exports = {
                 defaultCacheDirectory = path.resolve('/tmp', '.npm_cache_share');
             }
         }
+        fsExtra.ensureDirSync(defaultCacheDirectory);
         return defaultCacheDirectory;
+    },
+    /**
+     * 获取存储配置的路径
+     * @return {path} path for config
+     */
+    getConfigPath: function() {
+        var file = path.resolve(this.getCachePath(), '../.npm_cache_share_config.json');
+        if(!fs.existsSync(file)){
+            fsExtra.writeJsonSync(file, {});
+        }
+        return file;
     },
     /**
      * 获得文件后缀
@@ -43,15 +55,6 @@ var utils = module.exports = {
      */
     getFileExt: function() {
         return '.tar';
-    },
-    /**
-     * 获取存储token的文件路径
-     * @return {path} [description]
-     */
-    getTokenPath: function() {
-        var file = path.resolve(process.cwd(), 'token.json');
-        fsExtra.ensureFileSync(file);
-        return file;
     },
     /**
      * 获取服务器端缓存cache的目录

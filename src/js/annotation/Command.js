@@ -8,13 +8,16 @@
 */
 
 'use strict';
-var path = require("path"),
+var _ = require('lodash'),
+    path = require("path"),
     fsExtra = require("fs-extra"),
-    safeJSON = require("json-parse-helpfulerror");
+    utils = require('../common/utils');
 
 var programe = require("commander")
-                .version(fsExtra.readJsonSync(path.resolve(process.cwd(),'package.json')).version || '0.0.1')
+                .version(fsExtra.readJsonSync(path.resolve(__dirname,'../../../package.json')).version || '0.0.1')
                 .usage('<commands> [options]');
+
+var config = fsExtra.readJsonSync(utils.getConfigPath());
 
 /*@AutoLoad*/
 var Command = module.exports = require('node-annotation').Annotation.extend({
@@ -32,6 +35,7 @@ var Command = module.exports = require('node-annotation').Annotation.extend({
                     .description(ops.des)
                     .action(function(){
                         var instance = model.instance();
+                        arguments[arguments.length-1] = _.extend(config, arguments[arguments.length-1]);
                         instance[model.vo()].apply(instance, arguments);
                     });
         (ops.options || []).forEach(function(v){
