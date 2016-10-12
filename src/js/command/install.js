@@ -25,6 +25,7 @@ var installUtils = require('../common/installUtils'),
 module.exports = {
     run: function(module, options) {
         console.info('******************开始安装******************');
+        this.startTime = new Date().getTime();
         this.moduleName = module;
         this.forceNpm = false;
         this.opts = options;
@@ -141,6 +142,8 @@ module.exports = {
      * @return {[type]} [description]
      */
     exit: function(code){
+        var endTime = new Date().getTime();
+        console.info('总共耗时：', parseInt((endTime - this.startTime)/1000), 's');
         console.info('******************安装结束******************');
         process.exit(code);
     }
