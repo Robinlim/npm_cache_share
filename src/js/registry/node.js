@@ -86,7 +86,7 @@ nodeRegistry.prototype.put = function(dir, callback) {
             callback(err);
         })
         .on('end', function() {
-            console.info(dir + ' pack done!');
+            console.debug(dir + ' pack done!');
         });
     // TODO stream.PassThrough() donnot work!
     //var river =  new stream.PassThrough();

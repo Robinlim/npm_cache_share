@@ -26,5 +26,6 @@ module.exports = {
         i: 1,
         name: 1
     },
-    CONFIGKEY: ['registry','token','type','repository','port','i','name']
+    NPM_MAX_BUNDLE: 50,
+    CONFIGKEY: ['registry','token','type','repository','port','i','name','disturl']
 }

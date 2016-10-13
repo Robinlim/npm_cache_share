@@ -23,11 +23,17 @@ function getStorage(storageType, opts){
  * cache action
  */
 
+
+
 module.exports = {
     init: function(){
         storage.listRepository(function(err, repositorys){
-            _.forEach(repositorys, function(repository){
-
+            _.forEach(repositorys, function(el){
+                cache[repository] = {
+                    name: repository,
+                    stat:
+                    modules: {}
+                }
             });
         });
     }

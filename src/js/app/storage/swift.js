@@ -35,8 +35,8 @@ swift.prototype.createRepository = function(repository, cbk){
 };
 
 swift.prototype.listRepository = function(cbk){
-    this.storage.listContainers(function(err, cbk){
-        if(err){
+    this.storage.listContainers(function(err, res){
+        if(err) {
             cbk(err);
         } else if () {
 

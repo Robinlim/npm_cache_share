@@ -17,3 +17,11 @@ console.info = function() {
 console.error = function() {
   return console.log('\x1B[31m>[npm-cache-share]', joinArgs(arguments), '\x1B[39m');
 };
+
+console.debug = function() {
+    if(global.DEBUG){
+        return console.log.apply(console, arguments);
+    } else {
+        return null;
+    }
+}

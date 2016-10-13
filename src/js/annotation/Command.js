@@ -33,9 +33,17 @@ var Command = module.exports = require('node-annotation').Annotation.extend({
                     .usage(ops.usage)
                     .alias(ops.alias)
                     .description(ops.des)
+                    .option('-d, --debug', 'print all information for debug')
                     .action(function(){
+                        var opts = arguments[arguments.length-1];
+                        // 设置全局debug选项
+                        if(opts && opts.debug){
+                            global.DEBUG = true;
+                            console.debug('In debug mode, will print all information for debug');
+                            //console.debug('Options:', opts);
+                        }
                         var instance = model.instance();
-                        arguments[arguments.length-1] = _.extend(config, arguments[arguments.length-1]);
+                        arguments[arguments.length-1] = _.extend(config, opts);
                         instance[model.vo()].apply(instance, arguments);
                     });
         (ops.options || []).forEach(function(v){
@@ -47,5 +55,9 @@ var Command = module.exports = require('node-annotation').Annotation.extend({
 });
 
 global.run = function() {
+    // 默认打印帮助信息
+    if (!process.argv.slice(2).length) {
+        programe.help();
+    }
     programe.parse(process.argv);
 }

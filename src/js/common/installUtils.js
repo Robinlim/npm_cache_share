@@ -14,7 +14,8 @@ var path = require('path'),
     tar = require('tar'),
     _ = require('lodash'),
     rpt = require('read-package-tree'),
-    asyncMap = require("slide").asyncMap;
+    slide = require("slide"),
+    asyncMap = slide.asyncMap;
 
 require('shelljs/global');
 
@@ -83,7 +84,9 @@ module.exports = {
         if (this.registry && this.registry.check) {
             // 公共缓存拥有的模块
             this.serverCache = this.checkServer(this.needFetch).await();
+            console.debug('将从中央缓存拉取的包：', this.serverCache);
             this.needInstall = this.compareServer(this.needFetch);
+            console.debug('需要初次安装的包：', this.needInstall);
         } else {
             delete this.registry;
             this.needInstall = this.needFetch;
@@ -92,11 +95,8 @@ module.exports = {
         //下载公共模块
         this.download().await();
 
-        //安装缺失模块
-        this.installNews();
-
-        //同步本地模块
-        this.syncLocal().await();
+        //安装缺失模块并同步到本地
+        this.installNews().await();
 
         //打包模块至工程目录
         this.package();
@@ -104,9 +104,10 @@ module.exports = {
         //新安装的模块同步到远程服务
         this.syncRemote().await();
 
-        //删除缓存的node_modules目录
-        console.info('删除临时目录');
+        //删除缓存的node_modules目录,安装目录
+        console.debug('删除临时目录');
         rm('-rf', path.resolve(__cache, UPLOADDIR));
+        rm('-rf', path.resolve(__cache, LIBNAME));
 
     },
     /**
@@ -123,7 +124,7 @@ module.exports = {
             console.info('从公共缓存下载模块');
         }
         asyncMap(utils.toArrayByKey(this.serverCache), _.bind(function(packageName, cb){
-            console.info('下载模块', packageName);
+            console.debug('下载模块', packageName);
             this.registry.get(packageName, __cache, cb);
         }, this), callback);
     },
@@ -132,6 +133,7 @@ module.exports = {
      * @param  {JSON} modules   模块
      * @return {void}
      */
+    /*@Async*/
     installNews: function() {
         if (this.needInstall.length === 0) {
             console.info('没有需要安装的缺失模块');
@@ -139,32 +141,73 @@ module.exports = {
         } else {
             console.info('从npm安装缺失模块');
         }
-        _.forEach(this.needInstall, _.bind(function(el) {
-            //安装模块
-            var npmName = [el.name, el.version].join('@');
-            console.info('安装模块',npmName);
-
-            if (exec('npm install ' + npmName + ' ' + this.opts, {
-                cwd: __cache
-            }).code !== 0) {
-                throw npmName + ' install failed, please try by yourself!!';
+        var packageNames = [];
+        var bundles = [],
+            map = {};
+        _.forEach(this.needInstall, function(el) {
+            var name = el.name,
+                bundleId = 0;
+            if(!map[name]) {
+                map[name] = 1;
+            } else {
+                bundleId = map[name]
+                map[name]++;
             }
+            if(!bundles[bundleId]) {
+                bundles[bundleId] = [];
+            }
+            bundles[bundleId].unshift([name, el.version].join('@'));
+        });
+
+        console.debug('即将分批安装的模块：',bundles);
+        var counter = {
+            total: this.needInstall.length,
+            cur: 0
+        };
+        //安装模块
+        _.forEach(bundles, _.bind(function(el){
+            this._installBundle(el, counter);
+            this._syncLocal(el).await();
         }, this));
     },
     /**
+     * 批量安装一批npm依赖
+     * @param  {Array} pcks 需要被安装的包，每一项为“name@version”形式
+     * @param {Object} counter 一个用于进度的计数器
+     * @return {void}      [description]
+     */
+    _installBundle: function(pcks, counter){
+        var maxBundle = constant.NPM_MAX_BUNDLE;
+        for(var i = 0; i < pcks.length; i += maxBundle){
+            var start = i, end = i+maxBundle < pcks.length ? i+maxBundle : pcks.length,
+                part = pcks.slice(start, end),
+                cmd = 'npm install ' + part.join(' ') + ' ' + this.opts;
+            console.debug('安装模块', part);
+            //console.debug('安装命令', cmd);
+            if (exec(cmd, {
+                cwd: __cache,
+                silent: !global.DEBUG
+            }).code !== 0) {
+                throw  'Some module install failed, please try by yourself!!';
+            }
+            counter.cur += part.length;
+            console.info('已安装：', counter.cur, '/', counter.total);
+        }
+    },
+    /**
      * 同步本地模块
-     * @return {void}
+     * @param  {Array}   files    需要被同步的文件名称
+     * @param  {Function} callback 完成后的回调
+     * @return {void}            [description]
      */
     /*@AsyncWrap*/
-    syncLocal: function(callback) {
-        console.info('同步本地模块');
-        var files = ls(path.resolve(__cache, LIBNAME)),
-            self = this,
+    _syncLocal: function(files, callback) {
+        var self = this,
             pcks = [],
             filesArr = [];
 
         files.forEach(function(file, i) {
-            var filePath = path.resolve(__cache, LIBNAME, file);
+            var filePath = path.resolve(__cache, LIBNAME, utils.splitModuleName(file));
             //存在私有域@开头的，只会存在一级
             if (!test('-f', path.resolve(filePath, 'package.json'))) {
                 ls(filePath).forEach(function(file, j) {
@@ -214,8 +257,6 @@ module.exports = {
             if (test('-d', uploadDir)  && ls(uploadDir).length > 0) {
                 cp('-rf', path.resolve(__cache, UPLOADDIR, '*'), __cache);
             }
-            //删除安装目录
-            rm('-rf', path.resolve(__cache, LIBNAME));
             callback();
         });
     },
