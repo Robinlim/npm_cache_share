@@ -48,7 +48,7 @@ nodeRegistry.prototype.get = function(packageName, dir, cb) {
                         cb(err);
                     })
                     .on('end', function() {
-                        console.info(target + ' extract done!');
+                        console.debug(target + ' extract done!');
                         target = path.resolve(dir, response.headers.modulename);
                         cb(null, fs.existsSync(target) && target);
                     });
@@ -86,7 +86,7 @@ nodeRegistry.prototype.put = function(dir, callback) {
             callback(err);
         })
         .on('end', function() {
-            console.info(dir + ' pack done!');
+            console.debug(dir + ' pack done!');
         });
     // TODO stream.PassThrough() donnot work!
     //var river =  new stream.PassThrough();

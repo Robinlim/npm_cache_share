@@ -15,16 +15,19 @@ module.exports = {
         saveDev: 'save-dev',
         save: 'save',
         production: 'production',
-        registry: 'registry'
+        registry: 'registry',
+        disturl: 'disturl'
     },
     NPMOPSWITHOUTSAVE: {
         noOptional: 'no-optional',
         production: 'production',
-        registry: 'registry'
+        registry: 'registry',
+        disturl: 'disturl'
     },
     PM2OPS: {
         i: 1,
         name: 1
     },
-    CONFIGKEY: ['registry','token','type','repository','port','i','name']
+    NPM_MAX_BUNDLE: 50,
+    CONFIGKEY: ['registry','token','type','repository','disturl','port','i','name']
 }
