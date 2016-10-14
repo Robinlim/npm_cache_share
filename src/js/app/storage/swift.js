@@ -8,7 +8,7 @@
 
 var _ = require('lodash'),
     cache = require('./cache'),
-    Swift = require('./swift/index');
+    Swift = require('./swiftClient');
 
 /*@Factory("swift")*/
 function swift(config){
@@ -110,7 +110,7 @@ swift.prototype.get = function(repository, name, res){
 };
 
 swift.prototype.put = function(repository, name, content, cbk){
-    
+
 };
 
 /**
