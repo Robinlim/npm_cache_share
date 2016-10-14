@@ -10,10 +10,10 @@ require('shelljs/global');
 var modulesCachePath = utils.getServerCachePath(),
     fileExt = utils.getFileExt();
 
-var directory = require('../widget/directory'),
+var storage = require('../storage'),
     renderTool = require('../widget/render');
 
-directory.init(modulesCachePath);
+storage.init(modulesCachePath);
 
 /*@Controller*/
 module.exports = {
@@ -23,7 +23,7 @@ module.exports = {
     },
     /*@RequestMapping(["/repository"])*/
     repository: function(req, res){
-        var fileList = _.map(directory.listRepository(), function(v, k){
+        var fileList = _.map(storage.listRepository(), function(v, k){
             return {name: v.name, stat: v.stat, icon: 'drive'}
         });
         renderTool.renderDirectory({
@@ -36,7 +36,7 @@ module.exports = {
     },
     /*@RequestMapping("/repository/{repository}")*/
     modules: function(req, res, repository){
-        var fileList = _.map(directory.listModules(repository), function(v, k){
+        var fileList = _.map(storage.listModules(repository), function(v, k){
             return {name: v, icon: 'folder'}
         });
         renderTool.renderDirectory({
@@ -49,7 +49,7 @@ module.exports = {
     /*@RequestMapping("/repository/{repository}/{name}")*/
     packages: function(req, res, repository, name){
         var name = decodeURIComponent(name),
-            fileList = _.map(directory.listPackages(repository, name), function(v, k){
+            fileList = _.map(storage.listPackages(repository, name), function(v, k){
             return {name: v, icon: 'box'}
         });
         renderTool.renderDirectory({
@@ -62,7 +62,7 @@ module.exports = {
     /*@RequestMapping("/repository/{repository}/{name}/{subname}")*/
     info: function(req, res, repository, subname){
         var filename = decodeURIComponent(subname);
-        var stat = directory.listPackageInfo(modulesCachePath, repository, filename);
+        var stat = storage.listPackageInfo(modulesCachePath, repository, filename);
         renderTool.renderInfo({
             name: filename,
             stat: stat,

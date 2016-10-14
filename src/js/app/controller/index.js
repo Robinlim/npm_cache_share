@@ -11,7 +11,7 @@ var path = require('path'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
     utils = require('../../common/utils'),
-    directory = require('../widget/directory');
+    storage = require('../storage');
 
 require('shelljs/global');
 
@@ -39,7 +39,7 @@ module.exports = {
         res.end({
             status: 0,
             message: 'success',
-            data: directory.diffPackages(repository || 'default', list, platform)
+            data: storage.diffPackages(repository || 'default', list, platform)
         });
     },
     /*@RequestMapping(["/{repository}/fetch/{name}","/fetch/{name}"])*/
@@ -122,12 +122,12 @@ module.exports = {
     list: function(req, res, reqData){
         if(reqData.repository){
             if(reqData.name){
-                res.end(directory.listPackages(reqData.repository,reqData.name));
+                res.end(storage.listPackages(reqData.repository,reqData.name));
             } else {
-                res.end(directory.listModules(reqData.repository));
+                res.end(storage.listModules(reqData.repository));
             }
         } else {
-            res.end(directory.listAll());
+            res.end(storage.listAll());
         }
     },
     /*@ExceptionHandler*/
