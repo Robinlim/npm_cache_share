@@ -277,18 +277,23 @@ var utils = module.exports = {
         });
     },
     /**
-     * 遍历dependencies生成数组
+     * 遍历dependencies生成数组(按照name和version去重)
      * @param  {JSON} dependencies 树形依赖
      * @return {Array}              生成的打平的依赖数组
      */
     dependenciesTreeToArray: function(dependencies){
-        var arr = [];
+        var arr = [],
+            map = {};
         this.traverseDependencies(dependencies, function(v, k){
-            arr.push({
-                name: k,
-                version: v.version,
-                full: k.replace(RegExp('/', 'g'), SPLIT) + '@' + v.version
-            });
+            var full = k.replace(RegExp('/', 'g'), SPLIT) + '@' + v.version;
+            if(!map[full]){
+                map[full] = 1;
+                arr.push({
+                    name: k,
+                    version: v.version,
+                    full: full
+                });
+            }
         });
         return arr;
     },
