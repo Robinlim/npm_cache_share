@@ -58,5 +58,40 @@ module.exports = {
                 cbk(null);
             }
         });
+    },
+    npmInstallWithoutSave: function(moduleNames, npmopts, opts, skipDependencies){
+        var optstr = utils.toString(opts, constant.NPMOPSWITHOUTSAVE);
+        installTry(moduleNames, optstr, opts, skipDependencies);
     }
 };
+
+function installTry(moduleNames, optstr, opts, skipDependencies){
+    if(moduleNames.length === 0){
+        return;
+    }
+    var cmd = 'npm install ' + moduleNames.join(' ') + ' ' + optstr,
+            result = exec(cmd, opts);
+        console.debug(cmd);
+        if(result.code !== 0) {
+            var err = result.stderr,
+                errTarget = check(err),
+                index = moduleNames.indexOf(errTarget);
+            if(errTarget && index > -1) {
+                    console.info(errTarget, 'is not suitable for current platform, skip it.');
+                    moduleNames.splice(index, 1);
+                    skipDependencies.push(errTarget);
+                    installTry(moduleNames, optstr, opts, skipDependencies);
+            } else {
+                console.error(err);
+            }
+        }
+}
+
+function check(err){
+    var codeMatch = err.match(/npm ERR\! code (\w*)/);
+    if(codeMatch && codeMatch[1] === 'EBADPLATFORM'){
+        return err.match(/npm ERR\! notsup Not compatible with your operating system or architecture\: ([\w@\.]*)/)[1];
+    } else {
+        return false;
+    }
+}
