@@ -3,7 +3,7 @@ var _ = require('lodash'),
     path = require('path'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
-    utils = require('../../common/utils');
+    utils = require('../../../common/utils');
 
 require('shelljs/global');
 
@@ -11,13 +11,23 @@ var modulesCachePath = utils.getServerCachePath(),
     fileExt = utils.getFileExt();
 
 var storage = require('../storage'),
-    renderTool = require('../widget/render');
+    renderTool = require('../../widget/render');
 
 /*@Controller*/
 module.exports = {
     /*@RequestMapping("/")*/
     redirect: function(req, res){
         res.redirect('/repository')
+    },
+    /*@RequestMapping(["/manage/createRepository/{repository}"])*/
+    createRepository: function(repository, req, res){
+        storage.createRepository(repository, function(err, response){
+            if(err) {
+                res.statusCode(500).end(err);
+            } else {
+                res.end(response.body);
+            }
+        });
     },
     /*@RequestMapping(["/repository"])*/
     repository: function(req, res){
@@ -60,25 +70,22 @@ module.exports = {
     /*@RequestMapping("/repository/{repository}/{name}/{subname}")*/
     info: function(req, res, repository, subname){
         var filename = decodeURIComponent(subname);
-        var stat = storage.listPackageInfo(modulesCachePath, repository, filename);
-        renderTool.renderInfo({
-            name: filename,
-            stat: stat,
-            repository: repository
-        }, res);
+        var stat = storage.listPackageInfo(repository, filename, function(err, stat){
+            if(err){
+                res.status(404).end(err);
+            } else {
+                renderTool.renderInfo({
+                    name: filename,
+                    stat: stat,
+                    repository: repository
+                }, res);
+            }
+        });
     },
     /*@RequestMapping("/download/{repository}/{name}")*/
     download: function(req, res, repository, name){
-        var filename = decodeURIComponent(name),
-            filepath = path.join(modulesCachePath, repository, filename);
-        fs.access(filepath, fs.R_OK, function(err){
-            if(err){
-                res.status(404).end(filename + 'not exist!')
-            } else {
-                res.setHeader('modulename', filename);
-                res.download(filepath);
-            }
-        });
+        var filename = decodeURIComponent(name);
+        storage.get(repository, filename, res);
     },
     /*@RequestMapping("/delete/{repository}/{name}")*/
     /*@ResponseBody*/

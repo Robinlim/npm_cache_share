@@ -8,7 +8,8 @@
 
 
 
-var utils = require('../../common/utils');
+var _ = require('lodash'),
+    utils = require('../../../common/utils');
 
 /**
  * 缓存所有仓库和包的索引信息

@@ -14,21 +14,23 @@ var _ = require('lodash'),
 function swift(config){
     var self = this;
     this.avaliable = false;
-    this.config = config;
-    this.user = config.user.split(':')[0];
-    this.storage = new Swift({
-        user: 'test:tester',
-        pass: 'testing',
-        host: 'l-swift1.ops.dev.cn0.qunar.com'
-    }, function(err, res){
+    this.config = {
+        host: config[0],//'l-swift1.ops.dev.cn0.qunar.com',
+        user: config[1],//'test:tester',
+        pass: config[2] //'testing'
+    };
+    this.user = this.config.user.split(':')[0];
+    var storage = new Swift(this.config, function(err, res){
         if(err) {
             handleInitError(err);
-        } else if(this.storage.account && this.storage.token){
+        } else if(storage.account && storage.token){
             self.avaliable = true;
+            self.init();
         } else {
-            handleInitError(new Error('Request token fail:'+res.statusCode);
+            handleInitError(new Error('Request token fail:'+res.statusCode));
         }
     });
+    this.storage = storage;
 }
 
 swift.prototype.init = function(){
@@ -62,7 +64,14 @@ swift.prototype.check = function(){
 };
 
 swift.prototype.createRepository = function(repository, cbk){
-    this.storage.createRepository(repository, cbk);
+    this.storage.createContainer(repository, function(err, res){
+        if(err) {
+            cbk(err);
+        } else {
+            cache.addRepository(repository);
+            cbk(null, res);
+        }
+    });
 };
 
 swift.prototype.listRepository = function(cbk){
@@ -99,18 +108,26 @@ swift.prototype.listPackageInfo = function(repository, name, cbk){
          */
         cbk(null, {
             size: header['content-length'],
-            create_time: null,
-            last_modified_time: new Date(header['last-modified'])
+            birthtime: null,
+            mtime: new Date(header['last-modified'])
         });
     });
 };
 
 swift.prototype.get = function(repository, name, res){
+    res.setHeader('modulename', name);
     res.redirect(['http:/', this.config.host, this.user, repository, name].join('/'));
 };
 
-swift.prototype.put = function(repository, name, content, cbk){
-
+swift.prototype.put = function(repository, name, stream, cbk){
+    this.storage.createObjectWithStream(repository, name, stream, function(err){
+        if(err) {
+            cbk(err);
+        } else {
+            cache.addPackage(repository, name);
+            cbk();
+        }
+    });
 };
 
 /**
@@ -142,6 +159,5 @@ function handlerResponse(cbk){
         cbk(null, data);
     }
 }
-
 
 module.exports = swift;

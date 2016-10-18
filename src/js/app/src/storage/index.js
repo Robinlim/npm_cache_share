@@ -14,7 +14,7 @@ var storage = null;
 
 function getStorage(storageType, opts){
     if(!storage){
-        storage = Factory.instance(storageType, opts);
+        storage = Factory.instance(storageType, opts.split('|'));
     }
     return storage;
 };
@@ -22,12 +22,23 @@ function getStorage(storageType, opts){
 
 module.exports = {
     init: function(type, opts){
-        console.log(type, opts)
-        getStorage(type, opts).init();
+        getStorage(type, opts);
+    },
+    createRepository: function(){
+        var sto = getStorage();
+        return sto.createRepository.apply(sto, arguments);
     },
     listPackageInfo: function(){
         var sto = getStorage();
         return sto.listPackageInfo.apply(sto, arguments);
+    },
+    get: function(){
+        var sto = getStorage();
+        return sto.get.apply(sto, arguments);
+    },
+    put: function() {
+        var sto = getStorage();
+        return sto.put.apply(sto, arguments);
     },
     listAll: cache.listAll,
     listRepository: cache.listRepository,

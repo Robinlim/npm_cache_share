@@ -7,16 +7,19 @@
 */
 
 var _ = require('lodash'),
+    path = require('path'),
     fs = require('fs'),
-    fsExtra = require('fs-extra');
+    fsExtra = require('fs-extra'),
+    utils = require('../../../common/utils');
 
 
 var cache = require('./cache');
 
 /*@Factory("localfile")*/
 function localfile(config){
-    this.dir = config.dir;
+    this.dir = config? config.dir : utils.getServerCachePath();
     this.ignoreDir = ['.tempdir'];
+    this.init();
 }
 
 localfile.prototype.init = function(){
@@ -45,7 +48,7 @@ localfile.prototype.init = function(){
  * @param  {string} name 仓库名称
  * @return {void}      [description]
  */
-function _cacheRepositroy(base, name){
+function _cacheRepository(base, name){
     var filepath = path.resolve(base, name),
         check = _checkPath(filepath),
         stat;
@@ -67,7 +70,6 @@ function _cacheRepositroy(base, name){
  * @return {void}            [description]
  */
 function _traverseModule(repository, dir){
-    var _cacheModule = this._cacheModule.bind(this);
     fs.readdir(dir, function(err, files){
         _.forEach(files, function(file){
             _cacheModule(dir, repository, file);
@@ -143,13 +145,33 @@ localfile.prototype.createRepository = function(repository, cbk){
 // localfile.prototype.listPackages = function(repository, cbk){
 //
 // };
-
-localfile.prototype.get = function(repository, name, cbk){
-
+//
+localfile.prototype.listPackageInfo = function(repository, name, cbk){
+    fs.stat(path.join(this.dir, repository, name), cbk);
 };
 
-localfile.prototype.put = function(repository, name, cbk){
+localfile.prototype.get = function(repository, name, res){
+    var filepath = path.join(this.dir, repository, name);
+    fs.access(filepath, fs.R_OK, function(err){
+        if(err){
+            res.status(404).end(name + ' not exist!')
+        } else {
+            res.setHeader('modulename', name);
+            res.download(filepath);
+        }
+    });
+};
 
+localfile.prototype.put = function(repository, name, stream, cbk){
+    var filepath = path.resolve(this.dir, repository, name);
+        target = fs.createWriteStream(filepath);
+    stream.pipe(target)
+        .on('error', function(err){
+            cbk(err);
+        })
+        .on('end', function(){
+            cbk();
+        });
 };
 
 

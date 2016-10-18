@@ -29,5 +29,17 @@ module.exports = {
         name: 1
     },
     NPM_MAX_BUNDLE: 50,
-    CONFIGKEY: ['registry','token','type','repository','disturl','port','i','name']
+    CONFIGKEY: [
+        'registry',
+        'token',
+        'type',
+        'repository',
+        'disturl',
+        'port',
+        'i',
+        'name',
+        'storage',
+        'storageConfig',
+        'installTimeout'
+    ]
 }
