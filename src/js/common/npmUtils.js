@@ -92,6 +92,7 @@ module.exports = {
         if(filterArr.length > -1){
             var news = _.cloneDeep(dependencies);
             filterEach(news, filterArr);
+            return news;
         } else {
             return dependencies;
         }
