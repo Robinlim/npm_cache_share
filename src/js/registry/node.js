@@ -26,19 +26,31 @@ function nodeRegistry(config) {
 /**
  * 从公共缓存拉取模块
  * @param  {String}   moduleName            不含环境的模块名
- * @param  {String}   moduleNameForPlatform 含环境的模块名
  * @param  {path}   dir                   将要放置到的目录路径
  * @param  {Function} cb                    [description]
  * @return {void}                         [description]
  */
 nodeRegistry.prototype.get = function(packageName, dir, cb) {
-    var fileExt = this.fileExt;
+    var fileExt = this.fileExt,
+        moduleName = null;
     request
-        .get(['http:/', this.server, 'fetch', packageName].join('/'))
+        .get({
+            url: ['http:/', this.server, 'fetch', packageName].join('/'),
+            // 某些存储（swift）时采用重定向下载，但是需要从服务器的原始返回中获取信息
+            followRedirect : function(response){
+                if(response.headers.modulename){
+                    moduleName = response.headers.modulename
+                }
+                return true;
+            }
+        })
         .on('response', function(response) {
             if (response.statusCode == 200) {
+                if(response.headers.modulename){
+                    moduleName = response.headers.modulename;
+                }
                 // 获取文件名称
-                var target = path.resolve(dir, response.headers.modulename + fileExt);
+                var target = path.resolve(dir, moduleName + fileExt);
                 // 解压文件操作
                 var extractor = tar.Extract({
                         path: dir
@@ -49,7 +61,7 @@ nodeRegistry.prototype.get = function(packageName, dir, cb) {
                     })
                     .on('end', function() {
                         console.debug(target + ' extract done!');
-                        target = path.resolve(dir, response.headers.modulename);
+                        target = path.resolve(dir, moduleName);
                         cb(null, fs.existsSync(target) && target);
                     });
                 // 请求返回流通过管道流入解压流

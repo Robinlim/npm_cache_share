@@ -10,8 +10,8 @@
 var path = require('path'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
-    utils = require('../../common/utils'),
-    directory = require('../widget/directory');
+    utils = require('../../../common/utils'),
+    storage = require('../storage');
 
 require('shelljs/global');
 
@@ -39,22 +39,14 @@ module.exports = {
         res.end({
             status: 0,
             message: 'success',
-            data: directory.diffPackages(repository || 'default', list, platform)
+            data: storage.diffPackages(repository || 'default', list, platform)
         });
     },
     /*@RequestMapping(["/{repository}/fetch/{name}","/fetch/{name}"])*/
     fetch: function(req, res, repository, name) {
         console.log('[fetch]', repository || 'default', name);
-        var filename = decodeURIComponent(name),
-            filepath = path.join(modulesCachePath, repository||'default', filename + fileExt);
-        fs.access(filepath, fs.R_OK, function(err){
-            if(err){
-                res.status(404).end(filename + 'not exist!')
-            } else {
-                res.setHeader('modulename', filename);
-                res.download(filepath);
-            }
-        });
+        var filename = decodeURIComponent(name) + fileExt;
+        storage.get(repository || 'default', filename, res);
     },
     /*@RequestMapping(["/{repository}/upload","/upload"])*/
     /*@ResponseBody*/
@@ -92,9 +84,12 @@ module.exports = {
                     var modules = ls(path.resolve(target, UPLOADDIR)),
                         count = 0;
                     modules.forEach(function(file) {
-                        var tarfile = path.resolve(repositoryPath, file + fileExt);
-                        // compress
-                        utils.compress(path.resolve(target, UPLOADDIR, file), tarfile, function(err) {
+                        var stream = utils.compress(path.resolve(target, UPLOADDIR, file));
+                        storage.put(repository, file + fileExt, stream, function(err){
+                            if (err) {
+                                console.error('compress wrong ', err.stack);
+                                return;
+                            }
                             count++;
                             if (count == modules.length) {
                                 //删除临时目录
@@ -103,11 +98,6 @@ module.exports = {
                                     console.info('upload done!!');
                                 });
                             }
-                            if (err) {
-                                console.error('compress wrong ', err.stack);
-                                return;
-                            }
-                            //mv('-f', tarfile, repositoryPath);
                         });
                     });
                 });
@@ -122,12 +112,12 @@ module.exports = {
     list: function(req, res, reqData){
         if(reqData.repository){
             if(reqData.name){
-                res.end(directory.listPackages(reqData.repository,reqData.name));
+                res.end(storage.listPackages(reqData.repository,reqData.name));
             } else {
-                res.end(directory.listModules(reqData.repository));
+                res.end(storage.listModules(reqData.repository));
             }
         } else {
-            res.end(directory.listAll());
+            res.end(storage.listAll());
         }
     },
     /*@ExceptionHandler*/

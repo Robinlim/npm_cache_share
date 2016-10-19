@@ -7,7 +7,7 @@ var nodeAnnotation = require('node-annotation'),
  * [Function] 错误处理函数
  */
 nodeAnnotation.setGlobalErrorHandler(function(err){
-  console.error(err);
+  console.error(err.stack || err);
 });
 
 /**
@@ -20,7 +20,7 @@ nodeAnnotation.setLogger(true, 'error', function(str, level) {
     console.error('[ERROR]', str);
 });
 
-nodeAnnotation.start(path.resolve(__dirname, 'controller'), function(){
+nodeAnnotation.start(path.resolve(__dirname, 'src'), function(){
     var app = require('./app');
     nodeAnnotation.app(app);
     var server = app.listen(process.env.port || '8888', function() {
