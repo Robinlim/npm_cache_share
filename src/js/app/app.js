@@ -57,4 +57,6 @@ app.get('/healthcheck.html', function(req, res) {
     res.end(cont);
 });
 
+require('./code/storage').init(process.env.storage, process.env.storageConfig || '');
+
 module.exports = app;

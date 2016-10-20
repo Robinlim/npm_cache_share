@@ -19,13 +19,15 @@ var constant = require('../common/constant'),
     app = path.join(__dirname, '../app'),
     pm2OpsMap = constant.PM2OPS;
 
-/*@Command({"name": "server [command] [name]", "alias":"s", "des":"Start a server to store the npm module cache", options:[["-p, --port [port]", "specify the port of the service, default is 8888"],["-f, --useFork", "start with fork"],["-t, --token [token]", "control the auth to access the server"],["-i, --i [i]", "thread count only for pm2"],["-n --name [name]", "app name only for pm2"]]})*/
+/*@Command({"name": "server [command] [name]", "alias":"s", "des":"Start a server to store the npm module cache", options:[["-s, --storage [storage]", "specify the type of storage, could be localfile or swift"],["-c, --storageConfig [storageConfig]", "specify the config of storage, serveral arguments joined with '|'"],["-p, --port [port]", "specify the port of the service, default is 8888"],["-f, --useFork", "start with fork"],["-t, --token [token]", "control the auth to access the server"],["-i, --i [i]", "thread count only for pm2"],["-n --name [name]", "app name only for pm2"]]})*/
 module.exports = {
     run: function(command, name, opts) {
         var pm2 = which('pm2'),
             env = _.extend({        //进程传递参数
                 port: opts.port || '8888',
-                token: opts.token   //请求校验
+                token: opts.token,   //请求校验
+                storage: opts.storage || 'localfile',
+                storageConfig: opts.storageConfig
             }, process.env);
 
         // 没有pm2或者指定了useFork就使用fork子进程方式

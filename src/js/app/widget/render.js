@@ -62,7 +62,7 @@ module.exports = {
             name: params.name,
             repository: params.repository,
             size: (params.stat.size/1024).toFixed(2) + 'Kb',
-            create_time: params.stat.birthtime.toLocaleString(),
+            create_time: params.stat.birthtime?params.stat.birthtime.toLocaleString():'',
             last_modified_time: params.stat.mtime.toLocaleString()
         }
         var buf = new Buffer(this.templates.info(locals), 'utf8');
@@ -83,12 +83,13 @@ function createHtmlFileList(files, dir, useIcons, view) {
       '<li class="header">'
       + '<span class="name">Name</span>'
       + '<span class="size">Size</span>'
+      + '<span class="count">Count</span>'
       + '<span class="date">Modified</span>'
       + '</li>') : '');
 
   html += files.sort(fileSort).map(function (file) {
     var classes = [];
-    var isDir = file.stat && file.stat.isDirectory();
+    var isDir = true;
     var path = dir.split('/').map(function (c) { return encodeURIComponent(c); });
 
     if (useIcons) {
@@ -97,18 +98,19 @@ function createHtmlFileList(files, dir, useIcons, view) {
     }
 
     path.push(encodeURIComponent(file.name));
-
-    var date = file.stat && file.name !== '..'
+    var date = file.stat && file.stat.mtime
       ? file.stat.mtime.toLocaleTimeString() + ' ' + file.stat.mtime.toLocaleDateString()
       : '';
 
-    var size = file.stat && file.stat.size ? file.stat.size : '';
+    var size = file.stat && typeof(file.stat.size) !== 'undefined' ? file.stat.size : '',
+        count = file.stat && typeof(file.stat.count) !== 'undefined' ? file.stat.count : '';
     return '<li><a href="'
       + escapeHtml(normalizeSlashes(normalize(path.join('/'))))
       + '" class="' + escapeHtml(classes.join(' ')) + '"'
       + ' title="' + escapeHtml(file.name) + '">'
       + '<span class="name">' + escapeHtml(file.name.replace(/@@@/g,'\/')) + '</span>'
-      + '<span class="size">' + escapeHtml(size) + '</span>'
+      + '<span class="size">' + size + '</span>'
+      + '<span class="count">'+ count + '</span>'
       + '<span class="date">' + escapeHtml(date) + '</span>'
       + '</a></li>';
   }).join('\n');
@@ -124,14 +126,7 @@ function createHtmlFileList(files, dir, useIcons, view) {
  */
 
 function fileSort(a, b) {
-  // sort ".." to the top
-  if (a.name === '..' || b.name === '..') {
-    return a.name === b.name ? 0
-      : a.name === '..' ? -1 : 1;
-  }
-
-  return Number(b.stat && b.stat.isDirectory()) - Number(a.stat && a.stat.isDirectory()) ||
-    String(a.name).toLocaleLowerCase().localeCompare(String(b.name).toLocaleLowerCase());
+  return String(a.name).toLocaleLowerCase().localeCompare(String(b.name).toLocaleLowerCase());
 }
 
 
