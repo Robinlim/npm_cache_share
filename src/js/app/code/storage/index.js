@@ -24,6 +24,10 @@ module.exports = {
     init: function(type, opts){
         getStorage(type, opts);
     },
+    sync: function(){
+        var sto = getStorage();
+        return sto.sync.apply(sto, arguments);
+    },
     createRepository: function(){
         var sto = getStorage();
         return sto.createRepository.apply(sto, arguments);

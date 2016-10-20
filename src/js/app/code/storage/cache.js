@@ -19,6 +19,13 @@ var _cache = {};
 
 module.exports = {
     /**
+     * 清空缓存
+     * @return {[type]} [description]
+     */
+    clear: function(){
+        _cache = {};
+    },
+    /**
      * 增加仓库
      * @param {String} name 仓库名称
      * @param {Object} stat 仓库状态

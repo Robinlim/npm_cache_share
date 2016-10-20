@@ -59,6 +59,11 @@ swift.prototype.init = function(){
     });
 };
 
+swift.prototype.sync = function(){
+    cache.clear();
+    this.init();
+};
+
 swift.prototype.check = function(){
     return this.avaliable;
 };

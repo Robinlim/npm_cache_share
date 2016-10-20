@@ -22,6 +22,10 @@ function localfile(config){
     this.init();
 }
 
+localfile.prototype.sync() = function(){
+    // do nothing， do not need sync
+};
+
 localfile.prototype.init = function(){
     var self = this;
     fs.readdir(self.dir, function(err, files){

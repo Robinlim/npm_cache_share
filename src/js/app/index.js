@@ -20,7 +20,7 @@ nodeAnnotation.setLogger(true, 'error', function(str, level) {
     console.error('[ERROR]', str);
 });
 
-nodeAnnotation.start(path.resolve(__dirname, 'src'), function(){
+nodeAnnotation.start(path.resolve(__dirname, 'code'), function(){
     var app = require('./app');
     nodeAnnotation.app(app);
     var server = app.listen(process.env.port || '8888', function() {

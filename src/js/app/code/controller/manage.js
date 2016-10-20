@@ -21,13 +21,18 @@ module.exports = {
     },
     /*@RequestMapping(["/manage/createRepository/{repository}"])*/
     createRepository: function(repository, req, res){
-        storage.createRepository(repository, function(err, response){
+        storage.createRepository(repository, function(err){
             if(err) {
                 res.statusCode(500).end(err);
             } else {
-                res.end(response.body);
+                res.end('success!');
             }
         });
+    },
+    /*@RequestMapping(["/manage/sync"])*/
+    sync: function(req, res){
+        storage.sync();
+        res.end('已触发同步！');
     },
     /*@RequestMapping(["/repository"])*/
     repository: function(req, res){
@@ -86,30 +91,6 @@ module.exports = {
     download: function(req, res, repository, name){
         var filename = decodeURIComponent(name);
         storage.get(repository, filename, res);
-    },
-    /*@RequestMapping("/delete/{repository}/{name}")*/
-    /*@ResponseBody*/
-    delete: function(req, res, repository, name){
-        var filepath = path.join(modulesCachePath, repository, name);
-        fs.stat(filepath, function(err, stat){
-            if(err){
-                res.end({
-                    status: -2,
-                    message: '无法访问' + filepath + ',err:' + err
-                });
-            } else {
-                fs.unlink(filepath, function(e){
-                    if(e){
-                        res.end({
-                            status: -1,
-                            message: '删除失败,err:' + e
-                        });
-                    } else {
-                        res.redirect('/repository/'+repository+'/'+utils.splitModuleName(name));
-                    }
-                })
-            }
-        });
     },
     /*@ExceptionHandler*/
     /*@ResponseBody*/
