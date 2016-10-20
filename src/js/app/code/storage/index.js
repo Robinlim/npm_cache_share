@@ -14,6 +14,7 @@ var storage = null;
 
 function getStorage(storageType, opts){
     if(!storage){
+        console.log(opts)
         storage = Factory.instance(storageType, opts.split('|'));
     }
     return storage;
