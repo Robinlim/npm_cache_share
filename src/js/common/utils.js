@@ -86,20 +86,17 @@ var utils = module.exports = {
     /**
      * 压缩处理
      * @param  {String}   dir      需要压缩的文件夹路径
-     * @param  {String}   target   压缩生成的文件路径
-     * @param  {Function} callback 回调
-     * @return {void}
+     * @return {stream}
      */
-    compress: function(dir, target, callback) {
-        var dirDest = fs.createWriteStream(target);
+    compress: function(dir) {
         //错误处理
         function onError(err) {
-            callback(err);
+            console.error(err);
         }
 
         //压缩结束
         function onEnd() {
-            // console.info('compress done!');
+            console.info('compress done!');
         }
 
         var packer = tar.Pack({
@@ -109,14 +106,11 @@ var utils = module.exports = {
             .on('end', onEnd);
 
         // This must be a "directory"
-        fstream.Reader({
+        return fstream.Reader({
                 path: dir,
                 type: "Directory"
             })
-            .pipe(packer)
-            .pipe(dirDest)
-            .on('error', onError)
-            .on('close', callback)
+            .pipe(packer);
     },
     /**
      * 解压处理

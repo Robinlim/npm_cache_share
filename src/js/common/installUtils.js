@@ -20,6 +20,7 @@ var path = require('path'),
 require('shelljs/global');
 
 var utils = require('./utils'),
+    npmUtils = require('./npmUtils'),
     Factory = require('../annotation/Factory'),
     constant = require('./constant');
 
@@ -42,7 +43,7 @@ module.exports = {
         //初始化参数
         this.registry = Factory.instance(opts.type, opts);
         //构建安装参数
-        this.opts = utils.toString(opts, constant.NPMOPSWITHOUTSAVE);
+        this.opts = opts;
 
         //确保本地缓存文件夹及node_modules存在并可写入
         utils.ensureDirWriteablSync(__cache);
@@ -51,9 +52,9 @@ module.exports = {
         //确保工程目录node_modules存在并可写入
         utils.ensureDirWriteablSync(path.resolve(__cwd, LIBNAME));
 
-        // 所需全部依赖
-        this.dependencies = dependencies;
-        this.dependenciesArr = utils.dependenciesTreeToArray(dependencies);
+        // 所需全部依赖 过滤到不恰当的依赖
+        this.dependencies = npmUtils.filter(dependencies);
+        this.dependenciesArr = utils.dependenciesTreeToArray(this.dependencies);
         // 本地缓存模块
         this.localCache = utils.lsDirectory(__cache);
         // 需要从远程获取的模块
@@ -174,22 +175,18 @@ module.exports = {
      * 批量安装一批npm依赖
      * @param  {Array} pcks 需要被安装的包，每一项为“name@version”形式
      * @param {Object} counter 一个用于进度的计数器
-     * @return {void}      [description]
+     * @return {Array}
      */
     _installBundle: function(pcks, counter){
         var maxBundle = constant.NPM_MAX_BUNDLE;
         for(var i = 0; i < pcks.length; i += maxBundle){
             var start = i, end = i+maxBundle < pcks.length ? i+maxBundle : pcks.length,
-                part = pcks.slice(start, end),
-                cmd = 'npm install ' + part.join(' ') + ' ' + this.opts;
+                part = pcks.slice(start, end);
             console.debug('安装模块', part);
-            //console.debug('安装命令', cmd);
-            if (exec(cmd, {
+            npmUtils.npmInstallWithoutSave(part, this.opts, {
                 cwd: __cache,
                 silent: !global.DEBUG
-            }).code !== 0) {
-                throw  'Some module install failed, please try by yourself!!';
-            }
+            });
             counter.cur += part.length;
             console.info('已安装：', counter.cur, '/', counter.total);
         }
@@ -206,7 +203,7 @@ module.exports = {
             pcks = [],
             filesArr = [];
 
-        files.forEach(function(file, i) {
+        _.forEach(files, function(file, i) {
             var filePath = path.resolve(__cache, LIBNAME, utils.splitModuleName(file));
             //存在私有域@开头的，只会存在一级
             if (!test('-f', path.resolve(filePath, 'package.json'))) {
@@ -268,7 +265,8 @@ module.exports = {
     package: function() {
         console.info('开始打包模块');
         //project module path
-        var pmp = path.resolve(__cwd, LIBNAME),
+        var self = this,
+            pmp = path.resolve(__cwd, LIBNAME),
             cache = utils.lsDirectory(__cache),
             mn, tmp;
         //确保文件路径存在

@@ -29,6 +29,14 @@ module.exports = {
         this.moduleName = module;
         this.forceNpm = false;
         this.opts = options;
+        if(options.installTimeout){
+            console.debug('安装超时时间：',options.installTimeout,'s');
+            setTimeout(function(){
+                console.error('安装超时，自动退出！当前设置的超时时间为',
+                 options.installTimeout, 's,如需更改，请使用npm_cache_share config set installTimeout XXX 修正。');
+                process.exit(1);
+            }, options.installTimeout*1000);
+        }
         this.start();
     },
     /**
