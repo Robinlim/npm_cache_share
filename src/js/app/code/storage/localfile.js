@@ -22,7 +22,7 @@ function localfile(config){
     this.init();
 }
 
-localfile.prototype.sync() = function(){
+localfile.prototype.sync = function(){
     // do nothing， do not need sync
 };
 
