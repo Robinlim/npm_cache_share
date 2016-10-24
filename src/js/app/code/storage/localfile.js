@@ -17,12 +17,12 @@ var cache = require('./cache');
 
 /*@Factory("localfile")*/
 function localfile(config){
-    this.dir = config? config.dir : utils.getServerCachePath();
+    this.dir = config.length > 0 ? config[0] : utils.getServerCachePath();
     this.ignoreDir = ['.tempdir'];
     this.init();
 }
 
-localfile.prototype.sync() = function(){
+localfile.prototype.sync = function(){
     // do nothing， do not need sync
 };
 
