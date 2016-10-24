@@ -26,6 +26,7 @@ var utils = require('./utils'),
 
 var LIBNAME = constant.LIBNAME,
     UPLOADDIR = constant.UPLOADDIR,
+    MODULECHECKER = constant.MODULECHECKER,
     __cwd = process.cwd(),
     __cache = utils.getCachePath();
 
@@ -47,6 +48,7 @@ module.exports = {
 
         //确保本地缓存文件夹及node_modules存在并可写入
         utils.ensureDirWriteablSync(__cache);
+        utils.ensureDirWriteablSync(path.resolve(__cache, MODULECHECKER));
         utils.ensureDirWriteablSync(path.resolve(__cache, LIBNAME));
         utils.ensureDirWriteablSync(path.resolve(__cache, UPLOADDIR));
         //确保工程目录node_modules存在并可写入
@@ -126,7 +128,14 @@ module.exports = {
         }
         asyncMap(utils.toArrayByKey(this.serverCache), _.bind(function(packageName, cb){
             console.debug('下载模块', packageName);
-            this.registry.get(packageName, __cache, cb);
+            this.registry.get(packageName, __cache, function(err){
+                if(err){
+                    cb(err);
+                } else {
+                    fs.writeFileSync(path.resolve(__cache, MODULECHECKER, packageName), '');
+                    cb();
+                }
+            });
         }, this), callback);
     },
     /**
@@ -183,10 +192,15 @@ module.exports = {
             var start = i, end = i+maxBundle < pcks.length ? i+maxBundle : pcks.length,
                 part = pcks.slice(start, end);
             console.debug('安装模块', part);
-            npmUtils.npmInstallWithoutSave(part, this.opts, {
-                cwd: __cache,
-                silent: !global.DEBUG
-            });
+            try {
+                npmUtils.npmInstallWithoutSave(part, this.opts, {
+                    cwd: __cache,
+                    silent: !global.DEBUG
+                });
+            } catch (e) {
+                console.error(e);
+                process.exit(1);
+            }
             counter.cur += part.length;
             console.info('已安装：', counter.cur, '/', counter.total);
         }
@@ -228,32 +242,27 @@ module.exports = {
             if(err){
                 callback(err);
             }
-            //temporary path for module cache
-            var tpmc;
             utils.traverseTree(pcks, function(v, i, len) {
-                tpmc = utils.getModuleName(v.package.name, v.package.version, v.package.dependencies, v.realpath);
-                self.localCache[tpmc] = 1;
-                if (self.serverCache[tpmc]) {
-                    if (!self.localCache[tpmc]) {
-                        //如果本地缓存不存在，而公共缓存存在，则移动至本地缓存目录
-                        tpmc = path.resolve(__cache, tpmc);
-                    }
-                } else {
-                    //如果公共缓存不存在该模块，则移动至上传目录
-                    tpmc = path.resolve(__cache, UPLOADDIR, tpmc);
+                var tpmc = utils.getModuleName(v.package.name, v.package.version, v.package.dependencies, v.realpath);
+                //如果公共缓存不存在该模块，则移动至上传目录
+                if(!self.serverCache[tpmc]){
+                    var target = path.resolve(__cache, UPLOADDIR, tpmc)
+                    fsExtra.ensureDirSync(target);
+                    cp('-rf', path.resolve(v.realpath, '*'), target);
                 }
-                fsExtra.ensureDirSync(tpmc);
-                cp('-rf', path.resolve(v.realpath, '*'), tpmc);
+                //如果本地缓存不存在，则移动至本地缓存目录
+                if(!self.localCache[tpmc]){
+                    var target = path.resolve(__cache, tpmc);
+                    fsExtra.ensureDirSync(target);
+                    cp('-rf', path.resolve(v.realpath, '*'), target);
+                    self.localCache[tpmc] = 1;
+                    fs.writeFileSync(path.resolve(__cache, MODULECHECKER, tpmc), '');
+                }
                 //删除多余的node_modules空文件夹
                 if (i == len - 1 && v.parent) {
                     rm('-rf', path.resolve(v.parent.realpath, LIBNAME));
                 }
             });
-            //同步上传目录至缓存目录 ?
-            var uploadDir = path.resolve(__cache, UPLOADDIR);
-            if (test('-d', uploadDir)  && ls(uploadDir).length > 0) {
-                cp('-rf', path.resolve(__cache, UPLOADDIR, '*'), __cache);
-            }
             callback();
         });
     },
@@ -283,7 +292,12 @@ module.exports = {
                 tmp = path.resolve(pmp, k);
             }
             fsExtra.ensureDirSync(tmp);
-            cp('-rf', path.resolve(__cache, mn, '*'), tmp);
+            if(test('-d', path.resolve(__cache, mn))){
+                cp('-rf', path.resolve(__cache, mn, '*'), tmp);
+            } else {
+                console.error('Cannot find packages:', mn);
+                process.exit(1);
+            }
         }, __cwd);
     },
     /**

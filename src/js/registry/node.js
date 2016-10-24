@@ -85,7 +85,7 @@ nodeRegistry.prototype.get = function(packageName, dir, cb) {
  * @return {void}            [description]
  */
 nodeRegistry.prototype.put = function(dir, callback) {
-    if (!this.serverReady() || !fs.existsSync(dir)) {
+    if (!this.serverReady() || !fs.existsSync(dir) || !this.token) {
         callback();
         return;
     }
