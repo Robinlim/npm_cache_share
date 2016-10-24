@@ -9,6 +9,7 @@
 module.exports = {
     LIBNAME: 'node_modules',
     UPLOADDIR: 'upload_dir',
+    MODULECHECKER: 'modules_check_dir',
     SPLIT: '@@@',
     NPMOPS: {
         noOptional: 'no-optional',
