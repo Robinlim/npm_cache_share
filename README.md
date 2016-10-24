@@ -22,4 +22,4 @@ Options:
     -V, --version  output the version number
 
 ```
-指令相关帮助可以通过 npm_cache_share <commands> -h 来获得。
+指令相关帮助可以通过 `npm_cache_share <commands> -h` 来获得。
