@@ -66,10 +66,9 @@ module.exports = {
         if(moduleNames.length === 0){
             return;
         }
-        var optstr = utils.toString(opts, constant.NPMOPSWITHOUTSAVE),
+        var optstr = utils.toString(npmopts, constant.NPMOPSWITHOUTSAVE),
             cmd = 'npm install ' + moduleNames.join(' ') + ' ' + optstr,
             result = exec(cmd, opts);
-        console.debug(cmd);
         if(result.code !== 0) {
             console.error(result.stderr);
         }
