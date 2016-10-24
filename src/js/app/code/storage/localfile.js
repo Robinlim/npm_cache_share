@@ -17,6 +17,7 @@ var cache = require('./cache');
 
 /*@Factory("localfile")*/
 function localfile(config){
+    console.log(config)
     this.dir = config.length > 0 ? config[0] : utils.getServerCachePath();
     this.ignoreDir = ['.tempdir'];
     this.init();

@@ -14,7 +14,7 @@ var storage = null;
 
 function getStorage(storageType, opts){
     if(!storage){
-        storage = Factory.instance(storageType, opts.split('|'));
+        storage = Factory.instance(storageType, opts);
     }
     return storage;
 };
@@ -22,7 +22,8 @@ function getStorage(storageType, opts){
 
 module.exports = {
     init: function(type, opts){
-        getStorage(type, opts);
+        // opts can be a STRING ! ‘undefined’
+        getStorage(type, opts === 'undefined' ? [] : opts.split('|'));
     },
     sync: function(){
         var sto = getStorage();
