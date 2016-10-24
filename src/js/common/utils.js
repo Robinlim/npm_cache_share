@@ -162,7 +162,11 @@ var utils = module.exports = {
         var dMap = {};
         ls(p).forEach(function(file) {
             if (file == constant.LIBNAME) return;
-            dMap[file] = 1;
+            if (test('-f', path.resolve(p, constant.MODULECHECKER, file))) {
+                dMap[file] = 1;
+            } else {
+                dMap[file] = 0;
+            }
         });
         return dMap;
     },
