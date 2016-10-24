@@ -54,6 +54,7 @@ module.exports = {
         }
         var optstr = utils.toString(opts, constant.NPMOPS),
             cmd = 'npm install ' + ( moduleName ? moduleName + ' ' + optstr : optstr );
+        console.debug(cmd);
         exec(cmd, function(code, stdout, stderr){
             if (code!== 0) {
                 cbk(stderr);
@@ -69,6 +70,7 @@ module.exports = {
         var optstr = utils.toString(npmopts, constant.NPMOPSWITHOUTSAVE),
             cmd = 'npm install ' + moduleNames.join(' ') + ' ' + optstr,
             result = exec(cmd, opts);
+        console.debug(cmd);
         if(result.code !== 0) {
             console.error(result.stderr);
         }
