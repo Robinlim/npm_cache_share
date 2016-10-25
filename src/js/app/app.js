@@ -13,7 +13,6 @@ var favicon = require('serve-favicon');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var compression = require('compression');
-var serveIndex = require('serve-index');
 var utils = require('../common/utils');
 // 初始化express
 var app = express();

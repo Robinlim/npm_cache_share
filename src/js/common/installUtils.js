@@ -246,15 +246,13 @@ module.exports = {
                 var tpmc = utils.getModuleName(v.package.name, v.package.version, v.package.dependencies, v.realpath);
                 //如果公共缓存不存在该模块，则移动至上传目录
                 if(!self.serverCache[tpmc]){
-                    var target = path.resolve(__cache, UPLOADDIR, tpmc)
-                    fsExtra.ensureDirSync(target);
-                    cp('-rf', path.resolve(v.realpath, '*'), target);
+                    var target = path.resolve(__cache, UPLOADDIR, tpmc);
+                    cp('-rf', path.resolve(v.realpath), target);
                 }
                 //如果本地缓存不存在，则移动至本地缓存目录
                 if(!self.localCache[tpmc]){
                     var target = path.resolve(__cache, tpmc);
-                    fsExtra.ensureDirSync(target);
-                    cp('-rf', path.resolve(v.realpath, '*'), target);
+                    cp('-rf', path.resolve(v.realpath), target);
                     self.localCache[tpmc] = 1;
                     fs.writeFileSync(path.resolve(__cache, MODULECHECKER, tpmc), '');
                 }
@@ -291,9 +289,9 @@ module.exports = {
             } else {
                 tmp = path.resolve(pmp, k);
             }
-            fsExtra.ensureDirSync(tmp);
+            fsExtra.ensureDirSync(path.resolve(tmp, '..'));
             if(test('-d', path.resolve(__cache, mn))){
-                cp('-rf', path.resolve(__cache, mn, '*'), tmp);
+                cp('-rf', path.resolve(__cache, mn), tmp);
             } else {
                 console.error('Cannot find packages:', mn);
                 process.exit(1);
