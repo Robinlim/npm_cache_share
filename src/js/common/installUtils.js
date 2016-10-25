@@ -248,13 +248,13 @@ module.exports = {
                 if(!self.serverCache[tpmc]){
                     var target = path.resolve(__cache, UPLOADDIR, tpmc)
                     fsExtra.ensureDirSync(target);
-                    cp('-rf', path.resolve(v.realpath, '.'), target);
+                    cp('-rf', path.resolve(v.realpath) + '/.', target);
                 }
                 //如果本地缓存不存在，则移动至本地缓存目录
                 if(!self.localCache[tpmc]){
                     var target = path.resolve(__cache, tpmc);
                     fsExtra.ensureDirSync(target);
-                    cp('-rf', path.resolve(v.realpath, '.'), target);
+                    cp('-rf', path.resolve(v.realpath + '/.'), target);
                     self.localCache[tpmc] = 1;
                     fs.writeFileSync(path.resolve(__cache, MODULECHECKER, tpmc), '');
                 }
@@ -293,7 +293,7 @@ module.exports = {
             }
             fsExtra.ensureDirSync(tmp);
             if(test('-d', path.resolve(__cache, mn))){
-                cp('-rf', path.resolve(__cache, mn, '.'), tmp);
+                cp('-rf', path.resolve(__cache, mn) + '/.', tmp);
             } else {
                 console.error('Cannot find packages:', mn);
                 process.exit(1);
