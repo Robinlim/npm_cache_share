@@ -10,10 +10,9 @@
 var _ = require('lodash'),
     path = require('path'),
     utils = require('../common/utils'),
+    shellUtils = require('../common/shellUtils'),
     fsExtra = require('fs-extra'),
     childProcess = require('child_process');
-
-require('shelljs/global');
 
 var constant = require('../common/constant'),
     app = path.join(__dirname, '../app'),
@@ -22,7 +21,7 @@ var constant = require('../common/constant'),
 /*@Command({"name": "server [command] [name]", "alias":"s", "des":"Start a server to store the npm module cache", options:[["-s, --storage [storage]", "specify the type of storage, could be localfile or swift"],["-c, --storageConfig [storageConfig]", "specify the config of storage, serveral arguments joined with '|'"],["-p, --port [port]", "specify the port of the service, default is 8888"],["-f, --useFork", "start with fork"],["-t, --token [token]", "control the auth to access the server"],["-i, --i [i]", "thread count only for pm2"],["-n --name [name]", "app name only for pm2"]]})*/
 module.exports = {
     run: function(command, name, opts) {
-        var pm2 = which('pm2'),
+        var pm2 = shellUtils.which('pm2'),
             env = _.extend({        //进程传递参数
                 port: opts.port || '8888',
                 token: opts.token,   //请求校验
@@ -53,7 +52,7 @@ module.exports = {
             // 指令的第二个参数标示pm2的动作，默认start
             var cmd = [pm2,  command || 'start', name || app].concat(options).join(' ');
             console.info('exec:',cmd);
-            exec(cmd, {
+            shellUtils.exec(cmd, {
                 env: env
             });
         }

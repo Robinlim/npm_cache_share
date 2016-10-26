@@ -17,10 +17,9 @@ var path = require('path'),
     slide = require("slide"),
     asyncMap = slide.asyncMap;
 
-require('shelljs/global');
-
 var utils = require('./utils'),
     npmUtils = require('./npmUtils'),
+    shellUtils = require('./shellUtils'),
     Factory = require('../annotation/Factory'),
     constant = require('./constant');
 
@@ -109,8 +108,8 @@ module.exports = {
 
         //删除缓存的node_modules目录,安装目录
         console.debug('删除临时目录');
-        rm('-rf', path.resolve(__cache, UPLOADDIR));
-        rm('-rf', path.resolve(__cache, LIBNAME));
+        shellUtils.rm('-rf', path.resolve(__cache, UPLOADDIR));
+        shellUtils.rm('-rf', path.resolve(__cache, LIBNAME));
 
     },
     /**
@@ -220,8 +219,8 @@ module.exports = {
         _.forEach(files, function(file, i) {
             var filePath = path.resolve(__cache, LIBNAME, utils.splitModuleName(file));
             //存在私有域@开头的，只会存在一级
-            if (!test('-f', path.resolve(filePath, 'package.json'))) {
-                ls(filePath).forEach(function(file, j) {
+            if (!shellUtils.test('-f', path.resolve(filePath, 'package.json'))) {
+                shellUtils.ls(filePath).forEach(function(file, j) {
                     filesArr.push(path.resolve(filePath, file));
                 });
             } else {
@@ -247,18 +246,18 @@ module.exports = {
                 //如果公共缓存不存在该模块，则移动至上传目录
                 if(!self.serverCache[tpmc]){
                     var target = path.resolve(__cache, UPLOADDIR, tpmc);
-                    cp('-rf', path.resolve(v.realpath), target);
+                    shellUtils.cp('-rf', path.resolve(v.realpath), target);
                 }
                 //如果本地缓存不存在，则移动至本地缓存目录
                 if(!self.localCache[tpmc]){
                     var target = path.resolve(__cache, tpmc);
-                    cp('-rf', path.resolve(v.realpath), target);
+                    shellUtils.cp('-rf', path.resolve(v.realpath), target);
                     self.localCache[tpmc] = 1;
                     fs.writeFileSync(path.resolve(__cache, MODULECHECKER, tpmc), '');
                 }
                 //删除多余的node_modules空文件夹
                 if (i == len - 1 && v.parent) {
-                    rm('-rf', path.resolve(v.parent.realpath, LIBNAME));
+                    shellUtils.rm('-rf', path.resolve(v.parent.realpath, LIBNAME));
                 }
             });
             callback();
@@ -290,8 +289,8 @@ module.exports = {
                 tmp = path.resolve(pmp, k);
             }
             fsExtra.ensureDirSync(path.resolve(tmp, '..'));
-            if(test('-d', path.resolve(__cache, mn))){
-                cp('-rf', path.resolve(__cache, mn), tmp);
+            if(shellUtils.test('-d', path.resolve(__cache, mn))){
+                shellUtils.cp('-rf', path.resolve(__cache, mn), tmp);
             } else {
                 console.error('Cannot find packages:', mn);
                 process.exit(1);
@@ -311,7 +310,7 @@ module.exports = {
             return;
         }
         var uploadDir = path.resolve(__cache, UPLOADDIR);
-        if (test('-d', uploadDir)  && ls(uploadDir).length > 0){
+        if (shellUtils.test('-d', uploadDir)  && shellUtils.ls(uploadDir).length > 0){
             console.info('上传模块到公共缓存');
             this.registry.put(uploadDir, callback);
         } else {

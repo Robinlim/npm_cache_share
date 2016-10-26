@@ -12,9 +12,9 @@ var path = require('path'),
     fsExtra = require('fs-extra'),
     fstream = require('fstream');
 
-require('shelljs/global');
 
-var constant = require('./constant'),
+var shellUtils = require('./shellUtils'),
+    constant = require('./constant'),
     SPLIT = constant.SPLIT,
     arch = process.arch,
     platform = process.platform,
@@ -160,9 +160,9 @@ var utils = module.exports = {
      */
     lsDirectory: function(p) {
         var dMap = {};
-        ls(p).forEach(function(file) {
+        shellUtils.ls(p).forEach(function(file) {
             if (file == constant.LIBNAME) return;
-            if (test('-f', path.resolve(p, constant.MODULECHECKER, file))) {
+            if (shellUtils.test('-f', path.resolve(p, constant.MODULECHECKER, file))) {
                 dMap[file] = 1;
             } else {
                 dMap[file] = 0;
