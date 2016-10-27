@@ -228,7 +228,7 @@ var utils = module.exports = {
         //for > node v0.8 use node-gyp to build with binding.gyp
         //see also: https://www.npmjs.com/package/node-gyp
         if ((dependencies && dependencies['node-gyp']) ||
-            (modulePath && (test('-f', path.resolve(modulePath, 'binding.gyp')) || test('-f', path.resolve(modulePath, 'wscript'))))) {
+            (modulePath && (shellUtils.test('-f', path.resolve(modulePath, 'binding.gyp')) || shellUtils.test('-f', path.resolve(modulePath, 'wscript'))))) {
             return this.getModuleNameForPlatform(name, version);
         }
         return [name, version].join('@').replace(RegExp('/', 'g'), SPLIT);
