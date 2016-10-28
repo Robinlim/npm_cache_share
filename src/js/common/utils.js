@@ -10,7 +10,8 @@ var path = require('path'),
     tar = require('tar'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
-    fstream = require('fstream');
+    fstream = require('fstream'),
+    osHomedir = require('os-homedir');
 
 
 var shellUtils = require('./shellUtils'),
@@ -28,7 +29,7 @@ var utils = module.exports = {
     getCachePath: function() {
         var defaultCacheDirectory = process.env.NPM_CACHE_DIR;
         if (defaultCacheDirectory === undefined) {
-            var homeDirectory = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+            var homeDirectory = osHomedir();
             if (homeDirectory !== undefined) {
                 defaultCacheDirectory = path.resolve(homeDirectory, '.npm_cache_share');
             } else {

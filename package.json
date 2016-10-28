@@ -38,6 +38,7 @@
     "multiparty": "^4.1.2",
     "node-annotation": "^0.0.*",
     "node-annotation-extend": "^0.0.*",
+    "os-homedir": "^1.0.2",
     "read-package-json": "^2.0.4",
     "read-package-tree": "^5.1.5",
     "request": "^2.74.0",
