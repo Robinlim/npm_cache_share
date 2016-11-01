@@ -29,7 +29,7 @@ Options:
     -t,--token			指定服务的令牌token，用于校验用户上传权限
     -i,--i				适用于pm2启动服务，指定进程数目
     -n,--name			适用于pm2启动服务，指定服务名称
-    
+
   of 'install'
   	-c,--type			指定公共缓存服务类型，目前有node（默认）与nexus（功能有限）
   	-e,--repository     指定公共缓存服务仓库，由HOST:PORT/NAME构成
@@ -42,5 +42,3 @@ Options:
      -s,--forServer   指定当前运行环境是在公共缓存服务上，使用如 npm_cache_share clean --forServer
 
 ```
-
->>>>>>> f4015aa9be39dd5ab9291dead53f358752e3c4d2
