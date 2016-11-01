@@ -11,16 +11,15 @@ var _ = require('lodash'),
     rpt = require('read-package-tree'),
     fsExtra = require('fs-extra');
 
-require('shelljs/global');
-
 var utils = require('./utils'),
+    shellUtils = require('./shellUtils'),
     constant = require('./constant');
 
 var config = fsExtra.readJsonSync(utils.getConfigPath());
 
 module.exports = {
     getLastestVersion: function(moduleName, cbk) {
-        exec('npm view ' + moduleName + ' versions', function(code, stdout, stderr){
+        shellUtils.exec('npm view ' + moduleName + ' versions', function(code, stdout, stderr){
             if(code !== 0){
                 cbk(stderr);
             }else{
@@ -38,7 +37,7 @@ module.exports = {
         });
     },
     npmShrinkwrap: function(cbk){
-        exec('npm shrinkwrap', function(code, stdout, stderr){
+        shellUtils.exec('npm shrinkwrap', function(code, stdout, stderr){
             if (code!== 0) {
                 cbk(stderr);
             } else {
@@ -55,7 +54,7 @@ module.exports = {
         var optstr = utils.toString(opts, constant.NPMOPS),
             cmd = 'npm install ' + ( moduleName ? moduleName + ' ' + optstr : optstr );
         console.debug(cmd);
-        exec(cmd, function(code, stdout, stderr){
+        shellUtils.exec(cmd, function(code, stdout, stderr){
             if (code!== 0) {
                 cbk(stderr);
             } else {
@@ -69,7 +68,7 @@ module.exports = {
         }
         var optstr = utils.toString(npmopts, constant.NPMOPSWITHOUTSAVE),
             cmd = 'npm install ' + moduleNames.join(' ') + ' ' + optstr,
-            result = exec(cmd, opts);
+            result = shellUtils.exec(cmd, opts);
         console.debug(cmd);
         if(result.code !== 0) {
             console.error(result.stderr);

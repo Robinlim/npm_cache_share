@@ -11,9 +11,9 @@ var path = require('path'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
     utils = require('../../../common/utils'),
+    shellUtils = require('../../../common/shellUtils'),
     storage = require('../storage');
 
-require('shelljs/global');
 
 var modulesCachePath = utils.getServerCachePath(),
     fileExt = utils.getFileExt(),
@@ -79,9 +79,9 @@ module.exports = {
                         return;
                     }
                     //删除压缩文件
-                    rm('-f', file);
+                    shellUtils.rm('-f', file);
                     //压缩每个模块
-                    var modules = ls(path.resolve(target, UPLOADDIR)),
+                    var modules = shellUtils.ls(path.resolve(target, UPLOADDIR)),
                         count = 0;
                     modules.forEach(function(file) {
                         var stream = utils.compress(path.resolve(target, UPLOADDIR, file));
@@ -94,7 +94,7 @@ module.exports = {
                             if (count == modules.length) {
                                 //删除临时目录
                                 process.nextTick(function() {
-                                    rm('-rf', target);
+                                    shellUtils.rm('-rf', target);
                                     console.info('upload done!!');
                                 });
                             }

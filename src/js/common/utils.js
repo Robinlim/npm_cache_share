@@ -10,11 +10,12 @@ var path = require('path'),
     tar = require('tar'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
-    fstream = require('fstream');
+    fstream = require('fstream'),
+    osHomedir = require('os-homedir');
 
-require('shelljs/global');
 
-var constant = require('./constant'),
+var shellUtils = require('./shellUtils'),
+    constant = require('./constant'),
     SPLIT = constant.SPLIT,
     arch = process.arch,
     platform = process.platform,
@@ -28,7 +29,7 @@ var utils = module.exports = {
     getCachePath: function() {
         var defaultCacheDirectory = process.env.NPM_CACHE_DIR;
         if (defaultCacheDirectory === undefined) {
-            var homeDirectory = process.env.HOME || process.env.HOMEPATH || process.env.USERPROFILE;
+            var homeDirectory = osHomedir();
             if (homeDirectory !== undefined) {
                 defaultCacheDirectory = path.resolve(homeDirectory, '.npm_cache_share');
             } else {
@@ -160,9 +161,9 @@ var utils = module.exports = {
      */
     lsDirectory: function(p) {
         var dMap = {};
-        ls(p).forEach(function(file) {
+        shellUtils.ls(p).forEach(function(file) {
             if (file == constant.LIBNAME) return;
-            if (test('-f', path.resolve(p, constant.MODULECHECKER, file))) {
+            if (shellUtils.test('-f', path.resolve(p, constant.MODULECHECKER, file))) {
                 dMap[file] = 1;
             } else {
                 dMap[file] = 0;
@@ -228,7 +229,7 @@ var utils = module.exports = {
         //for > node v0.8 use node-gyp to build with binding.gyp
         //see also: https://www.npmjs.com/package/node-gyp
         if ((dependencies && dependencies['node-gyp']) ||
-            (modulePath && (test('-f', path.resolve(modulePath, 'binding.gyp')) || test('-f', path.resolve(modulePath, 'wscript'))))) {
+            (modulePath && (shellUtils.test('-f', path.resolve(modulePath, 'binding.gyp')) || shellUtils.test('-f', path.resolve(modulePath, 'wscript'))))) {
             return this.getModuleNameForPlatform(name, version);
         }
         return [name, version].join('@').replace(RegExp('/', 'g'), SPLIT);

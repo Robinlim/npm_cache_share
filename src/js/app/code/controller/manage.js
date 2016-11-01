@@ -5,8 +5,6 @@ var _ = require('lodash'),
     fsExtra = require('fs-extra'),
     utils = require('../../../common/utils');
 
-require('shelljs/global');
-
 var modulesCachePath = utils.getServerCachePath(),
     fileExt = utils.getFileExt();
 
