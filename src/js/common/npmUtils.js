@@ -9,13 +9,23 @@
 'use strict'
 var _ = require('lodash'),
     rpt = require('read-package-tree'),
-    fsExtra = require('fs-extra');
+    fsExtra = require('fs-extra'),
+    semver = require('semver');
 
 var utils = require('./utils'),
     shellUtils = require('./shellUtils'),
     constant = require('./constant');
 
 var config = fsExtra.readJsonSync(utils.getConfigPath());
+
+function testYarn(){
+    var yarnCmd = shellUtils.which('yarn'),
+        nodeVer = process.versions.node.split('-')[0];
+    return yarnCmd && semver.satisfies(nodeVer, '>=4.0.0');
+}
+
+// 判断是否可以使用yarn
+var checkYarn = testYarn();
 
 module.exports = {
     getLastestVersion: function(moduleName, cbk) {
@@ -45,16 +55,12 @@ module.exports = {
             }
         });
     },
-    npmInstall: function(moduleName, opts, cbk){
-        if(_.isFunction(opts)){
-            cbk = opts;
-            opts = moduleName;
-            moduleName = null;
-        }
-        var optstr = utils.toString(opts, constant.NPMOPS),
-            cmd = 'npm install ' + ( moduleName ? moduleName + ' ' + optstr : optstr );
-        console.debug(cmd);
-        shellUtils.exec(cmd, function(code, stdout, stderr){
+    npmInstall: function(npmopts, opts, cbk){
+        var optstr = utils.toString(npmopts, constant.NPMOPS),
+            cmd = 'npm install ' + optstr;
+            
+        console.debug(cmd, opts);
+        shellUtils.exec(cmd, opts, function(code, stdout, stderr){
             if (code!== 0) {
                 cbk(stderr);
             } else {
@@ -66,10 +72,12 @@ module.exports = {
         if(moduleNames.length === 0){
             return;
         }
-        var optstr = utils.toString(npmopts, constant.NPMOPSWITHOUTSAVE),
-            cmd = 'npm install ' + moduleNames.join(' ') + ' ' + optstr,
-            result = shellUtils.exec(cmd, opts);
+        var leading = checkYarn ? 'yarn add ' : 'npm install ',
+            optstr = utils.toString(npmopts, constant.NPMOPSWITHOUTSAVE),
+            cmd = leading + moduleNames.join(' ') + ' ' + optstr;
+
         console.debug(cmd);
+        var result = shellUtils.exec(cmd, opts);
         if(result.code !== 0) {
             console.error(result.stderr);
         }
