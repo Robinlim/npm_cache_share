@@ -29,7 +29,6 @@ module.exports = {
         this.startTime = new Date().getTime();
         this.moduleName = module;
         this.forceNpm = false;
-        this.ignoreYarn = true;
         this.opts = options;
         if(options.installTimeout){
             console.debug('安装超时时间：',options.installTimeout,'s');
