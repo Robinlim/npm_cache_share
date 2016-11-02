@@ -35,10 +35,9 @@ module.exports = {
      * @param  {Object} dependencies 模块依赖
      * @param  {Object} opts         指令参数
      * @param  {Function} callback   回调
-     * @param  {String} modulename   指定安装的模块名
      * @return {void}
      */
-    parse: function(dependencies, opts, callback, modulename) {
+    parse: function(dependencies, opts, callback) {
         console.info('初始化环境');
         //初始化参数
         this.registry = Factory.instance(opts.type, opts);
@@ -65,8 +64,9 @@ module.exports = {
         // 需要本地安装的依赖 (在公共服务check后从needFetch中比较得出)
         this.needInstall = {};
 
-        this.parseModule().then(function(){
-            callback();
+        this.parseModule().then(function(val){
+            console.debug(val);
+            callback(null, val);
         },function(err) {
             console.error(err);
             callback(err);
@@ -111,6 +111,10 @@ module.exports = {
         shellUtils.rm('-rf', path.resolve(__cache, UPLOADDIR));
         shellUtils.rm('-rf', path.resolve(__cache, LIBNAME));
 
+        return {
+            downloadNum: _.keys(this.serverCache).length,
+            installNum: this.needInstall.length
+        };
     },
     /**
      * 下载公共缓存模块

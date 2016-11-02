@@ -7,18 +7,19 @@
 */
 
 'use strict'
-var fs = require('fs'),
+var _ = require('lodash'),
+    fs = require('fs'),
     fsExtra = require('fs-extra'),
-    path = require('path');
+    path = require('path'),
+    constant = require('../common/constant');
 
 var __cwd = process.cwd(),
-    NPMSHRINKWRAP = 'npm-shrinkwrap.json',
     PACKAGE = 'package.json',
-    npmShrinkwrapPath = path.resolve(__cwd, NPMSHRINKWRAP),
     npmPackagePath = path.resolve(__cwd, PACKAGE);
 
 var installUtils = require('../common/installUtils'),
-    npmUtils = require('../common/npmUtils');
+    npmUtils = require('../common/npmUtils'),
+    manifestUtils = require('../common/manifestUtils');
 
 /*@Flow*/
 /*@Command({"name": "install [module]", "alias":"i", "des":"Install the module", options:[["-c, --type [type]", "server type, default is node", "node"],["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],["-r, --registry [registry]", "specify the npm origin"],["-t, --token [token]", "use the token to access the npm_cache_share server"],["-a, --auth [auth]", "use auth to access the Nexus Server, like username:password format"],["-p, --production", "will not install modules listed in devDependencies"],["--noOptional", "will prevent optional dependencies from being installed"], ["--save","module will be added to the package.json as dependencies"], ["--save-dev", "module will be added to the package.json as devDependencies"]]})*/
@@ -28,6 +29,7 @@ module.exports = {
         this.startTime = new Date().getTime();
         this.moduleName = module;
         this.forceNpm = false;
+        this.ignoreYarn = true;
         this.opts = options;
         if(options.installTimeout){
             console.debug('安装超时时间：',options.installTimeout,'s');
@@ -78,20 +80,7 @@ module.exports = {
                 });
             }
         } else { // 未指定模块名称则全部安装
-            var rs = fs.existsSync(npmShrinkwrapPath);
-            if(!rs){ // 不存在npm-shrinkwrap.json，直接执行npm install
-                console.warn('缺少npm-shrinkwrap.json文件，此次安装将直接使用npm install');
-                this.forceNpm = true;
-                callback(null);
-            } else { // 存在npm-shrinkwrap.json则分析其依赖进行安装
-                console.info('读取npm-shrinkwrap.json文件！！');
-                try{
-                    callback(null, fsExtra.readJsonSync(npmShrinkwrapPath).dependencies);
-                }catch(e){
-                    console.error(e.stack);
-                    callback(e);
-                }
-            }
+            manifestUtils.readManifest(__cwd, callback);
         }
     },
     /**
@@ -100,11 +89,41 @@ module.exports = {
      */
     /*@Step("preinstall")*/
     install: function(rs, callback){
-        var dependencies = rs.preinstall;
-        if (this.forceNpm) {
-            npmUtils.npmInstall(this.opts, callback);
+        var self = this,
+            dependencies = rs.preinstall;
+        if (this.forceNpm || !dependencies) {
+            npmUtils.npmInstall(this.opts, {}, callback);
         } else {
-            installUtils.parse(dependencies, this.opts, callback, this.module);
+            // 安装指定模块以及其子依赖
+            if(this.module){
+                installUtils.parse(dependencies, this.opts, function(err0, val){
+                    if(err0){
+                        callback(err0);
+                    } else if(val.installNum === 0) { //如果模块是从缓存加载的，则安装其子依赖
+                        console.info('安装'+self.module.name+'的子依赖');
+                        var childrenPath = path.resolve(__cwd, constant.LIBNAME, self.module.name);
+                        manifestUtils.readManifest(childrenPath, function(err1, children){
+                            if(err1){
+                                callback(err1);
+                            } else {
+                                if(children){
+                                    installUtils.parse(children, self.opts, callback);
+                                } else {
+                                    // 子模块默认指定--prodcution
+                                    var opts = _.extend({
+                                        production: true
+                                    }, self.opts);
+                                    npmUtils.npmInstall(opts, {
+                                        cwd: childrenPath
+                                    }, callback);
+                                }
+                            }
+                        });
+                    }
+                });
+            } else {
+                installUtils.parse(dependencies, this.opts, callback);
+            }
         }
     },
     /*@Step("install")*/
