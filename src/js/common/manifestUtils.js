@@ -11,7 +11,8 @@ var _ = require('lodash'),
     path = require('path'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
-    readline = require('readline');
+    readline = require('readline'),
+    checkUtils = require('./checkUtils');
 
 var NPMSHRINKWRAP = 'npm-shrinkwrap.json',
     YARNLOCKFILE = 'yarn.lock';
@@ -30,6 +31,7 @@ module.exports = {
             var shrinkwrap;
             try {
                 shrinkwrap = fsExtra.readJsonSync(npmShrinkwrapPath);
+                checkUtils.npmShrinkwrapCheck(shrinkwrap);
             } catch (e) {
                 cbk(e);
                 return;
