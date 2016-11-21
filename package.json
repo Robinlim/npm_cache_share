@@ -1,10 +1,13 @@
 {
   "name": "npm_cache_share",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "npm cache by npm-shrinkwrap.json",
   "license": "MIT",
   "main": "index.js",
-  "bin": "./bin/client",
+  "bin": {
+      "npm_cache_share": "./bin/client",
+      "ncs": "./bin/client"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/Robinlim/npm_cache_share.git"
