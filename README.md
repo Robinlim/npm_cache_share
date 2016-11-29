@@ -36,6 +36,7 @@ Options:
     -r,--registry    	指定安装的源, 使用如 npm_cache_share install --registry 源
     -t,--token			仅type=node，指定公共服务上传所需要校验的token
     -a,--auth			仅type=nexus，指定nexus账户（username:password）
+    -n,--npm [npm]      可指定npm的安装路径来执行npm指令，用于指定特定版本的npm
     -p,--production,--noOptional,--save,--save-dev	同npm安装
 
   of 'clean'
