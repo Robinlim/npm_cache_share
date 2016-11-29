@@ -18,8 +18,17 @@ var utils = require('./utils'),
 var config = fsExtra.readJsonSync(utils.getConfigPath());
 
 module.exports = {
+    npmPath: 'npm',
+    /**
+     * 配置npm路径
+     * @param  {[String]} npmPath [npm path]
+     * @return {[void]}
+     */
+    config: function(npmPath){
+        this.npmPath = npmPath || 'npm';
+    },
     getLastestVersion: function(moduleName, cbk) {
-        shellUtils.exec('npm view ' + moduleName + ' versions', function(code, stdout, stderr){
+        shellUtils.exec(this.npmPath + ' view ' + moduleName + ' versions', function(code, stdout, stderr){
             if(code !== 0){
                 cbk(stderr);
             }else{
@@ -37,7 +46,7 @@ module.exports = {
         });
     },
     npmShrinkwrap: function(cbk){
-        shellUtils.exec('npm shrinkwrap', function(code, stdout, stderr){
+        shellUtils.exec(this.npmPath + ' shrinkwrap', function(code, stdout, stderr){
             if (code!== 0) {
                 cbk(stderr);
             } else {
@@ -51,8 +60,9 @@ module.exports = {
             opts = moduleName;
             moduleName = null;
         }
+        
         var optstr = utils.toString(opts, constant.NPMOPS),
-            cmd = 'npm install ' + ( moduleName ? moduleName + ' ' + optstr : optstr );
+            cmd = this.npmPath + ' install ' + ( moduleName ? moduleName + ' ' + optstr : optstr );
         console.debug(cmd);
         shellUtils.exec(cmd, function(code, stdout, stderr){
             if (code!== 0) {
@@ -67,7 +77,7 @@ module.exports = {
             return;
         }
         var optstr = utils.toString(npmopts, constant.NPMOPSWITHOUTSAVE),
-            cmd = 'npm install ' + moduleNames.join(' ') + ' ' + optstr,
+            cmd = this.npmPath + ' install ' + moduleNames.join(' ') + ' ' + optstr,
             result = shellUtils.exec(cmd, opts);
         console.debug(cmd);
         if(result.code !== 0) {

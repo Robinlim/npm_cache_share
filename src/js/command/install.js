@@ -21,7 +21,7 @@ var installUtils = require('../common/installUtils'),
     npmUtils = require('../common/npmUtils');
 
 /*@Flow*/
-/*@Command({"name": "install [module]", "alias":"i", "des":"Install the module", options:[["-c, --type [type]", "server type, default is node", "node"],["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],["-r, --registry [registry]", "specify the npm origin"],["-t, --token [token]", "use the token to access the npm_cache_share server"],["-a, --auth [auth]", "use auth to access the Nexus Server, like username:password format"],["-p, --production", "will not install modules listed in devDependencies"],["--noOptional", "will prevent optional dependencies from being installed"], ["--save","module will be added to the package.json as dependencies"], ["--save-dev", "module will be added to the package.json as devDependencies"]]})*/
+/*@Command({"name": "install [module]", "alias":"i", "des":"Install the module", options:[["-c, --type [type]", "server type, default is node", "node"],["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],["-r, --registry [registry]", "specify the npm origin"],["-t, --token [token]", "use the token to access the npm_cache_share server"],["-a, --auth [auth]", "use auth to access the Nexus Server, like username:password format"],["-p, --production", "will not install modules listed in devDependencies"],["-n, --npm [npm]", "specify the npm path to execute", "node"],["--noOptional", "will prevent optional dependencies from being installed"], ["--save","module will be added to the package.json as dependencies"], ["--save-dev", "module will be added to the package.json as devDependencies"]]})*/
 module.exports = {
     run: function(module, options) {
         console.info('******************开始安装******************');
@@ -45,6 +45,8 @@ module.exports = {
      */
     /*@Step*/
     preinstall: function(callback){
+        //指定npm路径
+        this.opts.npm && npmUtils.config(this.opts.npm);
         if (this.moduleName) { // 指定了模块名称则安装特定模块
             if (this.moduleName.indexOf('@') > -1) { // 包含版本号
                 var arr = this.moduleName.split('@'),
