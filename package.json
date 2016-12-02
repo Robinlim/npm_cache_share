@@ -1,6 +1,6 @@
 {
   "name": "npm_cache_share",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "npm cache by npm-shrinkwrap.json",
   "license": "MIT",
   "main": "index.js",
