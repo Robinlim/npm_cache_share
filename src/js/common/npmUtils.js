@@ -9,7 +9,8 @@
 'use strict'
 var _ = require('lodash'),
     rpt = require('read-package-tree'),
-    fsExtra = require('fs-extra');
+    fsExtra = require('fs-extra'),
+    semver = require('semver');
 
 var utils = require('./utils'),
     shellUtils = require('./shellUtils'),
@@ -17,9 +18,27 @@ var utils = require('./utils'),
 
 var config = fsExtra.readJsonSync(utils.getConfigPath());
 
+function testYarn(){
+    var yarnCmd = shellUtils.which('yarn'),
+        nodeVer = process.versions.node.split('-')[0];
+    return yarnCmd && semver.satisfies(nodeVer, '>=4.0.0');
+}
+
+// 判断是否可以使用yarn
+var checkYarn = testYarn();
+
 module.exports = {
+    npmPath: 'npm',
+    /**
+     * 配置npm路径
+     * @param  {[String]} npmPath [npm path]
+     * @return {[void]}
+     */
+    config: function(npmPath){
+        this.npmPath = npmPath || 'npm';
+    },
     getLastestVersion: function(moduleName, cbk) {
-        shellUtils.exec('npm view ' + moduleName + ' versions', function(code, stdout, stderr){
+        shellUtils.exec(this.npmPath + ' view ' + moduleName + ' versions', function(code, stdout, stderr){
             if(code !== 0){
                 cbk(stderr);
             }else{
@@ -37,7 +56,7 @@ module.exports = {
         });
     },
     npmShrinkwrap: function(cbk){
-        shellUtils.exec('npm shrinkwrap', function(code, stdout, stderr){
+        shellUtils.exec(this.npmPath + ' shrinkwrap', function(code, stdout, stderr){
             if (code!== 0) {
                 cbk(stderr);
             } else {
@@ -45,15 +64,10 @@ module.exports = {
             }
         });
     },
-    npmInstall: function(moduleName, opts, cbk){
-        if(_.isFunction(opts)){
-            cbk = opts;
-            opts = moduleName;
-            moduleName = null;
-        }
-        var optstr = utils.toString(opts, constant.NPMOPS),
-            cmd = 'npm install ' + ( moduleName ? moduleName + ' ' + optstr : optstr );
-        console.debug(cmd);
+    npmInstall: function(npmopts, opts, cbk){
+        var optstr = utils.toString(npmopts, constant.NPMOPS),
+            cmd = this.npmPath + ' install ' + optstr;
+        console.debug(cmd, opts);
         shellUtils.exec(cmd, function(code, stdout, stderr){
             if (code!== 0) {
                 cbk(stderr);
@@ -66,10 +80,12 @@ module.exports = {
         if(moduleNames.length === 0){
             return;
         }
-        var optstr = utils.toString(npmopts, constant.NPMOPSWITHOUTSAVE),
-            cmd = 'npm install ' + moduleNames.join(' ') + ' ' + optstr,
-            result = shellUtils.exec(cmd, opts);
+        var leading = checkYarn ? 'yarn add ' : this.npmPath + ' install ',
+            optstr = utils.toString(npmopts, constant.NPMOPSWITHOUTSAVE),
+            cmd = leading + moduleNames.join(' ') + ' ' + optstr;
+
         console.debug(cmd);
+        var result = shellUtils.exec(cmd, opts);
         if(result.code !== 0) {
             console.error(result.stderr);
         }
