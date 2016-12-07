@@ -57,5 +57,6 @@ app.get('/healthcheck.html', function(req, res) {
 });
 
 require('./code/storage').init(process.env.storage, process.env.storageConfig);
+require('./code/storage/synclist').load();
 
 module.exports = app;

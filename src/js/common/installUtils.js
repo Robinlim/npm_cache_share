@@ -85,7 +85,7 @@ module.exports = {
         //判断公共缓存是否存在
         if (this.registry && this.registry.check) {
             // 公共缓存拥有的模块
-            this.serverCache = this.checkServer(this.needFetch).await();
+            this.serverCache = this.checkServer().await();
             console.debug('将从中央缓存拉取的包：', this.serverCache);
             this.needInstall = this.compareServer(this.needFetch);
             console.debug('需要初次安装的包：', this.needInstall);
@@ -316,7 +316,7 @@ module.exports = {
         var uploadDir = path.resolve(__cache, UPLOADDIR);
         if (shellUtils.test('-d', uploadDir)  && shellUtils.ls(uploadDir).length > 0){
             console.info('上传模块到公共缓存');
-            this.registry.put(uploadDir, callback);
+            this.registry.put(uploadDir, false, callback);
         } else {
             console.info('没有需要上传的模块');
             callback();
@@ -324,15 +324,15 @@ module.exports = {
     },
     /**
      * 判断并读取公共缓存持有的本地所需依赖
-     * @param  {JSON}   dependencies 模块依赖
      * @param  {Function} callback     回调
      * @return {void}                [description]
      */
     /*@AsyncWrap*/
-    checkServer: function(dependencies, callback){
+    checkServer: function(callback){
         var self = this,
-            list = _.map(dependencies, 'full');
-        self.registry.check(list, function(avaliable, data) {
+            list = _.map(this.needFetch, 'full'),
+            checkSyncList = _.keys(this.localCache);
+        self.registry.check(list, checkSyncList, function(avaliable, data) {
             if(!avaliable){
                 delete self.registry;
                 callback(null, {});

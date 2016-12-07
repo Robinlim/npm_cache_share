@@ -81,10 +81,11 @@ nodeRegistry.prototype.get = function(packageName, dir, cb) {
 /**
  * 上传模块目录到公共缓存
  * @param  {path}   dir      待上传的路径
+ * @param  {boolean} markSyncList 标记为追加到synclist的模块
  * @param  {Function} callback [description]
  * @return {void}            [description]
  */
-nodeRegistry.prototype.put = function(dir, callback) {
+nodeRegistry.prototype.put = function(dir, markSyncList, callback) {
     if (!this.serverReady() || !fs.existsSync(dir) || !this.token) {
         callback();
         return;
@@ -113,6 +114,7 @@ nodeRegistry.prototype.put = function(dir, callback) {
         request.post({
             headers: {
                 token: self.token,
+                marksynclist: markSyncList?'on':'off'
             },
             url: 'http://' + self.server + '/upload',
             formData: {
@@ -142,10 +144,11 @@ nodeRegistry.prototype.put = function(dir, callback) {
 /**
  * 判断服务是否正常,并返回服务端与当前工程模块依赖的交集
  * @param  {Array} list  工程的模块依赖
+ * @param  {Array} checkSyncList 待检查是否需要同步的模块
  * @param  {Function} cb        检查完后的回调
  * @return {void}
  */
-nodeRegistry.prototype.check = function(list, cb) {
+nodeRegistry.prototype.check = function(list, checkSyncList, cb) {
     var self = this;
     if (!self.server) {
         cb(false, null);
@@ -153,6 +156,7 @@ nodeRegistry.prototype.check = function(list, cb) {
     }
     var form = {
         list: list,
+        checkSyncList: checkSyncList,
         platform: utils.getPlatform()
     };
     request

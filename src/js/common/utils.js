@@ -165,8 +165,6 @@ var utils = module.exports = {
             if (file == constant.LIBNAME) return;
             if (shellUtils.test('-f', path.resolve(p, constant.MODULECHECKER, file))) {
                 dMap[file] = 1;
-            } else {
-                dMap[file] = 0;
             }
         });
         return dMap;

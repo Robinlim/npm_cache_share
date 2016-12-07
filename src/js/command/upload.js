@@ -23,7 +23,7 @@ var __cwd = process.cwd(),
     UPLOADDIR = constant.UPLOADDIR,
     PACKAGE = 'package.json',
     npmPackagePath = path.resolve(__cwd, PACKAGE);
-/*@Command({"name": "upload", "alias":"u", "des":"Upload a dir as a package to center cache server", options:[["-c, --type [type]", "server type, default is node", "node"],["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],["-t, --token [token]", "use the token to access the npm_cache_share server"],["-p, --dependOnEnv", "whether the package is depend on environment meaning whether this package itself need node-gyp compile"]]})*/
+/*@Command({"name": "upload", "alias":"u", "des":"Upload a dir as a package to center cache server", options:[["-c, --type [type]", "server type, default is node", "node"],["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],["-t, --token [token]", "use the token to access the npm_cache_share server"],["-p, --dependOnEnv", "whether the package is depend on environment meaning whether this package itself need node-gyp compile"],["-s, --alwaysSync", "mark this package to be sync on each install action"]]})*/
 module.exports = {
     run: function(options){
         console.info('******************开始上传******************');
@@ -40,6 +40,10 @@ module.exports = {
             packageNameWithEnv = utils.getModuleNameForPlatform(moduleName, moduleVersion),
             realName = options.dependOnEnv?packageNameWithEnv:packageName;
         console.info('即将上传的包名称：', realName);
+        var markSyncList = !!options.alwaysSync;
+        if(markSyncList){
+            console.info('该包被标记为本地安装时必定从中央缓存同步最新代码状态。')
+        }
         var uploadDir = path.resolve(__cache, UPLOADDIR);
         utils.ensureDirWriteablSync(uploadDir);
         var tempDir = path.resolve(uploadDir, realName);
@@ -58,12 +62,12 @@ module.exports = {
         .on('close', function(){
             console.info('开始上传模块');
             var registry = Factory.instance(options.type, options);
-            registry.check([packageName], function(avaliable, data){
+            registry.check([packageName], [], function(avaliable, data){
                 if(avaliable){
                     if(data && data[realName]){
                         console.info('中央缓存已存在', realName, '本次上传将覆盖之前的包！');
                     }
-                    registry.put(uploadDir, function(err){
+                    registry.put(uploadDir, markSyncList, function(err){
                         exit(err);
                     });
                 } else {

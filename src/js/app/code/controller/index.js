@@ -7,12 +7,14 @@
 */
 
 'use strict'
-var path = require('path'),
+var _ = require('lodash'),
+    path = require('path'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
     utils = require('../../../common/utils'),
     shellUtils = require('../../../common/shellUtils'),
-    storage = require('../storage');
+    storage = require('../storage'),
+    synclist = require('../storage/synclist');
 
 
 var modulesCachePath = utils.getServerCachePath(),
@@ -28,8 +30,9 @@ module.exports = {
     /*@ResponseBody*/
     check: function(req, res, reqData, repository){
         var list = reqData.list || [],
+            checkSyncList = reqData.checkSyncList || [],
             platform = reqData.platform;
-        if(!Array.isArray(list)){
+        if(!(Array.isArray(list) && Array.isArray(checkSyncList))){
             res.end({
                 status: -1,
                 message: 'list should be an array!'
@@ -39,7 +42,10 @@ module.exports = {
         res.end({
             status: 0,
             message: 'success',
-            data: storage.diffPackages(repository || 'default', list, platform)
+            data: _.extend(
+                storage.diffPackages(repository || 'default', list, platform),
+                synclist.diff(checkSyncList)
+            )
         });
     },
     /*@RequestMapping(["/{repository}/fetch/{name}","/fetch/{name}"])*/
@@ -57,6 +63,11 @@ module.exports = {
                 message: 'Token missing or wrong! Forbid uploading without token.'
             });
             return;
+        }
+        var markSyncList = false;
+        console.log(req.headers)
+        if(req.headers.marksynclist === 'on'){
+            markSyncList = true;
         }
 
         var multiparty = require('multiparty');
@@ -85,6 +96,9 @@ module.exports = {
                         count = 0;
                     modules.forEach(function(file) {
                         var stream = utils.compress(path.resolve(target, UPLOADDIR, file));
+                        if(markSyncList){
+                            synclist.add(file);
+                        }
                         storage.put(repository, file + fileExt, stream, function(err){
                             if (err) {
                                 console.error('compress wrong ', err.stack);
