@@ -173,8 +173,9 @@ nodeRegistry.prototype.check = function(list, cb) {
                 if(error || res.status !== 0){
                     console.error(self.server + '服务异常，请检查服务！', error || res.message);
                     cb(self.serverHealth = false, {});
+                } else {
+                    cb(self.serverHealth = true, res.data);
                 }
-                cb(self.serverHealth = true, res.data);
             }
         });
 };

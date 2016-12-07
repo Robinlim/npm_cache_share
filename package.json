@@ -5,8 +5,8 @@
   "license": "MIT",
   "main": "index.js",
   "bin": {
-      "npm_cache_share": "./bin/client",
-      "ncs": "./bin/client"
+    "npm_cache_share": "./bin/client",
+    "ncs": "./bin/client"
   },
   "repository": {
     "type": "git",
@@ -36,6 +36,7 @@
     "express": "~4.13.3",
     "fs-extra": "^0.30.0",
     "fstream": "^1.0.10",
+    "fstream-ignore": "^1.0.5",
     "json-parse-helpfulerror": "^1.0.3",
     "lodash": "^4.14.2",
     "multiparty": "^4.1.2",
