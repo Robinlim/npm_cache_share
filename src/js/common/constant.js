@@ -42,5 +42,6 @@ module.exports = {
         'storage',
         'storageConfig',
         'installTimeout'
-    ]
+    ],
+    ALWAYS_SYNC_FLAG: 2
 }

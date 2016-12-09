@@ -10,6 +10,7 @@ var _ = require('lodash'),
     path = require('path'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
+    constant = require('../../../common/constant'),
     utils = require('../../../common/utils');
 
 var serverCachePath = utils.getServerCachePath(),
@@ -35,8 +36,9 @@ module.exports = {
     diffSync: function(list){
         var hit = {};
         _.forEach(list, function(el){
-            if(_map[el] && _map[el].alwaysSync){
-                hit[el] = 2;
+            var name = utils.splitModuleName(el);
+            if(_map[name] && _map[name].alwaysSync){
+                hit[el] = constant.ALWAYS_SYNC_FLAG;
             }
         });
         return hit;

@@ -15,6 +15,7 @@ var fs = require('fs'),
     fignore = require("fstream-ignore"),
     Factory = require('../annotation/Factory'),
     utils = require('../common/utils'),
+    shellUtils = require('../common/shellUtils'),
     constant = require('../common/constant');
 
 var __cwd = process.cwd(),
@@ -86,6 +87,8 @@ module.exports = {
                         console.info('中央缓存已存在', realName, '本次上传将覆盖之前的包！');
                     }
                     registry.put(uploadDir, info, function(err){
+                        console.info('删除临时目录');
+                        shellUtils.rm('-rf', uploadDir);
                         exit(err);
                     });
                 } else {

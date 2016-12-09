@@ -51,6 +51,8 @@ module.exports = {
         utils.ensureDirWriteablSync(path.resolve(__cache, MODULECHECKER));
         utils.ensureDirWriteablSync(path.resolve(__cache, LIBNAME));
         utils.ensureDirWriteablSync(path.resolve(__cache, UPLOADDIR));
+        // 清空uploadDir
+        fsExtra.emptyDirSync(path.resolve(__cache, UPLOADDIR));
         //确保工程目录node_modules存在并可写入
         utils.ensureDirWriteablSync(path.resolve(base, LIBNAME));
 
@@ -131,17 +133,27 @@ module.exports = {
         } else {
             console.info('从公共缓存下载模块');
         }
-        asyncMap(utils.toArrayByKey(this.serverCache), _.bind(function(packageName, cb){
-            console.debug('下载模块', packageName);
-            this.registry.get(packageName, __cache, function(err){
-                if(err){
-                    cb(err);
-                } else {
-                    fs.writeFileSync(path.resolve(__cache, MODULECHECKER, packageName), '');
-                    cb();
+        asyncMap(
+            _.map(this.serverCache, function(v,k){
+                return k;
+            }),
+            _.bind(function(packageName, cb){
+                console.debug('下载模块', packageName);
+                if(this.serverCache[packageName] == constant.ALWAYS_SYNC_FLAG){
+                    // 每次都同步的模块在下载前会先清空本地
+                    fsExtra.emptyDirSync(path.resolve(__cache, packageName));
                 }
-            });
-        }, this), callback);
+                this.registry.get(packageName, __cache, function(err){
+                    if(err){
+                        cb(err);
+                    } else {
+                        fs.writeFileSync(path.resolve(__cache, MODULECHECKER, packageName), '');
+                        cb();
+                    }
+                });
+            }, this),
+            callback
+        );
     },
     /**
      * 安装缺失模块
