@@ -6,16 +6,22 @@
 * @Last modified time: 2016-08-11 10:48:26
 */
 
+var ansi = require('ansi-styles');
+
 var joinArgs = function(args) {
   return Array.prototype.slice.call(args).join(' ');
 };
 
 console.info = function() {
-  return console.log('\x1B[32m>[npm-cache-share]', joinArgs(arguments), '\x1B[39m');
+  return console.log(ansi.green.open, '>[npm-cache-share]', joinArgs(arguments), ansi.green.close);
+};
+
+console.warn = function(){
+  return console.log(ansi.yellow.open, '>[npm-cache-share]', joinArgs(arguments), ansi.yellow.close)
 };
 
 console.error = function() {
-  return console.log('\x1B[31m>[npm-cache-share]', joinArgs(arguments), '\x1B[39m');
+  return console.log(ansi.red.open, '>[npm-cache-share]', joinArgs(arguments), ansi.red.close);
 };
 
 console.debug = function() {

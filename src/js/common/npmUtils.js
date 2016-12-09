@@ -58,7 +58,7 @@ module.exports = {
     npmShrinkwrap: function(cbk){
         shellUtils.exec(this.npmPath + ' shrinkwrap', function(code, stdout, stderr){
             if (code!== 0) {
-                cbk(stderr);
+                cbk('自动更新执行npm shrinkwrap失败：'+stderr+'如不需要版本锁定可忽略该错误。');
             } else {
                 cbk(null);
             }
@@ -68,7 +68,7 @@ module.exports = {
         var optstr = utils.toString(npmopts, constant.NPMOPS),
             cmd = this.npmPath + ' install ' + optstr;
         console.debug(cmd, opts);
-        shellUtils.exec(cmd, function(code, stdout, stderr){
+        shellUtils.exec(cmd, opts, function(code, stdout, stderr){
             if (code!== 0) {
                 cbk(stderr);
             } else {

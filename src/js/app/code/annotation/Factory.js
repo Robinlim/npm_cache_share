@@ -37,7 +37,9 @@ var Factory = module.exports = require('node-annotation').Annotation.extend({
      * @return {Object}
      */
     instance: function(k, ops){
-        if(!this._items[k])return null;
+        if(!this._items[k]){
+            throw new Error('Unrecongnize storage type:'+k);
+        };
         var classType = this._items[k].instance();
         return new classType(ops);
     }

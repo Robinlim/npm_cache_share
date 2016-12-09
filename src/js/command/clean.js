@@ -12,7 +12,14 @@ var utils = require('../common/utils'),
     shellUtils = require('../common/shellUtils'),
     path = require('path');
 
-/*@Command({"name": "clean", "alias":"c", "des":"Clear the local npm module cache", options:[["-s, --forServer", "if it is false, clean the npm cache in client, or clean the server cache"]]})*/
+/*@Command({
+    "name": "clean",
+    "alias":"c",
+    "des":"Clear the local npm module cache",
+    options:[
+        ["-s, --forServer", "if it is false, clean the npm cache in client, or clean the server cache"]
+    ]
+})*/
 module.exports = {
     run: function(ops) {
         //清除服务端缓存
