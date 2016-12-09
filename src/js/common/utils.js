@@ -11,7 +11,8 @@ var path = require('path'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
     fstream = require('fstream'),
-    osHomedir = require('os-homedir');
+    osHomedir = require('os-homedir'),
+    semver = require('semver');
 
 
 var shellUtils = require('./shellUtils'),
@@ -246,11 +247,20 @@ var utils = module.exports = {
         // @qnpm@@@Qredis@0.0.1 => @qnpm@@@Qredis
         var arr = name.split('@'), moduleName;
         if(arr[0] === ''){
-            moduleName = arr.slice(0,-1).join('@');
+            moduleName = arr.slice(0,5).join('@');
         } else {
             moduleName = arr[0];
         }
         return moduleName;
+    },
+    /**
+     * 切分出模块的版本信息
+     * @param  {string} name [description]
+     * @return {string}      [description]
+     */
+    splitModuleVersion: function(name){
+        var arr = name.split('@');
+        return (arr[0]==='')?arr[5]:arr[1];
     },
     /**
      * 生成包含环境信息的包名称
@@ -305,5 +315,23 @@ var utils = module.exports = {
             arrs.push(k);
         });
         return arrs;
+    },
+    /**
+     * 取出一个包名称列表中版本最新的
+     * @param  {array} versions 包名称数组
+     * @return {object}         最新版的包版本
+     */
+    getLastestVersion: function(versions){
+        var latest,
+            fullname,
+            splitModuleVersion = this.splitModuleVersion;
+        _.forEach(versions, function(el){
+            var version = splitModuleVersion(el);
+            if(!latest || semver.gt(version, latest)){
+                latest = version;
+                fullname = el;
+            }
+        });
+        return latest;
     }
 };

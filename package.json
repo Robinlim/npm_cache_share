@@ -26,6 +26,7 @@
     "node"
   ],
   "dependencies": {
+    "ansi-styles": "^2.2.1",
     "async": "^2.0.1",
     "body-parser": "~1.15.2",
     "commander": "^2.9.0",
@@ -40,7 +41,7 @@
     "json-parse-helpfulerror": "^1.0.3",
     "lodash": "^4.14.2",
     "multiparty": "^4.1.2",
-    "node-annotation": "^0.0.*",
+    "node-annotation": ">=0.0.9",
     "node-annotation-extend": "^0.0.*",
     "os-homedir": "^1.0.2",
     "read-package-json": "^2.0.4",

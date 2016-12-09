@@ -14,7 +14,7 @@ var _ = require('lodash'),
     utils = require('../../../common/utils'),
     shellUtils = require('../../../common/shellUtils'),
     storage = require('../storage'),
-    synclist = require('../storage/synclist');
+    packageList = require('../dao/packageList');
 
 
 var modulesCachePath = utils.getServerCachePath(),
@@ -44,7 +44,7 @@ module.exports = {
             message: 'success',
             data: _.extend(
                 storage.diffPackages(repository || 'default', list, platform),
-                synclist.diff(checkSyncList)
+                packageList.diffSync(checkSyncList)
             )
         });
     },
@@ -64,11 +64,6 @@ module.exports = {
             });
             return;
         }
-        var markSyncList = false;
-        console.log(req.headers)
-        if(req.headers.marksynclist === 'on'){
-            markSyncList = true;
-        }
 
         var multiparty = require('multiparty');
         // parse a file upload
@@ -79,6 +74,16 @@ module.exports = {
 
         var repositoryPath = resolveRepository(repository);
         form.parse(req, function(err, fields, files) {
+            console.info('接收到的附加信息', fields);
+            // TODO: mutliparty的fields的每个字段都是数组，暂时先全取数组第一项
+            if(fields && fields.name){
+                packageList.add(fields.name[0], {
+                    alwaysSync: fields.alwaysSync && (fields.alwaysSync[0] === 'on'),
+                    isPrivate: fields.isPrivate && (fields.isPrivate[0] === 'on'),
+                    user: fields.user[0]
+                });
+            }
+
             if (files.modules.length != 0) {
                 var file = files.modules[0].path,
                     target = path.resolve(TEMPDIR, String(Date.now()));
@@ -96,9 +101,6 @@ module.exports = {
                         count = 0;
                     modules.forEach(function(file) {
                         var stream = utils.compress(path.resolve(target, UPLOADDIR, file));
-                        if(markSyncList){
-                            synclist.add(file);
-                        }
                         storage.put(repository, file + fileExt, stream, function(err){
                             if (err) {
                                 console.error('compress wrong ', err.stack);
@@ -133,6 +135,45 @@ module.exports = {
         } else {
             res.end(storage.listAll());
         }
+    },
+    /*@RequestMapping("/{repository}/info")*/
+    /*@ResponseBody*/
+    info: function(req, res, reqData, repository){
+        var name = reqData.name,
+            version = reqData.version,
+            platform = reqData.platform,
+            all = storage.listPackages(repository, name) || [],
+            fileExt = utils.getFileExt(),
+            packages = _.map(all, function(el){
+                return _.trimEnd(el, fileExt);
+            }),
+            rtn = {
+                name: name,
+                version: version,
+                full: null,
+                isPrivate: false
+            };
+        // 判断包是否是私有包
+        rtn.isPrivate = packageList.checkPrivate(name);
+        if(rtn.isPrivate){
+            if(!version || version === 'latest'){
+                rtn.version = utils.getLastestVersion(packages);
+            }
+            var fullname = name + '@' + rtn.version,
+                packageNameForPlatform = utils.joinPackageName(fullname, platform),
+                packageName = fullname;
+            if(packages.indexOf(packageNameForPlatform) > -1){
+                rtn.full = packageNameForPlatform;
+            } else if (packages.indexOf(packageName) > -1){
+                rtn.full = packageName;
+            }
+        }
+        console.info('info', name, version, platform, 'rth:', rtn);
+        res.end({
+            status: 0,
+            message: 'succ',
+            data: rtn
+        });
     },
     /*@ExceptionHandler*/
     /*@ResponseBody*/

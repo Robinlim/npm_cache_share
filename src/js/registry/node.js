@@ -81,11 +81,11 @@ nodeRegistry.prototype.get = function(packageName, dir, cb) {
 /**
  * 上传模块目录到公共缓存
  * @param  {path}   dir      待上传的路径
- * @param  {boolean} markSyncList 标记为追加到synclist的模块
+ * @param  {json}   info    附加信息
  * @param  {Function} callback [description]
  * @return {void}            [description]
  */
-nodeRegistry.prototype.put = function(dir, markSyncList, callback) {
+nodeRegistry.prototype.put = function(dir, info, callback) {
     if (!this.serverReady() || !fs.existsSync(dir) || !this.token) {
         callback();
         return;
@@ -111,22 +111,15 @@ nodeRegistry.prototype.put = function(dir, markSyncList, callback) {
         callback(err);
     }).on('finish', function() {
         console.info('同步模块至服务http://' + self.server);
+        var formData = info || {};
         request.post({
             headers: {
-                token: self.token,
-                marksynclist: markSyncList?'on':'off'
+                token: self.token
             },
             url: 'http://' + self.server + '/upload',
-            formData: {
+            formData: _.extend(formData, {
                 modules: fs.createReadStream(tmpFile)
-                    // modules: {
-                    //     value: river,
-                    //     options: {
-                    //         filename: Date.now() + self.fileExt,
-                    //         contentType: 'application/x-tar'
-                    //     }
-                    // }
-            }
+            })
         }, function(err, res, body) {
             if (err || res.statusCode !== 200) {
                 console.error('上传失败:', err || body);
@@ -184,6 +177,40 @@ nodeRegistry.prototype.check = function(list, checkSyncList, cb) {
         });
 };
 
+
+nodeRegistry.prototype.info = function(name, version, cb){
+    var self = this,
+        url = 'http://' + this.server + '/info';
+    request.post({
+        url: url,
+        form: {
+            name: name,
+            version: version,
+            platform: utils.getPlatform()
+        }
+    }, function(err, response, body){
+        if(err){
+            console.error(url + '该服务不可正常访问，请检查服务！', err);
+            cb(true);
+        } else {
+            var res, error;
+            try {
+                res = JSON.parse(body);
+            } catch (e) {
+                error = e;
+            }
+            if(error || res.status !== 0){
+                console.error(url + '服务异常，请检查服务！', error || res.message);
+                cb(true);
+            } else {
+                if(res.data.full){
+                    res.data.url = ['http:/', self.server, 'fetch', res.data.full].join('/'); 
+                }
+                cb(null, res.data);
+            }
+        }
+    });
+};
 /**
  * 判断服务是否正常
  * @return {[type]} [description]

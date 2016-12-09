@@ -13,34 +13,35 @@ var _ = require('lodash'),
     utils = require('../../../common/utils');
 
 var serverCachePath = utils.getServerCachePath(),
-    synclistName = 'synclist.json',
-    synclistPath = path.join(serverCachePath, synclistName);
+    packageListName = 'packageList.json',
+    packageListPath = path.join(serverCachePath, packageListName);
 
 var _map = {};
 
 module.exports = {
     load: function(){
-        if(fs.existsSync(synclistPath)){
-            _map = fsExtra.readJsonSync(synclistPath);
+        if(fs.existsSync(packageListPath)){
+            _map = fsExtra.readJsonSync(packageListPath);
         }
     },
-    add: function(name){
-        if(!_map[name]){
-            console.log('[synclist] add', name);
-            _map[name] = 1;
-            this.save();
-        }
+    add: function(name, info){
+        console.log('[synclist] change', name, info);
+        _map[name] = info;
+        this.save();
     },
-    diff: function(list){
+    save: function(){
+        fsExtra.writeJsonSync(packageListPath, _map);
+    },
+    diffSync: function(list){
         var hit = {};
         _.forEach(list, function(el){
-            if(_map[el]){
+            if(_map[el] && _map[el].alwaysSync){
                 hit[el] = 2;
             }
         });
         return hit;
     },
-    save: function(){
-        fsExtra.writeJsonSync(synclistPath, _map);
+    checkPrivate: function(name){
+        return _map[name] && _map[name].isPrivate;
     }
 }

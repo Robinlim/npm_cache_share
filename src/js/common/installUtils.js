@@ -26,21 +26,24 @@ var utils = require('./utils'),
 var LIBNAME = constant.LIBNAME,
     UPLOADDIR = constant.UPLOADDIR,
     MODULECHECKER = constant.MODULECHECKER,
-    __cwd = process.cwd(),
     __cache = utils.getCachePath();
 
 module.exports = {
     /**
      * 分析依赖
+     * @param  {path}  base 执行安装的根路径
+     * @param  {Registry} registry  一个registry实例
      * @param  {Object} dependencies 模块依赖
      * @param  {Object} opts         指令参数
      * @param  {Function} callback   回调
      * @return {void}
      */
-    parse: function(dependencies, opts, callback) {
+    parse: function(base, registry, dependencies, opts, callback) {
         console.info('初始化环境');
-        //初始化参数
-        this.registry = Factory.instance(opts.type, opts);
+        // 根路径
+        this.base = base;
+        // 缓存注册中心实例
+        this.registry = registry;
         //构建安装参数
         this.opts = opts;
 
@@ -50,7 +53,7 @@ module.exports = {
         utils.ensureDirWriteablSync(path.resolve(__cache, LIBNAME));
         utils.ensureDirWriteablSync(path.resolve(__cache, UPLOADDIR));
         //确保工程目录node_modules存在并可写入
-        utils.ensureDirWriteablSync(path.resolve(__cwd, LIBNAME));
+        utils.ensureDirWriteablSync(path.resolve(base, LIBNAME));
 
         // 所需全部依赖 过滤到不恰当的依赖
         this.dependencies = npmUtils.filter(dependencies);
@@ -276,7 +279,7 @@ module.exports = {
         console.info('开始打包模块');
         //project module path
         var self = this,
-            pmp = path.resolve(__cwd, LIBNAME),
+            pmp = path.resolve(this.base, LIBNAME),
             cache = utils.lsDirectory(__cache),
             mn, tmp;
         //确保文件路径存在
@@ -299,7 +302,7 @@ module.exports = {
                 console.error('Cannot find packages:', mn);
                 process.exit(1);
             }
-        }, __cwd);
+        }, this.base);
     },
     /**
      * 同步远程服务
