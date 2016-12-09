@@ -13,8 +13,8 @@ var _ = require('lodash'),
     fsExtra = require('fs-extra');
 
 module.exports = {
-    npmShrinkwrapCheck: function(shrinkwrapJson){
-        var pkgPath = path.resolve(process.cwd(), 'package.json');
+    npmShrinkwrapCheck: function(base, shrinkwrapJson){
+        var pkgPath = path.resolve(base, 'package.json');
         if(fs.existsSync(pkgPath)){
             var pkgJson = fsExtra.readJsonSync(pkgPath),
                 miss = diff(pkgJson.dependencies, shrinkwrapJson.dependencies);

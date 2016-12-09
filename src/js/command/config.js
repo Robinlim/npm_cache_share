@@ -11,7 +11,12 @@ var fs = require('fs'),
     utils = require('../common/utils'),
     constant = require('../common/constant');
 
-/*@Command({"name": "config [action] [key] [value]", "alias":"f", "des":"Set config for npm cache", options:[]})*/
+/*@Command({
+    "name": "config [action] [key] [value]",
+    "alias":"f",
+    "des":"Set config for npm cache",
+    options:[]
+})*/
 module.exports = {
     run: function(action, key, value, opts) {
         this.configPath = utils.getConfigPath();
