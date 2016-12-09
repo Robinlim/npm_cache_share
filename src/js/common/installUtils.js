@@ -20,7 +20,6 @@ var path = require('path'),
 var utils = require('./utils'),
     npmUtils = require('./npmUtils'),
     shellUtils = require('./shellUtils'),
-    Factory = require('../annotation/Factory'),
     constant = require('./constant');
 
 var LIBNAME = constant.LIBNAME,
