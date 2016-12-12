@@ -308,6 +308,9 @@ module.exports = {
             }
             fsExtra.ensureDirSync(path.resolve(tmp, '..'));
             if(shellUtils.test('-d', path.resolve(__cache, mn))){
+                // 先删除原有的目录
+                shellUtils.rm('-rf', tmp);
+                console.debug('cp -rf', path.resolve(__cache, mn), tmp);
                 shellUtils.cp('-rf', path.resolve(__cache, mn), tmp);
             } else {
                 console.error('Cannot find packages:', mn);
@@ -345,7 +348,13 @@ module.exports = {
     checkServer: function(callback){
         var self = this,
             list = _.map(this.needFetch, 'full'),
-            checkSyncList = _.keys(this.localCache);
+            checkSyncList = [],
+            localCache = this.localCache;
+        _.forEach(this.dependenciesArr, function(el){
+            if(localCache[el.full]){
+                checkSyncList.push(el.full);
+            }
+        });
         self.registry.check(list, checkSyncList, function(avaliable, data) {
             if(!avaliable){
                 delete self.registry;

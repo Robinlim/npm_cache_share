@@ -116,14 +116,25 @@ nodeRegistry.prototype.put = function(dir, info, callback) {
             formData: _.extend(formData, {
                 modules: fs.createReadStream(tmpFile)
             })
-        }, function(err, res, body) {
-            if (err || res.statusCode !== 200) {
-                console.error('上传失败:', err || body);
-                callback();
-                return;
+        }, function(err, response, body) {
+            if (err) {
+                console.error('上传失败:', err);
+                callback(err);
+            } else {
+                var res, error;
+                try {
+                    res = JSON.parse(body);
+                } catch (e) {
+                    error = e;
+                }
+                if(error || res.status !== 0){
+                    console.error('上传发生错误：', error || res.message);
+                    callback(res.message);
+                } else {
+                    console.info('上传成功');
+                    callback();
+                }
             }
-            console.info('上传成功');
-            callback();
         });
     });
     fstream.Reader(dir).pipe(packer).pipe(river);

@@ -32,7 +32,8 @@ var __cwd = process.cwd(),
         ["-c, --type [type]", "server type, default is node", "node"],
         ["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],
         ["-t, --token [token]", "use the token to access the npm_cache_share server"],
-        ["-p, --dependOnEnv", "whether the package is depend on environment meaning whether this package itself need node-gyp compile"],
+        ["-p, --password [password]", "use the password to access certain package"],
+        ["-d, --dependOnEnv", "whether the package is depend on environment meaning whether this package itself need node-gyp compile"],
         ["-s, --cancelAlwaysSync", "mark this package to be NOT sync on each install action"]
     ]
 })*/
@@ -60,7 +61,8 @@ module.exports = {
             name: moduleName,
             alwaysSync: alwaysSync?'on':'off',
             isPrivate: 'on',
-            user: 'default'
+            user: 'default',
+            password: options.password || ''
         };
 
         var uploadDir = path.resolve(__cache, UPLOADDIR);
@@ -104,7 +106,7 @@ module.exports = {
      */
     exit: function(err){
         if(err){
-            console.error(err);
+            console.error('上传失败：',err);
             process.exit(1);
         } else {
             console.info('******************上传结束******************');

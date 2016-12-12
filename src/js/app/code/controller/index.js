@@ -77,11 +77,22 @@ module.exports = {
             console.info('接收到的附加信息', fields);
             // TODO: mutliparty的fields的每个字段都是数组，暂时先全取数组第一项
             if(fields && fields.name){
-                packageList.add(fields.name[0], {
-                    alwaysSync: fields.alwaysSync && (fields.alwaysSync[0] === 'on'),
-                    isPrivate: fields.isPrivate && (fields.isPrivate[0] === 'on'),
-                    user: fields.user[0]
-                });
+                var name = fields.name[0],
+                    password = fields.password[0];
+                if(packageList.auth(name, password)){
+                    packageList.add(name, {
+                        alwaysSync: fields.alwaysSync && (fields.alwaysSync[0] === 'on'),
+                        isPrivate: fields.isPrivate && (fields.isPrivate[0] === 'on'),
+                        user: fields.user[0],
+                        password: password
+                    });
+                } else {
+                    res.end({
+                        status: -2,
+                        message: '没有upload名为'+name+'的包的权限！请检查-p/--password配置!'
+                    });
+                    return;
+                }
             }
 
             if (files.modules.length != 0) {
@@ -119,6 +130,7 @@ module.exports = {
                 });
             }
             res.end({
+                status: 0,
                 message: 'success'
             });
         });
