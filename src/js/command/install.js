@@ -11,24 +11,45 @@ var _ = require('lodash'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
     path = require('path'),
-    constant = require('../common/constant');
+    constant = require('../common/constant'),
+    Factory = require('../annotation/Factory');
 
 var __cwd = process.cwd(),
     PACKAGE = 'package.json',
     npmPackagePath = path.resolve(__cwd, PACKAGE);
 
-var installUtils = require('../common/installUtils'),
+var utils = require('../common/utils'),
+    installUtils = require('../common/installUtils'),
     npmUtils = require('../common/npmUtils'),
     manifestUtils = require('../common/manifestUtils');
 
 /*@Flow*/
-/*@Command({"name": "install [module]", "alias":"i", "des":"Install the module", options:[["-c, --type [type]", "server type, default is node", "node"],["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],["-r, --registry [registry]", "specify the npm origin"],["-t, --token [token]", "use the token to access the npm_cache_share server"],["-a, --auth [auth]", "use auth to access the Nexus Server, like username:password format"],["-p, --production", "will not install modules listed in devDependencies"],["-n, --npm [npm]", "specify the npm path to execute", "npm"],["--noOptional", "will prevent optional dependencies from being installed"], ["--save","module will be added to the package.json as dependencies"], ["--save-dev", "module will be added to the package.json as devDependencies"]]})*/
+/*@Command({
+    "name": "install [module]",
+    "alias":"i",
+    "des":"Install the module",
+    options:[
+        ["-c, --type [type]", "server type, default is node", "node"],
+        ["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],
+        ["-r, --registry [registry]", "specify the npm origin"],
+        ["-t, --token [token]", "use the token to access the npm_cache_share server"],
+        ["-a, --auth [auth]", "use auth to access the Nexus Server, like username:password format"],
+        ["-p, --production", "will not install modules listed in devDependencies"],
+        ["-n, --npm [npm]", "specify the npm path to execute", "npm"],
+        ["-l, --lockfile [lockfile]", "specify the filename of lockfile,default npm-shrinkwrap.json"],
+        ["--noOptional", "will prevent optional dependencies from being installed"],
+        ["--save", "module will be added to the package.json as dependencies, default true"],
+        ["--nosave", "do not save package to package.json"],
+        ["--save-dev", "module will be added to the package.json as devDependencies"]
+    ]
+})*/
 module.exports = {
     run: function(module, options) {
         console.info('******************开始安装******************');
         this.startTime = new Date().getTime();
         this.moduleName = module;
         this.forceNpm = false;
+        this.registry = Factory.instance(options.type, options);
         this.opts = options;
         if(options.installTimeout){
             console.debug('安装超时时间：',options.installTimeout,'s');
@@ -48,40 +69,55 @@ module.exports = {
     preinstall: function(callback){
         //指定npm路径
         this.opts.npm && npmUtils.config(this.opts.npm);
-        if (this.moduleName) { // 指定了模块名称则安装特定模块
-            if (this.moduleName.indexOf('@') > -1) { // 包含版本号
-                var arr = this.moduleName.split('@'),
-                    name = arr[0],
-                    version = arr[1],
-                    dependencies = {};
-                dependencies[name] = {
-                    version: version
-                };
-                this.module = {
-                    name: name,
-                    version: version
-                };
-                callback(null, dependencies);
-            } else { // 不含版本号则通过npm获取最新版本号
-                var self = this;
-                npmUtils.getLastestVersion(this.moduleName, function(err, version){
-                    if (err) {
-                        callback(err);
+        var self = this;
+        if (self.moduleName) { // 指定了模块名称则安装特定模块
+            var name = utils.splitModuleName(self.moduleName),
+                version = utils.splitModuleVersion(self.moduleName),
+                dependencies = {};
+            self.registry.info(name, version, function(err, data){
+                console.debug('info', name, version, err, data);
+                if(!err && data.full){
+                    dependencies[name] = {
+                        version: data.version
+                    };
+                    self.module = {
+                        name: data.name,
+                        version: data.version,
+                        isPrivate: data.isPrivate,
+                        full: data.full,
+                        url: data.url
+                    };
+                    callback(null, dependencies);
+                } else {
+                    if(!version){
+                        npmUtils.getLastestVersion(self.moduleName, function(err, latestVersion){
+                            if (err) {
+                                callback(err);
+                            } else {
+                                dependencies[name] = {
+                                    version: latestVersion
+                                };
+                                self.module = {
+                                    name: name,
+                                    version: latestVersion
+                                };
+                                callback(null, dependencies);
+                            }
+                        });
                     } else {
-                        var dependencies = {};
-                        dependencies[self.moduleName] = {
+                        dependencies[name] = {
                             version: version
                         };
                         self.module = {
-                            name: self.moduleName,
+                            name: name,
                             version: version
                         };
                         callback(null, dependencies);
                     }
-                });
-            }
+                }
+            });
         } else { // 未指定模块名称则全部安装
-            manifestUtils.readManifest(__cwd, callback);
+            manifestUtils.readManifest(__cwd, this.opts.lockfile, callback);
         }
     },
     /**
@@ -92,23 +128,28 @@ module.exports = {
     install: function(rs, callback){
         var self = this,
             dependencies = rs.preinstall;
-        if (this.forceNpm || !dependencies) {
+        // 未取得依赖信息时强制采用npm安装
+        if(!dependencies){
+            this.forceNpm = true;
+        }
+        if (this.forceNpm) {
             npmUtils.npmInstall(this.opts, {}, callback);
         } else {
             // 安装指定模块以及其子依赖
             if(this.module){
-                installUtils.parse(dependencies, this.opts, function(err0, val){
+                installUtils.parse(__cwd, this.registry, dependencies, this.opts, function(err0, val){
                     if(err0){
                         callback(err0);
-                    } else if(val.installNum === 0) { //如果模块是从缓存加载的，则安装其子依赖
+                    } else {//if(val.installNum === 0) { //如果模块是从缓存加载的，则安装其子依赖
                         console.info('安装'+self.module.name+'的子依赖');
                         var childrenPath = path.resolve(__cwd, constant.LIBNAME, self.module.name);
-                        manifestUtils.readManifest(childrenPath, function(err1, children){
+                        console.debug('模块路径：',childrenPath)
+                        manifestUtils.readManifest(childrenPath, null, function(err1, children){
                             if(err1){
                                 callback(err1);
                             } else {
                                 if(children){
-                                    installUtils.parse(children, self.opts, callback);
+                                    installUtils.parse(childrenPath, this.registry, children, self.opts, callback);
                                 } else {
                                     // 子模块默认指定--prodcution
                                     var opts = _.extend({
@@ -123,34 +164,43 @@ module.exports = {
                     }
                 });
             } else {
-                installUtils.parse(dependencies, this.opts, callback);
+                installUtils.parse(__cwd, this.registry, dependencies, this.opts, callback);
             }
         }
     },
     /*@Step("install")*/
     postinstall: function(rs, callback){
         // 安装特定模块并指定了--save/--save-dev时写入package.json
-        if(this.module && (this.opts['save'] || this.opts['saveDev'])){
-            try {
-                var packageInfo = fsExtra.readJsonSync(npmPackagePath);
-            } catch (e) {
-                callback(e);
-                return;
+        if(this.module){
+            if(this.opts['save']){
+                console.info('我们默认会自动save，所以你无需追加--save字段，如果想取消自动的--save，请使用--nosave');
             }
-            var dependenceKey = this.opts['save'] ? 'dependencies' : 'devDependencies';
-            if(!packageInfo[dependenceKey]){
-                packageInfo[dependenceKey] = {};
+            if(!this.opts['nosave'] || this.opts['saveDev']){
+                try {
+                    var packageInfo = fsExtra.readJsonSync(npmPackagePath);
+                } catch (e) {
+                    callback(e);
+                    return;
+                }
+                var dependenceKey = this.opts['saveDev'] ? 'devDependencies' : 'dependencies';
+                if(!packageInfo[dependenceKey]){
+                    packageInfo[dependenceKey] = {};
+                }
+                packageInfo[dependenceKey][this.module.name] = this.module.isPrivate?
+                    this.module.url : this.module.version;
+                try {
+                    fsExtra.writeJson(npmPackagePath, packageInfo);
+                } catch (e) {
+                    callback(e);
+                    return;
+                }
+                // 安装特定模块后重新npm-shrinkwrap
+                npmUtils.npmShrinkwrap(callback);
+            } else {
+                console.warn('安装该模块未开启save，将不会更新package.json和npm-shrinkwrap.json!!!');
+                callback(null);
             }
-            packageInfo[dependenceKey][this.module.name] = this.module.version;
-            try {
-                fsExtra.writeJson(npmPackagePath, packageInfo);
-            } catch (e) {
-                callback(e);
-                return;
-            }
-        }
-        // 安装特定模块或者直接使用npm安装后重新npm-shrinkwrap
-        if(this.module || this.forceNpm){
+        } else if(this.forceNpm){ // 直接使用npm安装后重新npm-shrinkwrap
             npmUtils.npmShrinkwrap(callback);
         } else {
             callback(null);

@@ -18,34 +18,50 @@ var NPMSHRINKWRAP = 'npm-shrinkwrap.json',
     YARNLOCKFILE = 'yarn.lock';
 
 module.exports = {
-    readManifest: function(base, cbk){
+    readManifest: function(base, name, cbk){
         var npmShrinkwrapPath = path.resolve(base, NPMSHRINKWRAP),
             yarnLockfilePath = path.resolve(base, YARNLOCKFILE);
-        var shrinkwrapCheck = fs.existsSync(npmShrinkwrapPath),
-            yarnCheck = fs.existsSync(yarnLockfilePath);
-        if (yarnCheck) {
-            console.info('将读取yarn.lock获取依赖');
-            parseLockfile(yarnLockfilePath, cbk);
-        } else if (shrinkwrapCheck) {
-            console.info('将读取npm-shrinkwrap.json获取依赖');
-            var shrinkwrap;
-            try {
-                shrinkwrap = fsExtra.readJsonSync(npmShrinkwrapPath);
-                checkUtils.npmShrinkwrapCheck(shrinkwrap);
-            } catch (e) {
-                cbk(e);
-                return;
+        // 未指定依赖时尝试用npm-shrinkwrap.json或yarn.lock
+        if(!name){
+            if(fs.existsSync(npmShrinkwrapPath)){
+                parseNpmShrinkwrap(npmShrinkwrapPath, base, NPMSHRINKWRAP, cbk);
+            } else if(fs.existsSync(yarnLockfilePath)){
+                parseYarnLockfile(yarnLockfilePath, cbk);
+            } else {
+                console.warn('缺少npm-shrinkwrap.json并未指定其lockfile，此次安装将直接使用npm install');
+                cbk();
             }
-            cbk(null, shrinkwrap.dependencies);
         } else {
-            console.warn('缺少npm-shrinkwrap.json或yarn.lock文件，此次安装将直接使用npm install');
-            cbk();
+            var manifestPath = path.resolve(base, name);
+            if(!fs.existsSync(manifestPath)){
+                cbk('Cannot find path '+manifestPath+',check your --lockfile option!');
+            }
+            if(name === YARNLOCKFILE){
+                parseYarnLockfile(manifestPath, cbk);
+            } else {
+                //  所有非 yarn.lock  均采用shrinkwrap方式解析
+                parseNpmShrinkwrap(manifestPath, base, name, cbk);
+            }
         }
     }
 }
 
+function parseNpmShrinkwrap(filepath, dir, name, cbk){
+    console.info('将读取'+name+'获取依赖');
+    var shrinkwrap;
+    try {
+        shrinkwrap = fsExtra.readJsonSync(filepath);
+        checkUtils.npmShrinkwrapCheck(dir, shrinkwrap);
+    } catch (e) {
+        cbk(e);
+        return;
+    }
+    cbk(null, shrinkwrap.dependencies);
+}
 
-function parseLockfile(filepath, cbk){
+
+function parseYarnLockfile(filepath, cbk){
+    console.info('将读取'+YARNLOCKFILE+'获取依赖');
     var dependenceArr = [],
         one = null;
     var NAMEREG = /\"*(@*[^\@]*)\@/,

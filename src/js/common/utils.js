@@ -11,7 +11,8 @@ var path = require('path'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
     fstream = require('fstream'),
-    osHomedir = require('os-homedir');
+    osHomedir = require('os-homedir'),
+    semver = require('semver');
 
 
 var shellUtils = require('./shellUtils'),
@@ -165,8 +166,6 @@ var utils = module.exports = {
             if (file == constant.LIBNAME) return;
             if (shellUtils.test('-f', path.resolve(p, constant.MODULECHECKER, file))) {
                 dMap[file] = 1;
-            } else {
-                dMap[file] = 0;
             }
         });
         return dMap;
@@ -246,13 +245,28 @@ var utils = module.exports = {
         // five@0.0.1.tar => five
         // fibers@0.1.0@x64-Linux-v8 => fibers
         // @qnpm@@@Qredis@0.0.1 => @qnpm@@@Qredis
+        // @qnpm/Qredis@0.0.1 => @qnpm/Qredis
         var arr = name.split('@'), moduleName;
         if(arr[0] === ''){
-            moduleName = arr.slice(0,-1).join('@');
+            var index = (arr.length > 3) ? 5 : 2;
+            moduleName = arr.slice(0, index).join('@');
         } else {
             moduleName = arr[0];
         }
         return moduleName;
+    },
+    /**
+     * 切分出模块的版本信息
+     * @param  {string} name [description]
+     * @return {string}      [description]
+     */
+    splitModuleVersion: function(name){
+        var arr = name.split('@');
+        if(arr[0] === ''){
+            return (arr.length > 3) ? arr[5]:arr[2];
+        } else {
+            return arr[1];
+        }
     },
     /**
      * 生成包含环境信息的包名称
@@ -307,5 +321,23 @@ var utils = module.exports = {
             arrs.push(k);
         });
         return arrs;
+    },
+    /**
+     * 取出一个包名称列表中版本最新的
+     * @param  {array} versions 包名称数组
+     * @return {object}         最新版的包版本
+     */
+    getLastestVersion: function(versions){
+        var latest,
+            fullname,
+            splitModuleVersion = this.splitModuleVersion;
+        _.forEach(versions, function(el){
+            var version = splitModuleVersion(el);
+            if(!latest || semver.gt(version, latest)){
+                latest = version;
+                fullname = el;
+            }
+        });
+        return latest;
     }
 };

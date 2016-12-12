@@ -20,27 +20,29 @@ var path = require('path'),
 var utils = require('./utils'),
     npmUtils = require('./npmUtils'),
     shellUtils = require('./shellUtils'),
-    Factory = require('../annotation/Factory'),
     constant = require('./constant');
 
 var LIBNAME = constant.LIBNAME,
     UPLOADDIR = constant.UPLOADDIR,
     MODULECHECKER = constant.MODULECHECKER,
-    __cwd = process.cwd(),
     __cache = utils.getCachePath();
 
 module.exports = {
     /**
      * 分析依赖
+     * @param  {path}  base 执行安装的根路径
+     * @param  {Registry} registry  一个registry实例
      * @param  {Object} dependencies 模块依赖
      * @param  {Object} opts         指令参数
      * @param  {Function} callback   回调
      * @return {void}
      */
-    parse: function(dependencies, opts, callback) {
+    parse: function(base, registry, dependencies, opts, callback) {
         console.info('初始化环境');
-        //初始化参数
-        this.registry = Factory.instance(opts.type, opts);
+        // 根路径
+        this.base = base;
+        // 缓存注册中心实例
+        this.registry = registry;
         //构建安装参数
         this.opts = opts;
 
@@ -49,8 +51,10 @@ module.exports = {
         utils.ensureDirWriteablSync(path.resolve(__cache, MODULECHECKER));
         utils.ensureDirWriteablSync(path.resolve(__cache, LIBNAME));
         utils.ensureDirWriteablSync(path.resolve(__cache, UPLOADDIR));
+        // 清空uploadDir
+        fsExtra.emptyDirSync(path.resolve(__cache, UPLOADDIR));
         //确保工程目录node_modules存在并可写入
-        utils.ensureDirWriteablSync(path.resolve(__cwd, LIBNAME));
+        utils.ensureDirWriteablSync(path.resolve(base, LIBNAME));
 
         // 所需全部依赖 过滤到不恰当的依赖
         this.dependencies = npmUtils.filter(dependencies);
@@ -85,7 +89,7 @@ module.exports = {
         //判断公共缓存是否存在
         if (this.registry && this.registry.check) {
             // 公共缓存拥有的模块
-            this.serverCache = this.checkServer(this.needFetch).await();
+            this.serverCache = this.checkServer().await();
             console.debug('将从中央缓存拉取的包：', this.serverCache);
             this.needInstall = this.compareServer(this.needFetch);
             console.debug('需要初次安装的包：', this.needInstall);
@@ -129,17 +133,27 @@ module.exports = {
         } else {
             console.info('从公共缓存下载模块');
         }
-        asyncMap(utils.toArrayByKey(this.serverCache), _.bind(function(packageName, cb){
-            console.debug('下载模块', packageName);
-            this.registry.get(packageName, __cache, function(err){
-                if(err){
-                    cb(err);
-                } else {
-                    fs.writeFileSync(path.resolve(__cache, MODULECHECKER, packageName), '');
-                    cb();
+        asyncMap(
+            _.map(this.serverCache, function(v,k){
+                return k;
+            }),
+            _.bind(function(packageName, cb){
+                console.debug('下载模块', packageName);
+                if(this.serverCache[packageName] == constant.ALWAYS_SYNC_FLAG){
+                    // 每次都同步的模块在下载前会先清空本地
+                    fsExtra.emptyDirSync(path.resolve(__cache, packageName));
                 }
-            });
-        }, this), callback);
+                this.registry.get(packageName, __cache, function(err){
+                    if(err){
+                        cb(err);
+                    } else {
+                        fs.writeFileSync(path.resolve(__cache, MODULECHECKER, packageName), '');
+                        cb();
+                    }
+                });
+            }, this),
+            callback
+        );
     },
     /**
      * 安装缺失模块
@@ -276,7 +290,7 @@ module.exports = {
         console.info('开始打包模块');
         //project module path
         var self = this,
-            pmp = path.resolve(__cwd, LIBNAME),
+            pmp = path.resolve(this.base, LIBNAME),
             cache = utils.lsDirectory(__cache),
             mn, tmp;
         //确保文件路径存在
@@ -294,12 +308,15 @@ module.exports = {
             }
             fsExtra.ensureDirSync(path.resolve(tmp, '..'));
             if(shellUtils.test('-d', path.resolve(__cache, mn))){
+                // 先删除原有的目录
+                shellUtils.rm('-rf', tmp);
+                console.debug('cp -rf', path.resolve(__cache, mn), tmp);
                 shellUtils.cp('-rf', path.resolve(__cache, mn), tmp);
             } else {
                 console.error('Cannot find packages:', mn);
                 process.exit(1);
             }
-        }, __cwd);
+        }, this.base);
     },
     /**
      * 同步远程服务
@@ -316,7 +333,7 @@ module.exports = {
         var uploadDir = path.resolve(__cache, UPLOADDIR);
         if (shellUtils.test('-d', uploadDir)  && shellUtils.ls(uploadDir).length > 0){
             console.info('上传模块到公共缓存');
-            this.registry.put(uploadDir, callback);
+            this.registry.put(uploadDir, false, callback);
         } else {
             console.info('没有需要上传的模块');
             callback();
@@ -324,15 +341,21 @@ module.exports = {
     },
     /**
      * 判断并读取公共缓存持有的本地所需依赖
-     * @param  {JSON}   dependencies 模块依赖
      * @param  {Function} callback     回调
      * @return {void}                [description]
      */
     /*@AsyncWrap*/
-    checkServer: function(dependencies, callback){
+    checkServer: function(callback){
         var self = this,
-            list = _.map(dependencies, 'full');
-        self.registry.check(list, function(avaliable, data) {
+            list = _.map(this.needFetch, 'full'),
+            checkSyncList = [],
+            localCache = this.localCache;
+        _.forEach(this.dependenciesArr, function(el){
+            if(localCache[el.full]){
+                checkSyncList.push(el.full);
+            }
+        });
+        self.registry.check(list, checkSyncList, function(avaliable, data) {
             if(!avaliable){
                 delete self.registry;
                 callback(null, {});

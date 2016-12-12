@@ -1,12 +1,12 @@
 {
   "name": "npm_cache_share",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "npm cache by npm-shrinkwrap.json",
   "license": "MIT",
   "main": "index.js",
   "bin": {
-      "npm_cache_share": "./bin/client",
-      "ncs": "./bin/client"
+    "npm_cache_share": "./bin/client",
+    "ncs": "./bin/client"
   },
   "repository": {
     "type": "git",
@@ -26,6 +26,7 @@
     "node"
   ],
   "dependencies": {
+    "ansi-styles": "^2.2.1",
     "async": "^2.0.1",
     "body-parser": "~1.15.2",
     "commander": "^2.9.0",
@@ -36,10 +37,11 @@
     "express": "~4.13.3",
     "fs-extra": "^0.30.0",
     "fstream": "^1.0.10",
+    "fstream-ignore": "^1.0.5",
     "json-parse-helpfulerror": "^1.0.3",
     "lodash": "^4.14.2",
     "multiparty": "^4.1.2",
-    "node-annotation": "^0.0.*",
+    "node-annotation": ">=0.0.9",
     "node-annotation-extend": "^0.0.*",
     "os-homedir": "^1.0.2",
     "read-package-json": "^2.0.4",

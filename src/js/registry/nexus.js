@@ -1,9 +1,5 @@
 /**
- * @Author: wyw.wang <wyw>
- * @Date:   2016-09-09 16:09
- * @Email:  wyw.wang@qunar.com
-* @Last modified by:   robin
-* @Last modified time: 2016-09-19 11:10:28
+ * nexus 类型的registry在新版功能中不兼容，已弃用！！！
  */
 
 var path = require('path'),
@@ -14,7 +10,7 @@ var path = require('path'),
     request = require('request'),
     tar = require('tar'),
     _ = require('lodash');
-/*@Factory("nexus")*/
+
 function nexusRegistry(config) {
     this.repository = path.resolve(config.server, config.repository);
     var auth = config.auth && config.auth.split(':');

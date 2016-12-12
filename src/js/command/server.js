@@ -18,7 +18,20 @@ var constant = require('../common/constant'),
     app = path.join(__dirname, '../app'),
     pm2OpsMap = constant.PM2OPS;
 
-/*@Command({"name": "server [command] [name]", "alias":"s", "des":"Start a server to store the npm module cache", options:[["-s, --storage [storage]", "specify the type of storage, could be localfile or swift"],["-c, --storageConfig [storageConfig]", "specify the config of storage, serveral arguments joined with '|'"],["-p, --port [port]", "specify the port of the service, default is 8888"],["-f, --useFork", "start with fork"],["-t, --token [token]", "control the auth to access the server"],["-i, --i [i]", "thread count only for pm2"],["-n --name [name]", "app name only for pm2"]]})*/
+/*@Command({
+    "name": "server [command] [name]",
+    "alias":"s",
+    "des":"Start a server to store the npm module cache",
+    options:[
+        ["-s, --storage [storage]", "specify the type of storage, could be localfile or swift"],
+        ["-c, --storageConfig [storageConfig]", "specify the config of storage, serveral arguments joined with '|'"],
+        ["-p, --port [port]", "specify the port of the service, default is 8888"],
+        ["-f, --useFork", "start with fork"],
+        ["-t, --token [token]", "control the auth to access the server"],
+        ["-i, --i [i]", "thread count only for pm2"],
+        ["-n --name [name]", "app name only for pm2"]
+    ]
+})*/
 module.exports = {
     run: function(command, name, opts) {
         var pm2 = shellUtils.which('pm2'),
