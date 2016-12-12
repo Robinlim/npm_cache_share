@@ -245,9 +245,11 @@ var utils = module.exports = {
         // five@0.0.1.tar => five
         // fibers@0.1.0@x64-Linux-v8 => fibers
         // @qnpm@@@Qredis@0.0.1 => @qnpm@@@Qredis
+        // @qnpm/Qredis@0.0.1 => @qnpm/Qredis
         var arr = name.split('@'), moduleName;
         if(arr[0] === ''){
-            moduleName = arr.slice(0,5).join('@');
+            var index = (arr.length > 3) ? 5 : 2;
+            moduleName = arr.slice(0, index).join('@');
         } else {
             moduleName = arr[0];
         }
@@ -260,7 +262,11 @@ var utils = module.exports = {
      */
     splitModuleVersion: function(name){
         var arr = name.split('@');
-        return (arr[0]==='')?arr[5]:arr[1];
+        if(arr[0] === ''){
+            return (arr.length > 3) ? arr[5]:arr[2];
+        } else {
+            return arr[1];
+        }
     },
     /**
      * 生成包含环境信息的包名称
