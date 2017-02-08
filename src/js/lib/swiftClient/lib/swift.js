@@ -5,9 +5,10 @@
 * @Last modified by:   wyw
 * @Last modified time: 2016-10-13 19:22
 *
-* fix of npm module "swift" with two change, the code is from https://www.npmjs.com/package/swift
-* 1. replace https with https,
+* fix of npm module "swift" with several change, the code is from https://www.npmjs.com/package/swift
+* 1. replace https with http.
 * 2. change swift interface version from "v1.0" to "v1" for it not being recognized.
+* 3. add file stream support.
 */
 
 

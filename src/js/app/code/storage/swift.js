@@ -8,7 +8,7 @@
 
 var _ = require('lodash'),
     cache = require('./cache'),
-    Swift = require('./swiftClient');
+    Swift = require('../../../lib/swiftClient');
 
 /*@Factory("swift")*/
 function swift(config){

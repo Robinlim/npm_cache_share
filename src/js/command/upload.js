@@ -1,104 +1,90 @@
 /**
 * @Author: wyw.wang <wyw>
-* @Date:   2016-12-07 10:12
+* @Date:   2017-02-08 16:17
 * @Email:  wyw.wang@qunar.com
 * @Last modified by:   wyw
-* @Last modified time: 2016-12-07 10:13
+* @Last modified time: 2017-02-08 16:19
 */
 
-
-
 var fs = require('fs'),
-    path = require('path'),
-    fsExtra = require('fs-extra'),
+    Path = require('path'),
+    stream = require('stream'),
     fstream = require('fstream'),
-    fignore = require("fstream-ignore"),
-    Factory = require('../annotation/Factory'),
-    utils = require('../common/utils'),
-    shellUtils = require('../common/shellUtils'),
-    constant = require('../common/constant');
+    tar = require('tar'),
+    Swift = require('../lib/swiftClient');
 
-var __cwd = process.cwd(),
-    __cache = utils.getCachePath(),
-    LIBNAME = constant.LIBNAME,
-    UPLOADDIR = constant.UPLOADDIR,
-    PACKAGE = 'package.json',
-    npmPackagePath = path.resolve(__cwd, PACKAGE);
+var __cwd = process.cwd();
 /*@Command({
-    "name": "upload",
+    "name": "upload [path] [name]",
     "alias":"u",
-    "des":"Upload a dir as a package to center cache server",
+    "des":"Upload a static source to repository",
     options:[
-        ["-c, --type [type]", "server type, default is node", "node"],
-        ["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],
-        ["-t, --token [token]", "use the token to access the npm_cache_share server"],
-        ["-p, --password [password]", "use the password to access certain package"],
-        ["-d, --dependOnEnv", "whether the package is depend on environment meaning whether this package itself need node-gyp compile"],
-        ["-s, --cancelAlwaysSync", "mark this package to be NOT sync on each install action"]
+        ["-h, --host [host]", "host of swift"],
+        ["-u, --user [user]", "user of swift"],
+        ["-w, --pass [pass]", "pass of swift"],
+        ["-c, --container [container]", "container in swift"]
     ]
 })*/
 module.exports = {
-    run: function(options){
-        console.info('******************开始上传******************');
+    run: function(path, name, options){
         var exit = this.exit;
-        try {
-            var packageInfo = fsExtra.readJsonSync(npmPackagePath);
-        } catch (e) {
-            exit(e);
-            return;
-        }
-        var moduleName = packageInfo.name,
-            moduleVersion = packageInfo.version,
-            packageName = utils.getModuleName(moduleName, moduleVersion),
-            packageNameWithEnv = utils.getModuleNameForPlatform(moduleName, moduleVersion),
-            realName = options.dependOnEnv?packageNameWithEnv:packageName;
-        console.info('即将上传的包名称：', realName);
-        var alwaysSync = !options.cancelAlwaysSync;
-        console.info('该包在本地安装时'+(alwaysSync?'':'不')+'会每次从中央缓存同步最新代码状态。');
-
-        // info value in form-data must be a string or buffer
-        var info = {
-            name: moduleName,
-            alwaysSync: alwaysSync?'on':'off',
-            isPrivate: 'on',
-            user: 'default',
-            password: options.password || ''
-        };
-
-        var uploadDir = path.resolve(__cache, UPLOADDIR);
-        utils.ensureDirWriteablSync(uploadDir);
-        var tempDir = path.resolve(uploadDir, realName);
-        console.debug('temp upload path：', tempDir);
-        fsExtra.emptyDirSync(tempDir);
-        var source = fignore({
-            path: __cwd,
-            ignoreFiles: [".ignore", ".gitignore"]
-        })
-        .on('child', function (c) {
-            console.debug('walking:',c.path.substr(c.root.path.length + 1))
-        })
-        .on('error', exit);
-        var target = fstream.Writer(tempDir)
-        .on('error', exit)
-        .on('close', function(){
-            console.info('开始上传模块');
-            var registry = Factory.instance(options.type, options);
-            registry.check([packageName], [], function(avaliable, data){
-                if(avaliable){
-                    if(data && data[realName]){
-                        console.info('中央缓存已存在', realName, '本次上传将覆盖之前的包！');
-                    }
-                    registry.put(uploadDir, info, function(err){
-                        console.info('删除临时目录');
-                        shellUtils.rm('-rf', uploadDir);
-                        exit(err);
-                    });
-                } else {
-                    console.error('中央缓存服务不可用，无法上传！');
-                }
+        var params = this.validate(path, name, options);
+        var river = new stream.PassThrough(),
+            packer = tar.Pack({
+                noProprietary: true
+            }).on('error', function(err) {
+                console.error(name + ' pack is wrong ', err.stack);
+                exit(err);
+            }).on('end', function() {
+                console.debug(name + ' pack done!');
             });
+        var swift = new Swift({
+            host: params.host,
+            user: params.user,
+            pass: params.pass
+        }, function(err, res){
+            if(err) {
+                exit(err);
+            } else {
+                fstream.Reader(params.path).pipe(packer).pipe(river);
+                swift.createObjectWithStream(params.container, params.name, river, exit);
+            }
         });
-        source.pipe(target);
+    },
+    /**
+     * 检验参数合法性
+     * @param  {object} options [description]
+     * @return {object}
+     */
+    validate: function(path, name, options){
+        var params = {};
+        params.name = name;
+        params.path = path;
+        var swiftConfig = options.swiftConfig.split('|');
+        params.host = options.host || swiftConfig[0];
+        params.user = options.user || swiftConfig[1];
+        params.pass = options.pass || swiftConfig[2];
+        params.container = options.container || options.swiftContainer;
+        for(var i in params){
+            if(!params[i]){
+                this.exit(new Error('缺少参数：'+i));
+            }
+        }
+        params.path = this.check(params.path);
+        console.info('即将上传路径'+params.path+'到'+params.container+'的'+params.name);
+        return params;
+    },
+    /**
+     * 校验路径合法性，返回全路径
+     * @param  {string} filepath [description]
+     * @return {string}          [description]
+     */
+    check: function(filepath){
+        try {
+            return fs.realpathSync(filepath);
+        } catch (e) {
+            this.exit(e);
+        }
     },
     /**
      * 退出
@@ -106,10 +92,10 @@ module.exports = {
      */
     exit: function(err){
         if(err){
-            console.error('上传失败：',err);
+            console.error('上传失败：', err.stack || err);
             process.exit(1);
         } else {
-            console.info('******************上传结束******************');
+            console.info('上传成功！');
             process.exit(0);
         }
     }
