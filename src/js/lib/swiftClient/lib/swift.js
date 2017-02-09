@@ -332,6 +332,19 @@ Swift.prototype.createObject = Swift.prototype.updateObject = function(container
 };
 
 // added by wyw.wang
+Swift.prototype.getObjectWithStream = function(container, object){
+    var options = {
+      url: ['http://',this.options.host,':',this.options.port,'/',VERSION,'/',this.account,'/',container,'/',object].join(''),
+      headers: {
+          'X-Auth-Token': this.token
+          //, 'Content-Type': req.headers['content-type']
+          //, 'ETag': crypto.createHash('md5').update(container + '/' + object).digest('hex')
+          //, 'X-Object-Meta-PIN': 1234
+      }
+    };
+    return requestExtra(options);
+};
+
 Swift.prototype.createObjectWithStream = function(container, object, stream, callback) {
   var options = {
     url: ['http://',this.options.host,':',this.options.port,'/',VERSION,'/',this.account,'/',container,'/',object].join(''),
