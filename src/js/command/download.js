@@ -15,9 +15,9 @@ var fs = require('fs'),
 
 var __cwd = process.cwd();
 /*@Command({
-    "name": "upload [path] [name]",
-    "alias":"u",
-    "des":"Upload a static source to repository",
+    "name": "download [name] [path]",
+    "alias":"d",
+    "des":"Download a static source to repository",
     options:[
         ["-h, --host [host]", "host of swift"],
         ["-u, --user [user]", "user of swift"],
@@ -26,17 +26,18 @@ var __cwd = process.cwd();
     ]
 })*/
 module.exports = {
-    run: function(path, name, options){
+    run: function(name, path, options){
         var exit = this.exit;
         var params = this.validate(path, name, options);
         var river = new stream.PassThrough(),
-            packer = tar.Pack({
-                noProprietary: true
+            extractor = tar.Extract({
+                path: params.path
             }).on('error', function(err) {
-                console.error(name + ' pack is wrong ', err.stack);
+                console.error(name + ' extract is wrong ', err.stack);
                 exit(err);
             }).on('end', function() {
-                console.debug(name + ' pack done!');
+                console.debug(name + ' extract done!');
+                exit();
             });
         var swift = new Swift({
             host: params.host,
@@ -46,8 +47,20 @@ module.exports = {
             if(err) {
                 exit(err);
             } else {
-                fstream.Reader(params.path).pipe(packer).pipe(river);
-                swift.createObjectWithStream(params.container, params.name, river, exit);
+                swift.getObjectWithStream(params.container, params.name)
+                    .on('error', function(err){
+                        console.error(name + ' download is wrong ', err.stack);
+                        exit(err);
+                    })
+                    .on('response', function(response){
+                        if(response.statusCode !== 200){
+                            exit(new Error('Get source from swift return statusCode:'+response.statusCode));
+                        }
+                    })
+                    .on('end', function(){
+                        console.debug(name + ' download done!');
+                    })
+                    .pipe(extractor);
             }
         });
     },
@@ -70,21 +83,8 @@ module.exports = {
                 this.exit(new Error('缺少参数：'+i));
             }
         }
-        params.path = this.check(params.path);
-        console.info('即将上传路径'+params.path+'到'+params.container+'的'+params.name);
+        console.info('即将从容器'+params.container+'下载包'+params.name+'到'+params.path);
         return params;
-    },
-    /**
-     * 校验路径合法性，返回全路径
-     * @param  {string} filepath [description]
-     * @return {string}          [description]
-     */
-    check: function(filepath){
-        try {
-            return fs.realpathSync(filepath);
-        } catch (e) {
-            this.exit(e);
-        }
     },
     /**
      * 退出
@@ -92,10 +92,10 @@ module.exports = {
      */
     exit: function(err){
         if(err){
-            console.error('上传失败：', err.stack || err);
+            console.error('下载失败：', err.stack || err);
             process.exit(1);
         } else {
-            console.info('上传成功！');
+            console.info('下载成功！');
             process.exit(0);
         }
     }

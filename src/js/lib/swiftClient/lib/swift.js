@@ -5,9 +5,10 @@
 * @Last modified by:   wyw
 * @Last modified time: 2016-10-13 19:22
 *
-* fix of npm module "swift" with two change, the code is from https://www.npmjs.com/package/swift
-* 1. replace https with https,
+* fix of npm module "swift" with several change, the code is from https://www.npmjs.com/package/swift
+* 1. replace https with http.
 * 2. change swift interface version from "v1.0" to "v1" for it not being recognized.
+* 3. add file stream support.
 */
 
 
@@ -331,6 +332,19 @@ Swift.prototype.createObject = Swift.prototype.updateObject = function(container
 };
 
 // added by wyw.wang
+Swift.prototype.getObjectWithStream = function(container, object){
+    var options = {
+      url: ['http://',this.options.host,':',this.options.port,'/',VERSION,'/',this.account,'/',container,'/',object].join(''),
+      headers: {
+          'X-Auth-Token': this.token
+          //, 'Content-Type': req.headers['content-type']
+          //, 'ETag': crypto.createHash('md5').update(container + '/' + object).digest('hex')
+          //, 'X-Object-Meta-PIN': 1234
+      }
+    };
+    return requestExtra(options);
+};
+
 Swift.prototype.createObjectWithStream = function(container, object, stream, callback) {
   var options = {
     url: ['http://',this.options.host,':',this.options.port,'/',VERSION,'/',this.account,'/',container,'/',object].join(''),
