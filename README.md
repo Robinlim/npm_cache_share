@@ -14,6 +14,9 @@ Commands:
     install     进行依赖安装，会依赖npm-shrinkwrap.json文件来安装模块（如果不存在则直接通过npm install）
     clean       清除缓存，需要指定是客户端，还是服务端，默认是清除客户端缓存目录
     config		配置选项默认值，可set，get，list大部分option，也可以通过~/.npm_cache_share_config.json手动修改这些配置
+    publish     发布一个包到中央缓存
+    upload      上传一个静态资源到swift仓库
+    download    从swift仓库下载一个静态资源
     help        帮助说明
 
 Options:
@@ -41,5 +44,19 @@ Options:
 
   of 'clean'
      -s,--forServer   指定当前运行环境是在公共缓存服务上，使用如 npm_cache_share clean --forServer
+
+  of 'publish'
+     -c,--type			指定公共缓存服务类型，目前有node（默认）与nexus（功能有限）
+     -e,--repository     指定公共缓存服务仓库，由HOST:PORT/NAME构成
+     -t,--token			仅type=node，指定公共服务上传所需要校验的token
+     -p,--password      每个包上传时可以设置一个密码，覆盖该包时必须使用该密码
+     -d, --dependOnEnv  标明该包是否依赖环境（node-gyp）
+     -s, --cancelAlwaysSync 默认上传的包每次都会跳过本地缓存而使用中央缓存，设置该项将允许包使用本地缓存
+
+   of 'upload','download'
+     -h, --host         swift仓库的地址
+     -u, --user         swift仓库的账户        
+     -w, --pass         swift仓库的密码
+     -c, --container    需要上传／下载的目标容器
 
 ```
