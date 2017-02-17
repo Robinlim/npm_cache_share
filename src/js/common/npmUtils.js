@@ -83,8 +83,9 @@ module.exports = {
      * @return {void}          [description]
      */
     npmPublish: function(registry, cbk){
-        var optstr = registry ? "": " --registry " + registry,
+        var optstr = registry ? (" --registry " + registry):"",
             cmd = "npm publish" + optstr;
+        console.debug(cmd);
         shellUtils.exec(cmd, function(code, stdout, stderr){
             if(code!==0){
                 cbk(stderr);
