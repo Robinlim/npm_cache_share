@@ -76,6 +76,24 @@ module.exports = {
             }
         });
     },
+    /**
+     * 发布一个包到npm
+     * @param  {url} registry
+     * @param  {function} cbk    回调
+     * @return {void}          [description]
+     */
+    npmPublish: function(registry, cbk){
+        var optstr = registry ? (" --registry " + registry):"",
+            cmd = "npm publish" + optstr;
+        console.debug(cmd);
+        shellUtils.exec(cmd, function(code, stdout, stderr){
+            if(code!==0){
+                cbk(stderr);
+            }else{
+                cbk(null);
+            }
+        });
+    },
     npmInstallWithoutSave: function(moduleNames, npmopts, opts){
         if(moduleNames.length === 0){
             return;

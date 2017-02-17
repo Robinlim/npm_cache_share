@@ -15,6 +15,7 @@ var fs = require('fs'),
     fignore = require("fstream-ignore"),
     Factory = require('../annotation/Factory'),
     utils = require('../common/utils'),
+    npmUtils = require('../common/npmUtils'),
     shellUtils = require('../common/shellUtils'),
     constant = require('../common/constant');
 
@@ -29,17 +30,37 @@ var __cwd = process.cwd(),
     "alias":"p",
     "des":"Publish a dir as a package to center cache server",
     options:[
-        ["-c, --type [type]", "server type, default is node", "node"],
+        ["-c, --type [type]", "server type node/npm, default is node", "node"],
+
         ["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],
         ["-t, --token [token]", "use the token to access the npm_cache_share server"],
         ["-p, --password [password]", "use the password to access certain package"],
         ["-d, --dependOnEnv", "whether the package is depend on environment meaning whether this package itself need node-gyp compile"],
-        ["-s, --cancelAlwaysSync", "mark this package to be NOT sync on each install action"]
+        ["-s, --cancelAlwaysSync", "mark this package to be NOT sync on each install action"],
+
+        ["-r, --registry [registry]", "specify the npm registry"]
     ]
 })*/
 module.exports = {
     run: function(options){
         console.info('******************开始发布******************');
+        var type = options.type;
+        if(type === 'node'){
+            console.info('将发布到中央缓存');
+            this.toNode(options);
+        } else if (type === 'npm'){
+            console.info('将发布到npm');
+            this.toNpm(options);
+        } else {
+            this.exit(new Error('不支持的发布类型：'+type+',请指定--type为node或npm'));
+        }
+    },
+    /**
+     * 发布到node中央缓存
+     * @param  {object} options 输入参数
+     * @return {[type]}         [description]
+     */
+    toNode: function(options){
         var exit = this.exit;
         try {
             var packageInfo = fsExtra.readJsonSync(npmPackagePath);
@@ -99,6 +120,15 @@ module.exports = {
             });
         });
         source.pipe(target);
+    },
+    /**
+     * 发布到npm
+     * @param  {object} options 输入参数
+     * @return {[type]}         [description]
+     */
+    toNpm: function(options){
+        var registry = options.registry;
+        npmUtils.npmPublish(registry, this.exit);
     },
     /**
      * 退出
