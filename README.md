@@ -34,7 +34,6 @@ Options:
     -n,--name			适用于pm2启动服务，指定服务名称
 
   of 'install'
-  	-c,--type			指定公共缓存服务类型，目前有node（默认）与nexus（功能有限）
   	-e,--repository     指定公共缓存服务仓库，由HOST:PORT/NAME构成
     -r,--registry    	指定安装的源, 使用如 npm_cache_share install --registry 源
     -t,--token			仅type=node，指定公共服务上传所需要校验的token
@@ -46,7 +45,7 @@ Options:
      -s,--forServer   指定当前运行环境是在公共缓存服务上，使用如 npm_cache_share clean --forServer
 
   of 'publish'
-     -c,--type			指定公共缓存服务类型，目前有node（默认）与nexus（功能有限）
+     -c,--type			指定公共缓存服务类型，目前有node（默认）与npm（需要提前npm login）
      -e,--repository     指定公共缓存服务仓库，由HOST:PORT/NAME构成
      -t,--token			仅type=node，指定公共服务上传所需要校验的token
      -p,--password      每个包上传时可以设置一个密码，覆盖该包时必须使用该密码
