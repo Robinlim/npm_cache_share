@@ -52,7 +52,7 @@ module.exports = {
             console.info('将发布到npm');
             this.toNpm(options);
         } else {
-            this.exit(new Error('不支持的发布类型：'+type+',请制定--type为node或npm'));
+            this.exit(new Error('不支持的发布类型：'+type+',请指定--type为node或npm'));
         }
     },
     /**
