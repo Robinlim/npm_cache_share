@@ -7,11 +7,8 @@
 */
 
 var fs = require('fs'),
-    Path = require('path'),
-    stream = require('stream'),
-    fstream = require('fstream'),
-    tar = require('tar'),
-    Swift = require('../lib/swiftClient');
+    swiftUtils = require('../common/swiftUtils');
+
 
 var __cwd = process.cwd();
 /*@Command({
@@ -27,29 +24,8 @@ var __cwd = process.cwd();
 })*/
 module.exports = {
     run: function(path, name, options){
-        var exit = this.exit;
         var params = this.validate(path, name, options);
-        var river = new stream.PassThrough(),
-            packer = tar.Pack({
-                noProprietary: true
-            }).on('error', function(err) {
-                console.error(name + ' pack is wrong ', err.stack);
-                exit(err);
-            }).on('end', function() {
-                console.debug(name + ' pack done!');
-            });
-        var swift = new Swift({
-            host: params.host,
-            user: params.user,
-            pass: params.pass
-        }, function(err, res){
-            if(err) {
-                exit(err);
-            } else {
-                fstream.Reader(params.path).pipe(packer).pipe(river);
-                swift.createObjectWithStream(params.container, params.name, river, exit);
-            }
-        });
+        swiftUtils.upload(params, this.exit);
     },
     /**
      * 检验参数合法性

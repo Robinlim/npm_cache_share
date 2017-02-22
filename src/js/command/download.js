@@ -6,12 +6,7 @@
 * @Last modified time: 2017-02-08 16:19
 */
 
-var fs = require('fs'),
-    Path = require('path'),
-    stream = require('stream'),
-    fstream = require('fstream'),
-    tar = require('tar'),
-    Swift = require('../lib/swiftClient');
+var swiftUtils = require('../common/swiftUtils');
 
 var __cwd = process.cwd();
 /*@Command({
@@ -27,42 +22,8 @@ var __cwd = process.cwd();
 })*/
 module.exports = {
     run: function(name, path, options){
-        var exit = this.exit;
         var params = this.validate(path, name, options);
-        var river = new stream.PassThrough(),
-            extractor = tar.Extract({
-                path: params.path
-            }).on('error', function(err) {
-                console.error(name + ' extract is wrong ', err.stack);
-                exit(err);
-            }).on('end', function() {
-                console.debug(name + ' extract done!');
-                exit();
-            });
-        var swift = new Swift({
-            host: params.host,
-            user: params.user,
-            pass: params.pass
-        }, function(err, res){
-            if(err) {
-                exit(err);
-            } else {
-                swift.getObjectWithStream(params.container, params.name)
-                    .on('error', function(err){
-                        console.error(name + ' download is wrong ', err.stack);
-                        exit(err);
-                    })
-                    .on('response', function(response){
-                        if(response.statusCode !== 200){
-                            exit(new Error('Get source from swift return statusCode:'+response.statusCode));
-                        }
-                    })
-                    .on('end', function(){
-                        console.debug(name + ' download done!');
-                    })
-                    .pipe(extractor);
-            }
-        });
+        swiftUtils.download(params, this.exit);
     },
     /**
      * 检验参数合法性
