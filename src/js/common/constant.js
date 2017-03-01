@@ -41,7 +41,18 @@ module.exports = {
         'name',
         'storage',
         'storageConfig',
-        'installTimeout'
+        'installTimeout',
+        'host',
+        'user',
+        'pass',
+        'container',
+        'swiftContainer',
+        'swiftConfig'
     ],
-    ALWAYS_SYNC_FLAG: 2
+    ALWAYS_SYNC_FLAG: 2,
+    F2B: {
+        CONFIG_FILE: 'package.json',
+        CONFIG_KEY: 'f2b',
+        SPLIT: '_'
+    }
 }

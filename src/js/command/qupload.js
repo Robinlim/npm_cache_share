@@ -2,16 +2,15 @@
 * @Author: wyw.wang <wyw>
 * @Date:   2017-02-22 10:22
 * @Email:  wyw.wang@qunar.com
-* @Last modified by:   wyw
-* @Last modified time: 2017-02-22 10:23
+* @Last modified by:   robin
+* @Last modified time: 2017-02-28 10:23
 */
 
 
 
 var _ = require('lodash'),
-    qzzConfigUtils = require('../common/qzzConfigUtils'),
+    f2bConfigUtils = require('../common/f2bConfigUtils'),
     swiftUtils = require('../common/swiftUtils');
-
 
 var __cwd = process.cwd();
 /*@Command({
@@ -28,14 +27,17 @@ var __cwd = process.cwd();
 module.exports = {
     run: function(options){
         try {
-            var config = qzzConfigUtils.getConfig(__cwd);
+            var config = f2bConfigUtils.getConfig(__cwd),
+                params = swiftUtils.validate(options),
+                rs = config.format(),
+                self = this, p;
+            _.each(rs, function(cf){
+                p = _.extend({}, params, cf);
+                swiftUtils.upload(p, self.exit);
+            });
         } catch (e) {
             this.exit(e);
         }
-        var params = swiftUtils.validate(options),
-            p = _.extend({}, params, config.format());
-        console.info('即将上传路径'+p.path+'到'+p.container+'的'+p.name);
-        swiftUtils.upload(p, this.exit);
     },
     /**
      * 退出
@@ -43,10 +45,8 @@ module.exports = {
      */
     exit: function(err){
         if(err){
-            console.error('上传失败：', err.stack || err);
             process.exit(1);
         } else {
-            console.info('上传成功！');
             process.exit(0);
         }
     }

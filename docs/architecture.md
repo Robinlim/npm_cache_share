@@ -1,6 +1,6 @@
-# 代码结构
+# 工程结构
 
-使用node-annotation，由bin/client为入口解析全部注解启动。
+使用[node-annotation](https://www.npmjs.com/package/node-annotation)，由bin/client为入口解析全部注解启动。
 
 src/js下的代码结构及功能如下：
 
@@ -33,11 +33,12 @@ src/js下的代码结构及功能如下：
     │   ├── install.js
     │   ├── publish.js
     │   ├── server.js
-    │   └── upload.js
+    │   └── ...
     ├── common		公共模块
     │   ├── checkUtils.js		检查npm-srhinkwrap.json与package.json一致性工具
     │   ├── console.js			打印着色工具
     │   ├── constant.js			公共常量
+    │   ├── f2bConfigUtils.js   执行shell命令工具
     │   ├── installUtils.js		安装过程工具
     │   ├── manifestUtils.js	解析资源（npm-shrinkwrap.json等）工具
     │   ├── npmUtils.js			执行npm命令工具
@@ -93,7 +94,7 @@ src/js下的代码结构及功能如下：
 
 ## client细节
 
-​	client的功能包括安装（install）、发布包（publish）、上传／下载静态资源（upload/download）。	
+​	client的功能包括安装（install）、发布包（publish）、上传／下载静态资源（upload/download）。
 
 ### install
 
