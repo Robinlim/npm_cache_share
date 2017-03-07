@@ -1,4 +1,8 @@
 # 历史版本
+1.0.22
+   - qupload和qdownload支持auto参数
+1.0.21
+   - qupload和qdownload支持根据配置信息动态创建swift的container
 1.0.20
    - 新增前后端资源关联，前端上传qupload，后端下载qdownload
 
