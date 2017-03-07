@@ -26,7 +26,6 @@ module.exports = {
             name: name,
             path: swiftUtils.check(path)
         });
-        console.info(JSON.stringify(params));
         swiftUtils.upload(params, this.exit);
     },
     /**

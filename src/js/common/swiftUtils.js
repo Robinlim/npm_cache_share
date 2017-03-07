@@ -47,6 +47,9 @@ module.exports = {
                         callback(err);
                         return;
                     }
+                    if(!res){
+                        return;
+                    }
                     if(res.statusCode == 404){
                         swift.createContainer(params.container, function(err, res){
                             if(err) {
@@ -56,7 +59,7 @@ module.exports = {
                             }
                             callback(null, res);
                         });
-                    } else {
+                    } else if(res.statusCode == 200){
                         callback(null, res);
                     }
                 });
@@ -89,7 +92,6 @@ module.exports = {
             }).on('end', function() {
                 console.debug(name + ' pack done!');
             });
-
         var swift = new Swift({
             host: params.host,
             user: params.user,
@@ -100,7 +102,7 @@ module.exports = {
                 callback(err);
             } else {
                 fstream.Reader(params.path).pipe(packer).pipe(river);
-                swift.createObjectWithStream(params.container, params.name, river, function(){
+                swift.createObjectWithStream(params.container, name, river, function(){
                     console.info('上传成功！');
                     callback.apply(callback, arguments);
                 });

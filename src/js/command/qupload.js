@@ -21,20 +21,32 @@ var __cwd = process.cwd();
         ["-h, --host [host]", "host of swift"],
         ["-u, --user [user]", "user of swift"],
         ["-p, --pass [pass]", "pass of swift"],
-        ["-c, --container [container]", "container in swift"]
+        ["-c, --container [container]", "container in swift"],
+        ["-a, --auto", "create container automatically according to package.json,use project parameter in f2b, it will ignore container parameter in command"]
     ]
 })*/
 module.exports = {
     run: function(options){
         try {
-            var params = swiftUtils.getConfig(options, 'resourceSwift'),
+            //如果设定了auto参数，会忽略指令的container参数以及resourceSwift中container的配置，会根据package.json里f2b的project属性值来动态创建container
+            var whitelist = {};
+            if(options.auto){
+                whitelist.container = 1;
+            }
+            var params = swiftUtils.getConfig(options, 'resourceSwift', whitelist),
                 rs = f2bConfigUtils.getConfig(__cwd).format(),
                 self = this;
             //如果指定container，则对象创建在该container下
-            if(params.container){
+            if(!options.auto && params.container){
                 _.each(rs, function(cf){
-                    var p = _.extend({}, params, cf);
-                    swiftUtils.upload(p, self.exit);
+                    var p = _.extend({}, cf, params);
+                    swiftUtils.ensureContainerExist(p, function(err, res){
+                        if(err){
+                            self.exit(err);
+                            return;
+                        }
+                        swiftUtils.upload(p, self.exit);
+                    });
                 });
             //如果没有指定container，则会根据rs里的container值来创建（该值等同于package.json中的project），对象会存放在该container下
             }else{

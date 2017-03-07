@@ -68,6 +68,7 @@ Options:
      -u, --user         swift仓库的账户        
      -w, --pass         swift仓库的密码
      -c, --container    需要上传／下载的目标容器
+     -a, --auto         该参数只有qupload和qdownload使用，为true则通过package.json里的信息来指定container，否则就通过container参数或者全局配置文件里resourceSwift来指定。
 
 ```
 ## 涉及第三方存储

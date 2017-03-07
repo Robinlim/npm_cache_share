@@ -5,26 +5,30 @@
 - qupload 根据配置信息进行压缩上传，区别于upload指令（只做上传操作），swift的配置信息可以通过指令参数指定，也可以在config文件中通过resourceSwift变量指定。
 >Usage: qupload|qu [options]
 >
->Upload a static source to repository by package.json, you can set the swift setting by parameters or use command 'ncs config set resourceSwift host|user|pass|container'
+>Upload a static source to repository by package.json, you can set the swift setting by parameters or use command 'ncs config set resourceSwift "host|user|pass|container"'
 >
 >Options:
 >
 >+  -h, --host [host]            host of swift
->+   -u, --user [user]            user of swift
->+    -p, --pass [pass]            pass of swift
->+   -c, --container [container]  container in swift
+>+  -u, --user [user]            user of swift
+>+  -p, --pass [pass]            pass of swift
+>+  -c, --container [container]  container in swift
+>+  -a, --auto                   create container automatically according to package.json,use project parameter in f2b, it will ignore container parameter in command
+** 如果设定了auto参数，会忽略指令的container参数以及resourceSwift中container的配置，会根据package.json里f2b的project属性值来动态创建container **
 
 - qdownload 根据配置信息进行下载，区别于download指令（只做下载操作），swift的配置信息同qupload。
 >Usage: qdownload|qu [options]
 >
->Download a static source to repository, you can set the swift setting by parameters or use command 'ncs config set resourceSwift host|user|pass|container'
+>Download a static source to repository, you can set the swift setting by parameters or use command 'ncs config set resourceSwift "host|user|pass|container"'
 >
 >Options:
 >
->+    -h, --host [host]            host of swift
+>+   -h, --host [host]            host of swift
 >+   -u, --user [user]            user of swift
->+    -p, --pass [pass]            pass of swift
->+    -c, --container [container]  container in swift
+>+   -p, --pass [pass]            pass of swift
+>+   -c, --container [container]  container in swift
+>+  -a, --auto                    according to package.json,use project parameter in f2b to set the value of container, it will ignore container parameter in command
+** 如果设定了auto参数，会忽略指令的container参数以及resourceSwift中container的配置，会将package.json里的f2b下的key值作为container来下载对象 **
 
 # 实现
 读取工程根目录下package.json文件，并根据配置进行资源压缩上传，文件名为 ** project + version **， 后端可通过此文件名来获取资源。
