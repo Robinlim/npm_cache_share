@@ -31,11 +31,10 @@ var __cwd = process.cwd(),
     "des":"Publish a dir as a package to center cache server",
     options:[
         ["-c, --type [type]", "server type node/npm, default is node", "node"],
-
         ["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],
         ["-t, --token [token]", "use the token to access the npm_cache_share server"],
         ["-p, --password [password]", "use the password to access certain package"],
-        ["-d, --dependOnEnv", "whether the package is depend on environment meaning whether this package itself need node-gyp compile"],
+        ["-b, --dependOnEnv", "whether the package is depend on environment meaning whether this package itself need node-gyp compile"],
         ["-s, --cancelAlwaysSync", "mark this package to be NOT sync on each install action"],
 
         ["-r, --registry [registry]", "specify the npm registry"]

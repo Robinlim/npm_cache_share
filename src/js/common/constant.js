@@ -42,12 +42,8 @@ module.exports = {
         'storage',
         'storageConfig',
         'installTimeout',
-        'host',
-        'user',
-        'pass',
-        'container',
-        'swiftContainer',
-        'swiftConfig'
+        'swift',
+        'resourceSwift'
     ],
     ALWAYS_SYNC_FLAG: 2,
     F2B: {

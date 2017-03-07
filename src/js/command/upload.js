@@ -12,20 +12,21 @@ var __cwd = process.cwd();
 /*@Command({
     "name": "upload [path] [name]",
     "alias":"u",
-    "des":"Upload a static source to repository",
+    "des":"Upload a static source to repository, you can set the swift setting by parameters or use command 'ncs config set resourceSwift host|user|pass|container'",
     options:[
         ["-h, --host [host]", "host of swift"],
         ["-u, --user [user]", "user of swift"],
-        ["-w, --pass [pass]", "pass of swift"],
+        ["-p, --pass [pass]", "pass of swift"],
         ["-c, --container [container]", "container in swift"]
     ]
 })*/
 module.exports = {
     run: function(path, name, options){
-        var params = _.extend({}, swiftUtils.validate(options), {
+        var params = _.extend({}, swiftUtils.getConfig(options, 'resourceSwift'), {
             name: name,
             path: swiftUtils.check(path)
         });
+        console.info(JSON.stringify(params));
         swiftUtils.upload(params, this.exit);
     },
     /**

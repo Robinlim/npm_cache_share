@@ -16,6 +16,54 @@ var stream = require('stream'),
 
 module.exports = {
     /**
+     * 保证容器存在
+     * @param  {object}   params   {
+     *                                  host: swift的地址
+     *                                  user: swift账户名
+     *                                  pass: swift账户密码
+     *                                  container: swift容器名
+     *                             }
+     * @param  {Function} callback
+     * @return {void}
+     */
+    ensureContainerExist: function(params, callback){
+        var swift = new Swift({
+            host: params.host,
+            user: params.user,
+            pass: params.pass
+        }, function(err, res){
+            if(err) {
+                console.error('实例化Swift失败：', err.stack || err);
+                callback(err);
+            } else {
+                swift.retrieveContainerMetadata(params.container, function(err, res){
+                    //由于swift.js代码里会存在触发两次的场景，以下做兼容处理
+                    if(typeof err != 'undefined' && typeof err.statusCode != "undefined"){
+                        err = null;
+                        res = err;
+                    }
+                    if(err){
+                        console.error('获取容器信息失败：', err.stack || err);
+                        callback(err);
+                        return;
+                    }
+                    if(res.statusCode == 404){
+                        swift.createContainer(params.container, function(err, res){
+                            if(err) {
+                                console.error('创建容器失败：', err.stack || err);
+                                callback(err);
+                                return;
+                            }
+                            callback(null, res);
+                        });
+                    } else {
+                        callback(null, res);
+                    }
+                });
+            }
+        });
+    },
+    /**
      * 上传到swift
      * @param  {object}   params   {
      *                                  host: swift的地址
@@ -116,18 +164,18 @@ module.exports = {
     /**
      * 检验参数合法性
      * @param  {object} options [description]
+     * @param  {object} whitelist [description]
      * @return {object}
      */
-    validate: function(options){
-        var swiftConfig = (options.swiftConfig || '').split('|');
-            params = {
-                host: options.host || swiftConfig[0],
-                user: options.user || swiftConfig[1],
-                pass: options.pass || swiftConfig[2],
-                container: options.container || options.swiftContainer
+    validate: function(options, whitelist){
+        var params = {
+                host: options.host,
+                user: options.user,
+                pass: options.pass,
+                container: options.container
             };
         for(var i in params){
-            if(!params[i]){
+            if(!params[i] && !(whitelist && whitelist[i])){
                 throw new Error('缺少参数：'+i);
             }
         }
@@ -144,5 +192,22 @@ module.exports = {
         } catch (e) {
             this.exit(e);
         }
+    },
+    /**
+     * 获取swift配置信息
+     * @param  {Object} options     [description]
+     * @param  {String} name        [description]
+     * @param  {Object} whitelist   [description]
+     * @return {Object}             [description]
+     */
+    getConfig: function(options, name, whitelist){
+        var swiftConfig = (options[name] || '').split('|'),
+            params = this.validate({
+                host: options.host || swiftConfig[0],
+                user: options.user || swiftConfig[1],
+                pass: options.pass || swiftConfig[2],
+                container: options.container || swiftConfig[3]
+            }, whitelist);
+        return params;
     }
 };

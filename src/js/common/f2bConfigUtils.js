@@ -38,6 +38,7 @@ function Config(cwd, config){
 Config.prototype.format = function(){
     return _.flatMap(this.configs, function(el){
         return {
+            container: el.project,
             name: el.project + Constant.SPLIT + el.version,
             path: el.path
         };

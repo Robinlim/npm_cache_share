@@ -17,21 +17,25 @@ var __cwd = process.cwd();
 /*@Command({
     "name": "qdownload",
     "alias":"qd",
-    "des":"Download a static source to repository",
+    "des":"Download a static source to repository, you can set the swift setting by parameters or use command 'ncs config set resourceSwift host|user|pass|container'",
     options:[
         ["-h, --host [host]", "host of swift"],
         ["-u, --user [user]", "user of swift"],
-        ["-w, --pass [pass]", "pass of swift"],
+        ["-p, --pass [pass]", "pass of swift"],
         ["-c, --container [container]", "container in swift"]
     ]
 })*/
 module.exports = {
     run: function(options){
         try {
-            var config = f2bConfigUtils.getConfig(__cwd),
-                params = swiftUtils.validate(options);
-            asyncMap(config.format(), function(el, cb){
+            var params = swiftUtils.getConfig(options, 'resourceSwift'),
+                rs = f2bConfigUtils.getConfig(__cwd).format(),
+                self = this;
+
+            asyncMap(rs, function(el, cb){
                 var p = _.extend({}, params, el);
+                //container优先取参数或者配置文件里的
+                params.container && (p.container = params.container);
                 swiftUtils.download(p, cb);
             }, this.exit);
         } catch (e) {
