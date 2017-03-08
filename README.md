@@ -28,6 +28,7 @@ Commands:
     publish             发布一个包到中央缓存
     upload              上传一个静态资源到swift仓库
     download            从swift仓库下载一个静态资源
+    swift               swift仓库操作，目前支持查询对象是否存在，删除对象功能。
     help                帮助说明
 
 Options:
@@ -70,6 +71,11 @@ Options:
      -c, --container    需要上传／下载的目标容器
      -a, --auto         该参数只有qupload和qdownload使用，为true则通过package.json里的信息来指定container，否则就通过container参数或者全局配置文件里resourceSwift来指定。
 
+   of 'swift'           提供简单的swift操作，目前支持query和delete
+     -h, --host         swift仓库的地址
+     -u, --user         swift仓库的账户        
+     -w, --pass         swift仓库的密码
+     -c, --container    需要上传／下载的目标容器
 ```
 ## 涉及第三方存储
 [Swift](./docs/swift.md)

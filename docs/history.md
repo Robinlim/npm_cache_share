@@ -1,4 +1,6 @@
 # 历史版本
+1.0.23
+    增加swift便捷操作
 1.0.22
    - qupload和qdownload支持auto参数
 1.0.21

@@ -37,29 +37,90 @@ module.exports = {
                 callback(err);
             } else {
                 swift.retrieveContainerMetadata(params.container, function(err, res){
-                    //由于swift.js代码里会存在触发两次的场景，以下做兼容处理
-                    if(typeof err != 'undefined' && typeof err.statusCode != "undefined"){
-                        err = null;
-                        res = err;
-                    }
                     if(err){
-                        console.error('获取容器信息失败：', err.stack || err);
-                        callback(err);
+                        if(err.statusCode == 404) {
+                            swift.createContainer(params.container, function(err, res){
+                                if(err) {
+                                    console.error('创建容器失败：', err.stack || err);
+                                    callback(err);
+                                    return;
+                                }
+                                callback(null, res);
+                            });
+                        }else{
+                            console.error('获取容器信息失败：', err.stack || err);
+                            callback(err);
+                        }
                         return;
+                    }else if(res && res.statusCode != 404){
+                        callback(null, res);
                     }
-                    if(!res){
+                });
+            }
+        });
+    },
+    /**
+     * 查看对象是否存在
+     * @param  {[type]}   params   [description]
+     * @param  {Function} callback [description]
+     * @return {[type]}            [description]
+     */
+    objectExist: function(params, callback) {
+        console.info('即将查询容器' + params.container + '中' + params.name + '对象！！');
+
+        var swift = new Swift({
+            host: params.host,
+            user: params.user,
+            pass: params.pass
+        }, function(err, res){
+            if(err) {
+                console.error('实例化Swift失败：', err.stack || err);
+                callback(err);
+            } else {
+                swift.retrieveObjectMetadata(params.container, params.name, function(err, res){
+                    if(err){
+                        if(err.statusCode == 404) {
+                            callback(new Error('容器或对象不存在！！'));
+                        }else{
+                            console.error('获取容器信息失败：', err.stack || err);
+                            callback(err);
+                        }
                         return;
+                    }else if(res && res.statusCode != 404){
+                        callback(null, res);
                     }
-                    if(res.statusCode == 404){
-                        swift.createContainer(params.container, function(err, res){
-                            if(err) {
-                                console.error('创建容器失败：', err.stack || err);
-                                callback(err);
-                                return;
-                            }
-                            callback(null, res);
-                        });
-                    } else if(res.statusCode == 200){
+                });
+            }
+        });
+    },
+    /**
+     * 删除对象
+     * @param  {[type]}   params   [description]
+     * @param  {Function} callback [description]
+     * @return {[type]}            [description]
+     */
+    deleteObject: function(params, callback) {
+        console.info('即将删除容器' + params.container + '中' + params.name + '对象！！');
+
+        var swift = new Swift({
+            host: params.host,
+            user: params.user,
+            pass: params.pass
+        }, function(err, res){
+            if(err) {
+                console.error('实例化Swift失败：', err.stack || err);
+                callback(err);
+            } else {
+                swift.deleteObject(params.container, params.name, function(err, res){
+                    if(err){
+                        if(err.statusCode == 404) {
+                            callback(new Error('容器或对象不存在！！'));
+                        }else{
+                            console.error('删除对象信息失败：', err.stack || err);
+                            callback(err);
+                        }
+                        return;
+                    }else if(res && res.statusCode != 404){
                         callback(null, res);
                     }
                 });
@@ -189,11 +250,7 @@ module.exports = {
      * @return {string}          [description]
      */
     check: function(filepath){
-        try {
-            return fs.realpathSync(filepath);
-        } catch (e) {
-            this.exit(e);
-        }
+        return fs.realpathSync(filepath);
     },
     /**
      * 获取swift配置信息
