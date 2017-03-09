@@ -24,3 +24,9 @@
 >-    -d, --dependOnEnv              whether the package is depend on environment meaning whether this package itself need node-gyp compile
 >-    -s, --cancelAlwaysSync         mark this package to be NOT sync on each install action
 >-    -r, --registry [registry]      specify the npm registry
+
+# 参数额外说明
+- repository参数包含两部分，一部分是服务域名和端口，另一部分是repository name，对于swift就是container，对于localfile就是文件名
+- token参数是中央公共服务的权限认证，简单的值比较
+- dependOnEnv参数指明该包是否需要node-gyp编译，如果是的话，包名的组成会和环境相关
+- cancelAlwaysSync参数会忽略本地缓存，始终从中央公共服务获取

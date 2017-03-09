@@ -1,20 +1,35 @@
-## npm_cache_share
+# npm_cache_share
 ## 介绍
 该工程是用于发布时安装模块依赖的，强制依赖npm-shrinkwrap.json文件，如果工程没有该文件，请执行npm shrinkwrap来生成（否则走正常的npm install）。工程主要是以模块为缓存单元来进行安装的，有的缓存的做法是将整个工程的node_modules来生成缓存，只要有新增的模块就要生成新的，在空间和时间上都不是最细粒度的。该方案涉及两个阶段缓存，第一阶段是本地缓存，第二阶段是公共缓存(存在于其他机器上，需要在该机器上启动缓存服务)。
 
 ## 产生背景
 为了避免将node_modules入到工程版本库里(这种方式对于有环境依赖的模块是有问题的，比如node-sass,fibers等必须重新build才能运行)，需要在发布过程中动态安装，虽然npm自身也有cache,但即使开启了(通过 *--cache-min 时间* 来开启)还是会发起请求询问是否更新，当然这个不是主要问题，主要还是依赖node-gyp的模块，有的编译时间耗费较长，故为了解决这些问题而产生该项目。可以通过docker来模拟目标机器的环境来执行编译操作。
 
-## 其他
-- [架构](./docs/architecture.md)
+## 缓存服务搭建工作
+
+#### client端
+
+1. 安装node.js环境，可以上官网自行安装，版本 ≥0.12
+2. 安装npm_cache_share，`npm install -g npm_cache_share`
+3. 根据场景执行 `ncs install [options]`，可参见 [指令](#command)
+
+#### 中央公共服务
+
+1. 安装node.js环境，可以上官网自行安装，版本 ≥0.12
+2. 安装npm_cache_share，`npm install -g npm_cache_share`
+3. 启动服务 `ncs server [options]`, 可参见 [中央公共服务](./docs/server.md)
+
+## 文档
+- [中央公共服务](./docs/server.md)
 - [前后端关联](./docs/linkFront2Backend.md)
 - [包发布与安装](./docs/modules.md)
+- [架构](./docs/architecture.md)
 
 ## 注意
 > 针对optionalDependecise里的包，明确知道系统环境不符合，可以在配置文件中配置npmPlatBinds来过滤这些模块。
 > 例子：安装fsevents包，需要OS是darwin，但当前环境是linux，此时可以设置 npmPlatBinds = {"fsevents": 1}
 
-## 指令
+<h1 id="command">指令</h2>
 
 ```
 Usage:  <commands> [options]

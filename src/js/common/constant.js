@@ -42,6 +42,7 @@ module.exports = {
         'storage',
         'storageConfig',
         'installTimeout',
+        'npmPlatBinds',
         'swift',
         'resourceSwift'
     ],
