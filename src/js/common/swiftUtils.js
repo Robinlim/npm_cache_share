@@ -12,6 +12,8 @@ var stream = require('stream'),
     fstream = require('fstream'),
     tar = require('tar'),
     fs = require('fs'),
+    fsExtra = require('fs-extra'),
+    path = require('path'),
     Swift = require('../lib/swiftClient');
 
 module.exports = {
@@ -143,16 +145,6 @@ module.exports = {
     upload: function(params, callback){
         console.info('即将打包文件路径：' + params.path + '，作为' + params.name + '上传至swift容器' + params.container + '!!');
 
-        var name = params.name,
-            river = new stream.PassThrough(),
-            packer = tar.Pack({
-                noProprietary: true
-            }).on('error', function(err) {
-                console.error(name + ' pack is wrong ', err.stack);
-                callback(err);
-            }).on('end', function() {
-                console.debug(name + ' pack done!');
-            });
         var swift = new Swift({
             host: params.host,
             user: params.user,
@@ -162,7 +154,22 @@ module.exports = {
                 console.error('上传失败：', err.stack || err);
                 callback(err);
             } else {
-                fstream.Reader(params.path).pipe(packer).pipe(river);
+                var isDir = fs.statSync(params.path).isDirectory(),
+                    river = new stream.PassThrough(),
+                    name = params.name;
+                if(isDir){
+                    var packer = tar.Pack({
+                            noProprietary: true
+                        }).on('error', function(err) {
+                            console.error(name + ' pack is wrong ', err.stack);
+                            callback(err);
+                        }).on('end', function() {
+                            console.debug(name + ' pack done!');
+                        });
+                    fstream.Reader(params.path).pipe(packer).pipe(river);
+                }else{
+                    fstream.Reader(params.path).pipe(river);
+                }
                 swift.createObjectWithStream(params.container, name, river, function(){
                     console.info('上传成功！');
                     callback.apply(callback, arguments);
@@ -181,22 +188,13 @@ module.exports = {
      *                                  name:  待下载的对象名称
      *                             }
      * @param  {Function} callback [description]
+     * @param  {Boolean}  notTar  [description]
      * @return {void}            [description]
      */
-    download: function(params, callback){
+    download: function(params, callback, notTar){
         console.info('即将从容器' + params.container + '下载包' + params.name + '至路径' + params.path);
 
-        var name = params.name,
-            river = new stream.PassThrough(),
-            extractor = tar.Extract({
-                path: params.path
-            }).on('error', function(err) {
-                console.error(name + ' extract is wrong ', err.stack);
-                callback(err);
-            }).on('end', function() {
-                console.debug(name + ' extract done!');
-                callback();
-            });
+        var name = params.name;
         var swift = new Swift({
             host: params.host,
             user: params.user,
@@ -206,23 +204,42 @@ module.exports = {
                 console.error('下载失败：', err.stack || err);
                 callback(err);
             } else {
-                swift.getObjectWithStream(params.container, params.name)
-                    .on('error', function(err){
-                        console.error(name + ' download is wrong ', err.stack);
-                        callback(err);
-                    })
-                    .on('response', function(response){
-                        if(response.statusCode !== 200){
-                            callback(new Error('Get source from swift return statusCode:'+response.statusCode));
-                        }
-                    })
-                    .on('end', function(){
-                        console.debug(name + ' download done!');
-                        console.info('下载成功！');
-                    })
-                    .pipe(extractor);
+                download();
             }
         });
+        function download(){
+            var p = path.resolve(params.path),
+                downStream = swift.getObjectWithStream(params.container, params.name)
+                .on('error', function(err){
+                    console.error(name + ' download is wrong ', err.stack);
+                    callback(err);
+                })
+                .on('response', function(response){
+                    if(response.statusCode !== 200){
+                        callback(new Error('Get source from swift return statusCode:'+response.statusCode));
+                    }
+                })
+                .on('end', function(err){
+                    console.debug(name + ' download done!');
+                    console.info('下载结束！');
+                });
+            if(notTar || notTar == 'true'){
+                fsExtra.ensureDirSync(p);
+                downStream.pipe(fs.createWriteStream(path.join(p, params.name)));
+            }else{
+                var extractor = tar.Extract({
+                    path: p
+                }).on('error', function(err) {
+                    console.error(name + 'extract is wrong ', err.stack);
+                    callback(err);
+
+                }).on('end', function() {
+                    console.debug(name + ' extract done!');
+                    callback();
+                });
+                downStream.pipe(extractor);
+            }
+        }
     },
     /**
      * 检验参数合法性

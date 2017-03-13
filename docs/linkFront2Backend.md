@@ -27,8 +27,9 @@
 >+   -u, --user [user]            user of swift
 >+   -p, --pass [pass]            pass of swift
 >+   -c, --container [container]  container in swift
->+  -a, --auto                    according to package.json,use project parameter in f2b to set the value of container, it will ignore container parameter in command
-** 如果设定了auto参数，会忽略指令的container参数以及resourceSwift中container的配置，会将package.json里的f2b下的key值作为container来下载对象 **
+>+   -a, --auto                   according to package.json,use project parameter in f2b to set the value of container, it will ignore container parameter in command
+>+   -n, --notTar                 whether or not the resource is a tar file,default is false
+** 如果设定了auto参数，会忽略指令的container参数以及resourceSwift中container的配置，会将package.json里的f2b下的key值作为container来下载对象，如果下载对象非tar，请指定notTar参数 **
 
 # 实现
 读取工程根目录下package.json文件，并根据配置进行资源压缩上传，文件名为 ** project + version **， 后端可通过此文件名来获取资源。
@@ -39,11 +40,9 @@
 >
 > f2b
 >
->   project：项目名称
->
->   version：版本号
->
->   path：相对于工程目录的待上传目录
+>>   project：项目名称
+>>   version：版本号
+>>   path：相对于工程目录的待上传目录
 
 ```json
 example package.json
@@ -70,6 +69,8 @@ example package.json
 >>   key 需要的前端工程名（会和version拼接）
 >>>       version：前端版本号
 >>>       path：下载的前端资源需要存放的位置
+>>>       notTar：资源是否是压缩文件
+
 
 ```json
 {

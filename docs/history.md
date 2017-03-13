@@ -1,4 +1,8 @@
 # 历史版本
+1。0.26
+   - 可指定配置文件
+   - qupload和qdownload文件名拼接为name + "/" + version
+   - 支持单个文件上传和下载
 1.0.25
     fix bug for command annotation
 1.0.24

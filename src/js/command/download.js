@@ -18,17 +18,21 @@ var __cwd = process.cwd();
         ["-h, --host [host]", "host of swift"],
         ["-u, --user [user]", "user of swift"],
         ["-p, --pass [pass]", "pass of swift"],
-        ["-c, --container [container]", "container in swift"]
+        ["-c, --container [container]", "container in swift"],
+        ["-n, --notTar", "whether or not the resource is false"]
     ]
 })*/
 module.exports = {
     run: function(name, path, options){
-        var params = _.extend({}, swiftUtils.getConfig(options, 'resourceSwift'), {
-            name: name,
-            path: path
-        });
-
-        swiftUtils.download(params, this.exit);
+        try{
+            var params = _.extend({}, swiftUtils.getConfig(options, 'resourceSwift'), {
+                name: name,
+                path: path
+            });
+            swiftUtils.download(params, this.exit, options.notTar);
+        }catch(err){
+            this.exit(err);
+        }
     },
     /**
      * 退出

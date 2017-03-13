@@ -50,6 +50,6 @@ module.exports = {
     F2B: {
         CONFIG_FILE: 'package.json',
         CONFIG_KEY: 'f2b',
-        SPLIT: '_'
+        SPLIT: '/'
     }
 }

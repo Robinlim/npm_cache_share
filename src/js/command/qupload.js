@@ -33,9 +33,11 @@ module.exports = {
             if(options.auto){
                 whitelist.container = 1;
             }
+
             var params = swiftUtils.getConfig(options, 'resourceSwift', whitelist),
                 rs = f2bConfigUtils.getConfig(__cwd).format(),
                 self = this;
+
             //如果指定container，则对象创建在该container下
             if(!options.auto && params.container){
                 _.each(rs, function(cf){

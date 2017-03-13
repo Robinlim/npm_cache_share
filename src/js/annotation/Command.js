@@ -34,17 +34,28 @@ var Command = module.exports = require('node-annotation').Annotation.extend({
                     .alias(ops.alias)
                     .description(ops.des)
                     .option('-d, --debug', 'print all information for debug')
+                    .option('-g, --config [config]', 'use specific config path')
                     .action(function(){
-                        var opts = arguments[arguments.length-1];
-                        // 设置全局debug选项
-                        if(opts && opts.debug){
-                            global.DEBUG = true;
-                            console.debug('In debug mode, will print all information for debug');
-                            //console.debug('Options:', opts);
+                        try{
+                            var opts = arguments[arguments.length-1];
+                            // 设置全局debug选项
+                            if(opts && opts.debug){
+                                global.DEBUG = true;
+                                console.debug('In debug mode, will print all information for debug');
+                                //console.debug('Options:', opts);
+                            }
+                            var instance = model.instance();
+                            if(opts.config){
+                                config = fsExtra.readJsonSync(path.resolve(opts.config));
+                            }
+                            arguments[arguments.length-1] = _.extend(config, opts);
+                            instance[model.vo()].apply(instance, arguments);
+                        }catch(err){
+                            if(err){
+                                console.error(err.stack || err);
+                                process.exit(1);
+                            }
                         }
-                        var instance = model.instance();
-                        arguments[arguments.length-1] = _.extend(config, opts);
-                        instance[model.vo()].apply(instance, arguments);
                     });
         (ops.options || []).forEach(function(v){
             cmd.option(v[0], v[1], v[2]);

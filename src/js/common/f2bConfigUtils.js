@@ -23,14 +23,16 @@ function Config(cwd, config){
             configs.push({
                 project: k,
                 version: el.version,
-                path: path.join(cwd, el.path)
+                path: path.join(cwd, el.path),
+                notTar: el.notTar
             });
         }
     } else {
         configs.push({
             project: config.project,
             version: config.version,
-            path: path.join(cwd, config.path)
+            path: path.join(cwd, config.path),
+            notTar: config.notTar
         });
     }
 };
@@ -40,7 +42,8 @@ Config.prototype.format = function(){
         return {
             container: el.project,
             name: el.project + Constant.SPLIT + el.version,
-            path: el.path
+            path: el.path,
+            notTar: el.notTar
         };
     });
 };

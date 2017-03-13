@@ -34,9 +34,11 @@ module.exports = {
             if(options.auto){
                 whitelist.container = 1;
             }
+            
             var params = swiftUtils.getConfig(options, 'resourceSwift', whitelist),
                 rs = f2bConfigUtils.getConfig(__cwd).format(),
                 self = this;
+
             asyncMap(rs, function(el, cb){
                 var p = _.extend({}, params, el);
                 //如果auto为true,则将package.json中f2b里的key值作为container来下载对象，否则container取参数或者配置文件里的。
@@ -45,7 +47,7 @@ module.exports = {
                 }else{
                     params.container && (p.container = params.container);
                 }
-                swiftUtils.download(p, cb);
+                swiftUtils.download(p, cb, p.notTar);
             }, this.exit);
         } catch (e) {
             this.exit(e);

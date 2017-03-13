@@ -22,11 +22,18 @@ var __cwd = process.cwd();
 })*/
 module.exports = {
     run: function(path, name, options){
-        var params = _.extend({}, swiftUtils.getConfig(options, 'resourceSwift'), {
-            name: name,
-            path: swiftUtils.check(path)
-        });
-        swiftUtils.upload(params, this.exit);
+        try{
+            var params = _.extend({}, swiftUtils.getConfig(options, 'resourceSwift'), {
+                name: name,
+                path: swiftUtils.check(path)
+            });
+            swiftUtils.upload(params, this.exit);
+        }catch(err){
+            if(err){
+                console.error(err.stack || err);
+            }
+            this.exit(err);
+        }
     },
     /**
      * 退出
