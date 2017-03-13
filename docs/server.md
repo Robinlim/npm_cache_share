@@ -12,7 +12,7 @@
 >  Options:
 >
 >-    -s, --storage [storage]              specify the type of storage, could be localfile or swift
->-    -c, --storageConfig [storageConfig]  specify the config of storage, serveral arguments joined with '|'", the format of swift is 'host|user|pass', localfile is 'cache path'
+>-    -c, --storageConfig [storageConfig]  specify the config of storage, serveral arguments joined with '|', the format of swift is 'host|user|pass', localfile is 'cache path'"
 >-    -p, --port [port]                    specify the port of the service, default is 8888
 >-    -f, --useFork                        start with fork
 >-    -t, --token [token]                  control the auth to access the server

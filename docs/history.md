@@ -1,4 +1,6 @@
 # 历史版本
+1.0.25
+    fix bug for command annotation
 1.0.24
    - 补充文档
 1.0.23

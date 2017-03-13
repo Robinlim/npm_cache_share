@@ -29,7 +29,7 @@
 > 针对optionalDependecise里的包，明确知道系统环境不符合，可以在配置文件中配置npmPlatBinds来过滤这些模块。
 > 例子：安装fsevents包，需要OS是darwin，但当前环境是linux，此时可以设置 npmPlatBinds = {"fsevents": 1}
 
-<h1 id="command">指令</h2>
+<h1 id="command">指令</h1>
 
 ```
 Usage:  <commands> [options]

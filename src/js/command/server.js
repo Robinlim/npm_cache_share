@@ -24,7 +24,7 @@ var constant = require('../common/constant'),
     "des":"Start a server to store the npm module cache, command is for pm2, like start、stop、restart，and so on， name mean the name of application for pm2.",
     options:[
         ["-s, --storage [storage]", "specify the type of storage, could be localfile or swift"],
-        ["-c, --storageConfig [storageConfig]", "specify the config of storage, serveral arguments joined with '|'", the format of swift is 'host|user|pass', localfile is 'cache path'],
+        ["-c, --storageConfig [storageConfig]", "specify the config of storage, serveral arguments joined with '|', the format of swift is 'host|user|pass', localfile is 'cache path'"],
         ["-p, --port [port]", "specify the port of the service, default is 8888"],
         ["-f, --useFork", "start with fork"],
         ["-t, --token [token]", "control the auth to access the server"],
