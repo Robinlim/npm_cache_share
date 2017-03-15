@@ -19,7 +19,7 @@ var fs = require('fs'),
 })*/
 module.exports = {
     run: function(action, key, value, opts) {
-        this.configPath = utils.getConfigPath();
+        this.configPath = opts.config || utils.getConfigPath();
         this.config = fsExtra.readJsonSync(this.configPath);
         if(key && constant.CONFIGKEY.indexOf(key) < 0){
             console.error('非法的配置键值:', key);
