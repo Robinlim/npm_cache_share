@@ -1,26 +1,38 @@
 # 历史版本
 
+1.0.27
+
+   - config指令支持指定配置文件
+   - download指令对带/的文件名下载能生成对应目录路径
+
 1.0.26
+
    - 可指定配置文件
    - qupload和qdownload文件名拼接为name + "/" + version
    - 支持单个文件上传和下载
 
 1.0.25
-    fix bug for command annotation
+
+   - fix bug for command annotation
 
 1.0.24
+
    - 补充文档
 
 1.0.23
+
    - 增加swift便捷操作
 
 1.0.22
+
    - qupload和qdownload支持auto参数
 
 1.0.21
+
    - qupload和qdownload支持根据配置信息动态创建swift的container
-   
+
 1.0.20
+
    - 新增前后端资源关联，前端上传qupload，后端下载qdownload
 
 1.0.19

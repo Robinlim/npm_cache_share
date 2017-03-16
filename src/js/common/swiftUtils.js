@@ -224,7 +224,13 @@ module.exports = {
                     console.info('下载结束！');
                 });
             if(notTar || notTar == 'true'){
-                fsExtra.ensureDirSync(p);
+                var name, np;
+                //正则效率不高，但对于名称匹配也足矣
+                params.name.replace(/(\w*)\/([^\/]+)$/, function($, $1, $2){
+                    np = $1;
+                    name = $2;
+                });
+                fsExtra.ensureDirSync(path.join(p, np));
                 downStream.pipe(fs.createWriteStream(path.join(p, params.name)));
             }else{
                 var extractor = tar.Extract({
