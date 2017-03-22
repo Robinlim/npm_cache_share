@@ -23,7 +23,7 @@ function getStorage(storageType, opts){
 module.exports = {
     init: function(type, opts){
         // opts can be a STRING ! ‘undefined’
-        getStorage(type, opts === 'undefined' ? [] : opts.split('|'));
+        getStorage(type, opts === 'undefined' ? [] : (opts || "").split('|'));
     },
     sync: function(){
         var sto = getStorage();

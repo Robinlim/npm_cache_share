@@ -44,6 +44,7 @@ var Command = module.exports = require('node-annotation').Annotation.extend({
                                 console.debug('In debug mode, will print all information for debug');
                                 //console.debug('Options:', opts);
                             }
+                            opts = filter(opts);
                             var instance = model.instance();
                             if(opts.config){
                                 config = fsExtra.readJsonSync(path.resolve(opts.config));
@@ -60,6 +61,16 @@ var Command = module.exports = require('node-annotation').Annotation.extend({
         (ops.options || []).forEach(function(v){
             cmd.option(v[0], v[1], v[2]);
         });
+        //过滤command options的自有属性和方法，会和指令参数冲突
+        function filter(options){
+            var opts = {};
+            _.map(options, function(v, k){
+                if(k[0] !== '_' && typeof v != 'function'){
+                    opts[k] = v;
+                }
+            });
+            return opts;
+        }
     }
 }, {
     name: 'Command'

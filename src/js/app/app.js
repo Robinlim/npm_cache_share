@@ -55,7 +55,6 @@ app.get('/healthcheck.html', function(req, res) {
     var cont = fs.readFileSync(healthcheck).toString();
     res.end(cont);
 });
-
 require('./code/storage').init(process.env.storage, process.env.storageConfig);
 require('./code/dao/packageList').load();
 

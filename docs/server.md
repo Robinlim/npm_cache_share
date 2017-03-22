@@ -20,4 +20,5 @@
 >-    -n --name [name]                     app name only for pm2
 
 ## 注意
-如果storage选择swift，只能启动单机单进程，由于要记录swift的信息，并维护ncs操作的更新，如果只是做单机级别的多进程共享意义不大，更加提倡多机的方式来部署，会考虑redis或者memcached这样分布式缓存服务。
+- 如果storage选择swift，只能启动单机单进程，由于要记录swift的信息，并维护ncs操作的更新，如果只是做单机级别的多进程共享意义不大，更加提倡多机的方式来部署，会考虑redis或者memcached这样分布式缓存服务。
+- pm2的版本2.4.2以上，有些低版本会有问题。

@@ -135,6 +135,11 @@ function parseYarnLockfile(filepath, cbk){
         }
     });
     rl.on('close', function(){
+        //文件结束后one应该未空，未为空的场景下需要添加到dependenceArr
+        if(one){
+            dependenceArr.push(_.extend({},one));
+            one = null;
+        }
         var nameMap = {}, // 按模块名称构造的map
             rangeMap = {}, // 按模块名称包含版本范围构造的map
             dependList = {}, // 打平成list的依赖，key值是“name@version”
@@ -201,6 +206,7 @@ function parseYarnLockfile(filepath, cbk){
                 }
             }
         });
+
         console.debug('各个依赖按版本的出现次数：',nameMap);
         //console.debug(JSON.stringify(dependencies));
         cbk(null, _.cloneDeep(dependencies));
