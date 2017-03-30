@@ -8,8 +8,12 @@ var path = require('path'),
     fsExtra = require('fs-extra'),
     fstream = require('fstream'),
     request = require('request'),
-    tar = require('tar'),
     _ = require('lodash');
+
+var utils = require('../common/utils'),
+    constant = require('../common/constant');
+
+var UPLOADDIR = constant.UPLOADDIR;
 
 function nexusRegistry(config) {
     this.repository = path.resolve(config.server, config.repository);
@@ -35,20 +39,16 @@ nexusRegistry.prototype._get = function(name, dir, callback) {
     }).on('response', function(res) {
         if (res.statusCode == 200) {
             // 获取文件名称
-            var target = path.resolve(dir, name);
-            // 解压文件操作
-            var extractor = tar.Extract({
-                    path: dir
-                })
-                .on('error', function(err) {
-                    console.error(name + ' extract is wrong ', err.stack);
-                    callback(null, false);
-                })
-                .on('end', function() {
-                    console.info(name + ' extract done!');
-                });
+            var target = path.resolve(dir, moduleName),
+                river = new stream.PassThrough();
+
             // 请求返回流通过管道流入解压流
-            res.pipe(extractor);
+            res.pipe(river);
+
+            // 解压文件操作
+            river.pipe(Utils.extract(target, dir, function(){
+                cb(null, fs.existsSync(target) && target);
+            }));
             return;
         } else {
             callback();
@@ -87,17 +87,11 @@ nexusRegistry.prototype.get = function(moduleName, moduleNameForPlatform, dir, c
 nexusRegistry.prototype._put = function(target, callback) {
     var name = path.basename(target),
         url = this.repository + name + this.fileExt;
-    var river = new stream.PassThrough(),
-        packer = tar.Pack({
-            noProprietary: true
-        }).on('error', function(err) {
-            console.error(name + ' pack is wrong ', err.stack);
-            callback(err);
-        })
-        .on('end', function() {
-            console.info(name + ' pack done!');
-        });
-    fstream.Reader(target).pipe(packer).pipe(river);
+
+    var river = new stream.PassThrough();
+
+    utils.compress(target, UPLOADDIR, 'tar').pipe(river);
+
     request.put({
         url: url,
         auth: this.auth,

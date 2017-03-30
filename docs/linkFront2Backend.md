@@ -1,5 +1,5 @@
 # 前后端关联
-在现有的团队协作模式中，前后端工程一般都会分开管理，便于不同开发角色开发和维护，由于游览器有缓存机制，所以会通过版本来控制更新，也就会涉及到前端生成的版本号如何和后端进行关联（当然可以不仅限于版本信息），这里通过npm_cache_share的公共服务的存储能力来存储( ** 目前只支持swift存储 ** )。
+在现有的团队协作模式中，前后端工程一般都会分开管理，便于不同开发角色开发和维护，由于游览器有缓存机制，所以会通过版本来控制更新，也就会涉及到前端生成的版本号如何和后端进行关联（当然可以不仅限于版本信息），这里通过swift分布式存储来作为存储服务，区别于包发布(publish指令，走公共缓存服务来上传至存储服务)，直接通过client直接上传至swift，不走公共缓存服务。
 
 # 指令
 - qupload 根据配置信息进行压缩上传，区别于upload指令（只做上传操作），swift的配置信息可以通过指令参数指定，也可以在config文件中通过resourceSwift变量指定。
@@ -28,8 +28,7 @@
 >+   -p, --pass [pass]            pass of swift
 >+   -c, --container [container]  container in swift
 >+   -a, --auto                   according to package.json,use project parameter in f2b to set the value of container, it will ignore container parameter in command
->+   -n, --notTar                 whether or not the resource is a tar file,default is false
-** 如果设定了auto参数，会忽略指令的container参数以及resourceSwift中container的配置，会将package.json里的f2b下的key值作为container来下载对象，如果下载对象非tar，请指定notTar参数 **
+** 如果设定了auto参数，会忽略指令的container参数以及resourceSwift中container的配置，会将package.json里的f2b下的key值作为container来下载对象，所有上传资源都会进行压缩 **
 
 # 实现
 读取工程根目录下package.json文件，并根据配置进行资源压缩上传，文件名为 ** project + version **， 后端可通过此文件名来获取资源。
@@ -43,6 +42,7 @@
 >>   project：项目名称
 >>   version：版本号
 >>   path：相对于工程目录的待上传目录
+>>   type: 压缩类型，目前支持zip和tar
 
 ```json
 example package.json
@@ -51,7 +51,8 @@ example package.json
  	"f2b": {
   		"project": "sample_project",
   		"version": "btag-1234567",
-  		"path": "./ver"
+  		"path": "./ver",
+        "type": "zip"
 	}
     ...
 }
@@ -69,7 +70,7 @@ example package.json
 >>   key 需要的前端工程名（会和version拼接）
 >>>       version：前端版本号
 >>>       path：下载的前端资源需要存放的位置
->>>       notTar：资源是否是压缩文件
+>>>       type: 压缩类型，目前支持zip和tar
 
 
 ```json
@@ -78,12 +79,16 @@ example package.json
   	"f2b": {
         "sample_project": {
             "version": "btag-1234567",
-            "path": "./static/"
+            "path": "./static/",
+            "type": "zip"
         },
         "another_sample_project": {
             "version": "btag-1234567",
-            "path": "./"
+            "path": "./",
+            "type": "tar"
         }
 	}
 }
 ```
+# 注意
+> 压缩文件命名时不要以.properties结尾，会导致目录追踪至顶级。

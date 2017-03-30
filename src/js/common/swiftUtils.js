@@ -9,12 +9,13 @@
 
 
 var stream = require('stream'),
-    fstream = require('fstream'),
-    tar = require('tar'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
     path = require('path'),
-    Swift = require('../lib/swiftClient');
+    Swift = require('../lib/swiftClient'),
+    Utils = require('./utils');
+
+var COMPRESS_TYPE = require('./constant').COMPRESS_TYPE;
 
 module.exports = {
     /**
@@ -68,7 +69,8 @@ module.exports = {
      * @return {[type]}            [description]
      */
     objectExist: function(params, callback) {
-        console.info('即将查询容器' + params.container + '中' + params.name + '对象！！');
+        var name = params.compressType ? [params.name, params.compressType].join('.') : params.name ;
+        console.info('即将查询容器' + params.container + '中' + name + '对象！！');
 
         var swift = new Swift({
             host: params.host,
@@ -79,7 +81,7 @@ module.exports = {
                 console.error('实例化Swift失败：', err.stack || err);
                 callback(err);
             } else {
-                swift.retrieveObjectMetadata(params.container, params.name, function(err, res){
+                swift.retrieveObjectMetadata(params.container, name, function(err, res){
                     if(err){
                         if(err.statusCode == 404) {
                             callback(new Error('容器或对象不存在！！'));
@@ -102,7 +104,8 @@ module.exports = {
      * @return {[type]}            [description]
      */
     deleteObject: function(params, callback) {
-        console.info('即将删除容器' + params.container + '中' + params.name + '对象！！');
+        var name = params.compressType ? [params.name, params.compressType].join('.') : params.name;
+        console.info('即将删除容器' + params.container + '中' + name + '对象！！');
 
         var swift = new Swift({
             host: params.host,
@@ -113,7 +116,7 @@ module.exports = {
                 console.error('实例化Swift失败：', err.stack || err);
                 callback(err);
             } else {
-                swift.deleteObject(params.container, params.name, function(err, res){
+                swift.deleteObject(params.container, name, function(err, res){
                     if(err){
                         if(err.statusCode == 404) {
                             callback(new Error('容器或对象不存在！！'));
@@ -138,12 +141,14 @@ module.exports = {
      *                                  container: swift容器名
      *                                  path: 待上传的路径
      *                                  name: 上传后的对象名称
+     *                                  compressType: 压缩方式
      *                             }
      * @param  {Function} callback [description]
      * @return {void}            [description]
      */
     upload: function(params, callback){
-        console.info('即将打包文件路径：' + params.path + '，作为' + params.name + '上传至swift容器' + params.container + '!!');
+        var name = params.compressType ? [params.name, params.compressType].join('.') : params.name;
+        console.info('即将打包文件路径：' + params.path + '，作为' + name + '上传至swift容器' + params.container + '!!!');
 
         var swift = new Swift({
             host: params.host,
@@ -154,22 +159,11 @@ module.exports = {
                 console.error('上传失败：', err.stack || err);
                 callback(err);
             } else {
-                var isDir = fs.statSync(params.path).isDirectory(),
-                    river = new stream.PassThrough(),
-                    name = params.name;
-                if(isDir){
-                    var packer = tar.Pack({
-                            noProprietary: true
-                        }).on('error', function(err) {
-                            console.error(name + ' pack is wrong ', err.stack);
-                            callback(err);
-                        }).on('end', function() {
-                            console.debug(name + ' pack done!');
-                        });
-                    fstream.Reader(params.path).pipe(packer).pipe(river);
-                }else{
-                    fstream.Reader(params.path).pipe(river);
-                }
+                var river = new stream.PassThrough();
+                
+                //压缩
+                Utils.compress(params.path, params.destpath, params.compressType).pipe(river);
+                //swift上传
                 swift.createObjectWithStream(params.container, name, river, function(){
                     console.info('上传成功！');
                     callback.apply(callback, arguments);
@@ -185,66 +179,59 @@ module.exports = {
      *                                  pass: swift账户密码
      *                                  container: swift容器名
      *                                  path: 待下载到的路径
-     *                                  name:  待下载的对象名称
+     *                                  name: 待下载的对象名称
+     *                                  compressType: 文件后缀
      *                             }
      * @param  {Function} callback [description]
-     * @param  {Boolean}  notTar  [description]
      * @return {void}            [description]
      */
-    download: function(params, callback, notTar){
-        console.info('即将从容器' + params.container + '下载包' + params.name + '至路径' + params.path);
+    download: function(params, callback){
+        var name = params.name,
+            extname = path.extname(name).substr(1),
+            p = path.resolve(params.path);
+        if(extname !== COMPRESS_TYPE.TAR && extname !== COMPRESS_TYPE.ZIP && extname.length !== 0){
+            throw new Error('不识别的文件类型，须为.tar，或者.zip文件');
+        }
 
-        var name = params.name;
+        console.info('即将从容器' + params.container + '下载包' + name + '至路径' + p);
+
+        if(extname.length === 0){
+            //作为后续解压根据文件后缀来选择解压方式
+            name = [name, params.compressType].join('.');
+            console.info('没有文件后缀，默认以' + params.compressType + '方式进行解压');
+        }
+
         var swift = new Swift({
-            host: params.host,
-            user: params.user,
-            pass: params.pass
-        }, function(err, res){
-            if(err) {
-                console.error('下载失败：', err.stack || err);
-                callback(err);
-            } else {
-                download();
-            }
-        });
+                host: params.host,
+                user: params.user,
+                pass: params.pass
+            }, function(err, res){
+                if(err) {
+                    throw new Error('下载失败：', err.stack || err);
+                } else {
+                    download();
+                }
+            });
         function download(){
-            var p = path.resolve(params.path),
-                downStream = swift.getObjectWithStream(params.container, params.name)
-                .on('error', function(err){
-                    console.error(name + ' download is wrong ', err.stack);
-                    callback(err);
-                })
-                .on('response', function(response){
-                    if(response.statusCode !== 200){
-                        callback(new Error('Get source from swift return statusCode:'+response.statusCode));
-                    }
-                })
-                .on('end', function(err){
-                    console.debug(name + ' download done!');
-                    console.info('下载结束！');
-                });
-            if(notTar || notTar == 'true'){
-                var name, np;
-                //正则效率不高，但对于名称匹配也足矣
-                params.name.replace(/(\w*)\/([^\/]+)$/, function($, $1, $2){
-                    np = $1;
-                    name = $2;
-                });
-                fsExtra.ensureDirSync(path.join(p, np));
-                downStream.pipe(fs.createWriteStream(path.join(p, params.name)));
-            }else{
-                var extractor = tar.Extract({
-                    path: p
-                }).on('error', function(err) {
-                    console.error(name + 'extract is wrong ', err.stack);
-                    callback(err);
+            var river = new stream.PassThrough();
 
-                }).on('end', function() {
-                    console.debug(name + ' extract done!');
-                    callback();
-                });
-                downStream.pipe(extractor);
-            }
+            swift.getObjectWithStream(params.container, name)
+            .on('error', function(err){
+                throw new Error(name + ' download is wrong ', err.stack);
+            })
+            .on('response', function(response){
+                if(response.statusCode !== 200){
+                    callback(new Error('Get source from swift return statusCode:'+response.statusCode));
+                }
+            })
+            .on('end', function(err){
+                console.debug(name + ' download done!');
+                console.info('下载结束！');
+            }).pipe(river);
+
+            river.pipe(Utils.extract(name, p, function(){
+                console.info('解压完成！');
+            }));
         }
     },
     /**

@@ -24,7 +24,7 @@ function Config(cwd, config){
                 project: k,
                 version: el.version,
                 path: path.join(cwd, el.path),
-                notTar: el.notTar
+                type: el.type
             });
         }
     } else {
@@ -32,7 +32,7 @@ function Config(cwd, config){
             project: config.project,
             version: config.version,
             path: path.join(cwd, config.path),
-            notTar: config.notTar
+            type: config.type
         });
     }
 };
@@ -43,7 +43,7 @@ Config.prototype.format = function(){
             container: el.project,
             name: el.project + Constant.SPLIT + el.version,
             path: el.path,
-            notTar: el.notTar
+            compressType: el.type
         };
     });
 };

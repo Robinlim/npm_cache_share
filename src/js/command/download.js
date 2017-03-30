@@ -18,8 +18,7 @@ var __cwd = process.cwd();
         ["-h, --host [host]", "host of swift"],
         ["-u, --user [user]", "user of swift"],
         ["-p, --pass [pass]", "pass of swift"],
-        ["-c, --container [container]", "container in swift"],
-        ["-n, --notTar", "whether or not the resource is false"]
+        ["-c, --container [container]", "container in swift"]
     ]
 })*/
 module.exports = {
@@ -29,7 +28,7 @@ module.exports = {
                 name: name,
                 path: path
             });
-            swiftUtils.download(params, this.exit, options.notTar);
+            swiftUtils.download(params, this.exit);
         }catch(err){
             this.exit(err);
         }

@@ -42,7 +42,6 @@ var Command = module.exports = require('node-annotation').Annotation.extend({
                             if(opts && opts.debug){
                                 global.DEBUG = true;
                                 console.debug('In debug mode, will print all information for debug');
-                                //console.debug('Options:', opts);
                             }
                             opts = filter(opts);
                             var instance = model.instance();

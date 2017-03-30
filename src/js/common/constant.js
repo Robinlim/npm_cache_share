@@ -44,12 +44,17 @@ module.exports = {
         'installTimeout',
         'npmPlatBinds',
         'swift',
-        'resourceSwift'
+        'resourceSwift',
+        'compressType'
     ],
     ALWAYS_SYNC_FLAG: 2,
     F2B: {
         CONFIG_FILE: 'package.json',
         CONFIG_KEY: 'f2b',
         SPLIT: '/'
+    },
+    COMPRESS_TYPE: {
+        TAR: 'tar',
+        ZIP: 'zip'
     }
 }

@@ -41,7 +41,9 @@ module.exports = {
             //如果指定container，则对象创建在该container下
             if(!options.auto && params.container){
                 _.each(rs, function(cf){
-                    var p = _.extend({}, cf, params);
+                    var p = _.extend({
+                        destpath: cf.path
+                    }, cf, params);
                     swiftUtils.ensureContainerExist(p, function(err, res){
                         if(err){
                             self.exit(err);
@@ -53,7 +55,9 @@ module.exports = {
             //如果没有指定container，则会根据rs里的container值来创建（该值等同于package.json中的project），对象会存放在该container下
             }else{
                 _.each(rs, function(cf){
-                    var p = _.extend({}, params, cf);
+                    var p = _.extend({
+                        destpath: cf.path
+                    }, params, cf);
                     swiftUtils.ensureContainerExist(p, function(err, res){
                         if(err){
                             self.exit(err);

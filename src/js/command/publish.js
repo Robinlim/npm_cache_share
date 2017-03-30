@@ -106,7 +106,7 @@ module.exports = {
             registry.check([packageName], [], function(avaliable, data){
                 if(avaliable){
                     if(data && data[realName]){
-                        console.info('中央缓存已存在', realName, '本次上传将覆盖之前的包！');
+                        console.info('中央缓存已存在', realName, ',本次上传将覆盖之前的包！');
                     }
                     registry.put(uploadDir, info, function(err){
                         console.info('删除临时目录');

@@ -7,16 +7,15 @@
  */
 var path = require('path'),
     _ = require('lodash'),
-    tar = require('tar'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
-    fstream = require('fstream'),
     osHomedir = require('os-homedir'),
     semver = require('semver');
 
 
 var shellUtils = require('./shellUtils'),
     constant = require('./constant'),
+    compressUtils = require('./compressUtils'),
     SPLIT = constant.SPLIT,
     arch = process.arch,
     platform = process.platform,
@@ -88,58 +87,29 @@ var utils = module.exports = {
     /**
      * 压缩处理
      * @param  {String}   dir      需要压缩的文件夹路径
+     * @param  {String}   destpath 压缩文件里的路径
+     * @param  {String}   type     解压模式 zip 或者 tar
+     * @param  {Function} callback   回调
      * @return {stream}
      */
-    compress: function(dir) {
-        //错误处理
-        function onError(err) {
-            console.error(err);
-        }
-
-        //压缩结束
-        function onEnd() {
-            console.info('compress done!');
-        }
-
-        var packer = tar.Pack({
-                noProprietary: true
-            })
-            .on('error', onError)
-            .on('end', onEnd);
-
-        // This must be a "directory"
-        return fstream.Reader({
-                path: dir,
-                type: "Directory"
-            })
-            .pipe(packer);
+    compress: function(dir, destpath, type, callback) {
+        return compressUtils.compressStream(dir, destpath, type, function () {
+            console.debug(path.basename(dir) + ' compress done!');
+            callback && callback(dir, type);
+        });
     },
     /**
-     * 解压处理
-     * @param  {String} target       需要解压的文件
-     * @param  {String} dir          解压到的目录
+     * 解压处理，返回解压流，已确认解压路径，没有解压具体内容
+     * @param  {String} source       需要解压的文件
+     * @param  {String} target       解压到的目录
      * @param  {Function} callback   回调
      * @return {void}
      */
-    extract: function(target, dir, callback) {
-        //错误处理
-        function onError(err) {
-            callback(err);
-        }
-        //处理结束
-        function onEnd() {
-            callback();
-        }
-
-        var extractor = tar.Extract({
-                path: dir
-            })
-            .on('error', onError)
-            .on('end', onEnd);
-
-        fs.createReadStream(target)
-            .on('error', onError)
-            .pipe(extractor);
+    extract: function(source, target, callback) {
+        return compressUtils.extractStream(target, path.extname(source).substr(1), function(){
+            console.debug(path.basename(source) + ' extract done!');
+            callback && callback(source, target);
+        });
     },
     /**
      * 确保一个文件夹存在并且可写入

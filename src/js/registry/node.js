@@ -12,10 +12,13 @@ var path = require('path'),
     fsExtra = require('fs-extra'),
     fstream = require('fstream'),
     request = require('request'),
-    tar = require('tar'),
     _ = require('lodash');
 
-var utils = require('../common/utils');
+var utils = require('../common/utils'),
+    constant = require('../common/constant');
+
+var UPLOADDIR = constant.UPLOADDIR;
+
 /*@Factory("node")*/
 function nodeRegistry(config) {
     this.server = config.repository;
@@ -26,12 +29,13 @@ function nodeRegistry(config) {
 /**
  * 从公共缓存拉取模块
  * @param  {String}   moduleName            不含环境的模块名
- * @param  {path}   dir                   将要放置到的目录路径
+ * @param  {path}     dir                   将要放置到的目录路径
  * @param  {Function} cb                    [description]
  * @return {void}                         [description]
  */
 nodeRegistry.prototype.get = function(packageName, dir, cb) {
     var moduleName = packageName;
+
     request
         .get({
             url: ['http:/', this.server, 'fetch', packageName].join('/')
@@ -47,21 +51,12 @@ nodeRegistry.prototype.get = function(packageName, dir, cb) {
         .on('response', function(response) {
             if (response.statusCode == 200) {
                 // 获取文件名称
-                var target = path.resolve(dir, moduleName);
+                var target = path.resolve(dir, [moduleName, constant.COMPRESS_TYPE.TAR].join('.'));
+
                 // 解压文件操作
-                var extractor = tar.Extract({
-                        path: dir
-                    })
-                    .on('error', function(err) {
-                        console.error(target + ' extract is wrong ', err.stack);
-                        cb(err);
-                    })
-                    .on('end', function() {
-                        console.debug(target + ' extract done!');
-                        cb(null, fs.existsSync(target) && target);
-                    });
-                // 请求返回流通过管道流入解压流
-                response.pipe(extractor);
+                response.pipe(utils.extract(target, dir, function(){
+                    cb(null, fs.existsSync(target) && target);
+                }));
                 return;
             } else {
                 cb(new Error('下载模块异常:'+packageName+',statusCode:'+response.statusCode));
@@ -77,7 +72,7 @@ nodeRegistry.prototype.get = function(packageName, dir, cb) {
 /**
  * 上传模块目录到公共缓存
  * @param  {path}   dir      待上传的路径
- * @param  {json}   info    附加信息
+ * @param  {json}   info     附加信息
  * @param  {Function} callback [description]
  * @return {void}            [description]
  */
@@ -87,27 +82,17 @@ nodeRegistry.prototype.put = function(dir, info, callback) {
         return;
     }
     console.info('开始压缩需要上传模块');
-    var self = this;
-    var packer = tar.Pack({
-            noProprietary: true
-        }).on('error', function(err) {
-            console.error(dir + ' pack is wrong ', err.stack);
-            callback(err);
-        })
-        .on('end', function() {
-            console.debug(dir + ' pack done!');
-        });
-    // TODO stream.PassThrough() donnot work!
-    //var river =  new stream.PassThrough();
-    var tmpFile = path.resolve(path.dirname(dir), Date.now() + self.fileExt),
-        river = fs.createWriteStream(tmpFile);
 
-    river.on('error', function(err) {
-        console.error(err);
-        callback(err);
-    }).on('finish', function() {
+    var self = this,
+        tmpFile = path.resolve(path.dirname(dir), Date.now() + self.fileExt),
+        river = new stream.PassThrough();
+
+    utils.compress(dir, UPLOADDIR, constant.COMPRESS_TYPE.TAR).pipe(river);
+
+    river.on('end', function() {
         console.info('同步模块至服务http://' + self.server);
         var formData = info || {};
+
         request.post({
             headers: {
                 token: self.token
@@ -129,7 +114,7 @@ nodeRegistry.prototype.put = function(dir, info, callback) {
                 }
                 if(error || res.status !== 0){
                     console.error('上传发生错误：', error || res.message);
-                    callback(res.message);
+                    callback(res && res.message);
                 } else {
                     console.info('上传成功');
                     callback();
@@ -137,7 +122,8 @@ nodeRegistry.prototype.put = function(dir, info, callback) {
             }
         });
     });
-    fstream.Reader(dir).pipe(packer).pipe(river);
+
+    river.pipe(fstream.Writer(tmpFile));
 };
 
 

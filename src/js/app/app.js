@@ -17,6 +17,8 @@ var utils = require('../common/utils');
 // 初始化express
 var app = express();
 
+// 同步client的debug方法
+console.debug = console.info;
 
 // 如果存在版本文件,则初始化版本号，ref/ver为版本号存放目录,版本文件形式与fekit保持一致
 var versionPath = path.join(__dirname, 'ref/ver/versions.mapping'),

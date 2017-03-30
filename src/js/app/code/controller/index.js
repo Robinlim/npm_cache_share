@@ -11,19 +11,21 @@ var _ = require('lodash'),
     path = require('path'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
+    stream = require('stream'),
     utils = require('../../../common/utils'),
     shellUtils = require('../../../common/shellUtils'),
+    constant = require('../../../common/constant'),
     storage = require('../storage'),
     packageList = require('../dao/packageList');
-
 
 var modulesCachePath = utils.getServerCachePath(),
     fileExt = utils.getFileExt(),
     TEMPDIR = path.resolve(modulesCachePath, '.tempdir'),
-    UPLOADDIR = 'upload_dir',
+    UPLOADDIR = constant.UPLOADDIR,
     token = process.env.token;
 
 fsExtra.ensureDirSync(TEMPDIR);
+
 /*@Controller*/
 module.exports = {
     /*@RequestMapping(["/{repository}/check","/check"])*/
@@ -94,27 +96,35 @@ module.exports = {
                     return;
                 }
             }
-
+            if (!files){
+                res.end({
+                    status: 500,
+                    message: '文件流出错!!!'
+                });
+                return;
+            }
             if (files.modules.length != 0) {
                 var file = files.modules[0].path,
-                    target = path.resolve(TEMPDIR, String(Date.now()));
+                    target = path.resolve(TEMPDIR, String(Date.now())),
+                    river = new stream.PassThrough();
                 console.info('开始接收文件！' + files.modules[0].originalFilename);
-                //解压文件
-                utils.extract(file, target, function(err) {
-                    if (err) {
-                        console.error('extract is wrong ', err.stack);
-                        return;
-                    }
+
+                fs.createReadStream(file).pipe(river);
+
+                river.pipe(utils.extract(file, target, function(){
                     //删除压缩文件
                     shellUtils.rm('-f', file);
                     //压缩每个模块
                     var modules = shellUtils.ls(path.resolve(target, UPLOADDIR)),
                         count = 0;
                     modules.forEach(function(file) {
-                        var stream = utils.compress(path.resolve(target, UPLOADDIR, file));
-                        storage.put(repository, file + fileExt, stream, function(err){
+                        var riverCompress = new stream.PassThrough();
+
+                        utils.compress(path.resolve(target, UPLOADDIR, file), file, 'tar').pipe(riverCompress);
+
+                        storage.put(repository, file + fileExt, riverCompress, function(err){
                             if (err) {
-                                console.error('compress wrong ', err.stack);
+                                console.error(file + fileExt + ' upload to swift is wrong: ', err.stack);
                                 return;
                             }
                             count++;
@@ -127,7 +137,7 @@ module.exports = {
                             }
                         });
                     });
-                });
+                }));
             }
             res.end({
                 status: 0,
