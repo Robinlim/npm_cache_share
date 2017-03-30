@@ -85,11 +85,13 @@ nodeRegistry.prototype.put = function(dir, info, callback) {
 
     var self = this,
         tmpFile = path.resolve(path.dirname(dir), Date.now() + self.fileExt),
-        river = new stream.PassThrough();
+        // river = new stream.PassThrough()，
+        river = fs.createWriteStream(tmpFile);
 
-    utils.compress(dir, UPLOADDIR, constant.COMPRESS_TYPE.TAR).pipe(river);
-
-    river.on('end', function() {
+    river.on('error', function(err) {
+        console.error(err);
+        callback(err);
+    }).on('finish', function() {
         console.info('同步模块至服务http://' + self.server);
         var formData = info || {};
 
@@ -123,7 +125,7 @@ nodeRegistry.prototype.put = function(dir, info, callback) {
         });
     });
 
-    river.pipe(fstream.Writer(tmpFile));
+    utils.compress(dir, UPLOADDIR, constant.COMPRESS_TYPE.TAR).pipe(river);
 };
 
 
