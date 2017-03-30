@@ -8,7 +8,6 @@
 
 var path = require('path'),
     fs = require('fs'),
-    stream = require('stream'),
     fsExtra = require('fs-extra'),
     fstream = require('fstream'),
     request = require('request'),
@@ -85,7 +84,6 @@ nodeRegistry.prototype.put = function(dir, info, callback) {
 
     var self = this,
         tmpFile = path.resolve(path.dirname(dir), Date.now() + self.fileExt),
-        // river = new stream.PassThrough()，
         river = fs.createWriteStream(tmpFile);
 
     river.on('error', function(err) {
