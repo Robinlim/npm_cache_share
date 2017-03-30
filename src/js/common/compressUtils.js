@@ -9,7 +9,7 @@ var fs = require('fs'),
     path = require('path'),
     archiver = require('archiver'),
     tar = require('tar'),
-    unzip = require('unzip-stream');
+    unzipper = require('unzipper');
 
 var COMPRESS_TYPE = require('./constant').COMPRESS_TYPE;
 
@@ -107,7 +107,7 @@ function zipExtractStream(dir, callback) {
     function onEnd() {
         callback && callback();
     }
-    var extractor = unzip.Extract({
+    var extractor = unzipper.Extract({
             path: dir
         })
         .on('error', onError)

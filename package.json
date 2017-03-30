@@ -53,6 +53,6 @@
     "shelljs": "^0.7.3",
     "slide": "^1.1.6",
     "tar": "^2.2.1",
-    "unzip-stream": "^0.1.2"
+    "unzipper": "^0.8.8"
   }
 }
