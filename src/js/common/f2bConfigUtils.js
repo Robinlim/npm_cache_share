@@ -17,13 +17,15 @@ function Config(cwd, config){
     console.debug('f2b:', config);
     var configs = this.configs = [];
 
+    this.cwd = cwd;
+
     if ((typeof config.path) === 'undefined'){
         for(var k in config){
             var el = config[k];
             configs.push({
                 project: k,
                 version: el.version,
-                path: path.join(cwd, el.path),
+                path: el.path,
                 type: el.type
             });
         }
@@ -31,19 +33,21 @@ function Config(cwd, config){
         configs.push({
             project: config.project,
             version: config.version,
-            path: path.join(cwd, config.path),
+            path: config.path,
             type: config.type
         });
     }
 };
 
 Config.prototype.format = function(){
+    var cwd = this.cwd;
     return _.flatMap(this.configs, function(el){
         return {
             container: el.project,
             name: el.project + Constant.SPLIT + el.version,
-            path: el.path,
-            compressType: el.type
+            path: path.join(cwd, el.path),
+            compressType: el.type,
+            destpath: el.path
         };
     });
 };

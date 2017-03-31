@@ -120,7 +120,7 @@ module.exports = {
                     modules.forEach(function(file) {
                         var riverCompress = new stream.PassThrough();
 
-                        utils.compress(path.resolve(target, UPLOADDIR, file), file, 'tar').pipe(riverCompress);
+                        utils.compress(path.resolve(target, UPLOADDIR, file), file, constant.COMPRESS_TYPE.TAR).pipe(riverCompress);
 
                         storage.put(repository, file + fileExt, riverCompress, function(err){
                             if (err) {
