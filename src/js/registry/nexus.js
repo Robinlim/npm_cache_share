@@ -90,7 +90,7 @@ nexusRegistry.prototype._put = function(target, callback) {
 
     var river = new stream.PassThrough();
 
-    utils.compress(target, UPLOADDIR, 'tar').pipe(river);
+    utils.compress(target, UPLOADDIR, constant.COMPRESS_TYPE.TAR).pipe(river);
 
     request.put({
         url: url,

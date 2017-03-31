@@ -42,7 +42,7 @@ module.exports = {
             if(!options.auto && params.container){
                 _.each(rs, function(cf){
                     var p = _.extend({
-                        destpath: cf.path
+                        destpath: cf.destpath
                     }, cf, params);
                     swiftUtils.ensureContainerExist(p, function(err, res){
                         if(err){
@@ -56,7 +56,7 @@ module.exports = {
             }else{
                 _.each(rs, function(cf){
                     var p = _.extend({
-                        destpath: cf.path
+                        destpath: cf.destpath
                     }, params, cf);
                     swiftUtils.ensureContainerExist(p, function(err, res){
                         if(err){

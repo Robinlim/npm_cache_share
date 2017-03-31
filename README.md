@@ -86,7 +86,7 @@ Options:
      -w, --pass         swift仓库的密码
      -c, --container    需要上传／下载的目标容器
      -a, --auto         该参数只有qupload和qdownload使用，为true则通过package.json里的信息来指定container，否则就通过container参数或者全局配置文件里resourceSwift来指定
-     -n, --notTar       默认会进行解压操作，如果非压缩文件需要额外指明，上传不会涉及该参数，只有下载使用，上传会判断是否是目录，如果是目录则进行压缩上传，否则直接上传
+     -z, --compressType 指定压缩方式，zip或者tar，默认为tar
 
    of 'swift'           提供简单的swift操作，目前支持query和delete
      -h, --host         swift仓库的地址

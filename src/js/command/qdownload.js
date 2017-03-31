@@ -34,7 +34,7 @@ module.exports = {
             if(options.auto){
                 whitelist.container = 1;
             }
-            
+
             var params = swiftUtils.getConfig(options, 'resourceSwift', whitelist),
                 rs = f2bConfigUtils.getConfig(__cwd).format(),
                 self = this;
@@ -47,7 +47,7 @@ module.exports = {
                 }else{
                     params.container && (p.container = params.container);
                 }
-                swiftUtils.download(p, cb, p.notTar);
+                swiftUtils.download(p, cb);
             }, this.exit);
         } catch (e) {
             this.exit(e);
