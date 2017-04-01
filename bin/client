@@ -11,6 +11,7 @@ require('../src/js/common/console');
  */
 nodeAnnotation.setGlobalErrorHandler(function(err){
   console.error(err.stack || JSON.stringify(err));
+  process.exit(1);
 });
 
 /**
