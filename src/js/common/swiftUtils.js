@@ -160,7 +160,7 @@ module.exports = {
                 callback(err);
             } else {
                 var river = new stream.PassThrough();
-                
+
                 //压缩
                 Utils.compress(params.path, params.destpath, params.compressType).pipe(river);
                 //swift上传

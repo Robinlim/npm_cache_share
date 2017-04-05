@@ -40,7 +40,9 @@ module.exports = {
                 self = this;
 
             asyncMap(rs, function(el, cb){
-                var p = _.extend({}, params, el);
+                var p = _.extend({}, params, el, {
+                    name: el.name + '.' + el.compressType
+                });
                 //如果auto为true,则将package.json中f2b里的key值作为container来下载对象，否则container取参数或者配置文件里的。
                 if(options.auto){
                     p.container = el.container;
