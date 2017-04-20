@@ -309,5 +309,24 @@ var utils = module.exports = {
             }
         });
         return latest;
+    },
+    /**
+     * 生成swift资源地址
+     * @param  {[String]} host      域名
+     * @param  {[String]} user      账户
+     * @param  {[String]} container 容器
+     * @param  {[String]} obj       对象
+     * @return {[String]}
+     */
+    generateSwiftUrl: function(host, user, container, obj){
+        return "http://" + [host, user.split(':')[0], container, obj].join('/');
+    },
+    /**
+     * 判断是否是SNAPSHOT版本
+     * @param  {[String]} name 模块名称带版本
+     * @return {[Boolean]}
+     */
+    isSnapshot: function(name) {
+        return RegExp(constant.VERSION_TYPE.SNAPSHOT, 'i').test(name);
     }
 };

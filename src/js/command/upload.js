@@ -7,7 +7,8 @@
 */
 var _ = require('lodash'),
     Path = require('path'),
-    swiftUtils = require('../common/swiftUtils');
+    swiftUtils = require('../common/swiftUtils'),
+    utils = require('../common/utils');
 
 var __cwd = process.cwd();
 /*@Command({
@@ -19,19 +20,20 @@ var __cwd = process.cwd();
         ["-u, --user [user]", "user of swift"],
         ["-p, --pass [pass]", "pass of swift"],
         ["-c, --container [container]", "container in swift"],
+        ["-f, --forceUpdate", "if exists, module on the server will be overrided"],
         ["-z, --compressType [compressType]", "compress type, it is tar or zip, default is tar", "tar"]
     ]
 })*/
 module.exports = {
     run: function(path, name, options){
         try{
-            var params = _.extend({}, swiftUtils.getConfig(options, 'resourceSwift'), {
-                name: name,
-                path: swiftUtils.check(path),
-                compressType: options.compressType,
-                destpath: Path.relative(process.cwd(), path)
-            });
-            swiftUtils.upload(params, this.exit);
+            var params = _.extend({}, swiftUtils.getConfig(options, utils.isSnapshot(name) ? 'resourceSnapshotSwift': 'resourceSwift'), {
+                    name: name,
+                    path: swiftUtils.check(path),
+                    compressType: options.compressType,
+                    destpath: Path.relative(process.cwd(), path)
+                });
+            swiftUtils.upload(params, this.exit, options.forceUpdate);
         }catch(err){
             if(err){
                 console.error(err.stack || err);

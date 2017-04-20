@@ -8,6 +8,12 @@
 # 文件忽略
 可以在.ignore或者.gitignore里指定需要忽略的目录和文件。
 
+# SNAPSHOT
+在package.json里version属性里含有 **SNAPSHOT** 字样的都将被作为快照版本对待，可在配置文件里配置分隔符（SNAPSHOTLINKE属性），默认为-。行为描述如下：
+- 发布：始终会覆盖同名模块
+- 安装：始终会从服务器端更新，忽略本地缓存
+注意：包发布是通过公共缓存服务来上传的，所以SNAPSHOT和RELEASE的配置由服务端来决定，请参见[公共服务](./server.md)
+
 # 安装
 在初次新增依赖时，通过ncs install (包名称)[@包版本]；或者在相关依赖固化之后，直接使用ncs install，都会优先安装通过ncs publish发布到仓库的包。如果未找到，才会尝试从npm源安装。
 
@@ -25,8 +31,10 @@
 >-    -t, --token [token]            use the token to access the npm_cache_share server
 >-    -p, --password [password]      use the password to access certain package
 >-    -d, --dependOnEnv              whether the package is depend on environment meaning whether this package itself need node-gyp compile
->-    -s, --cancelAlwaysSync         mark this package to be NOT sync on each install action
 >-    -r, --registry [registry]      specify the npm registry
+>-    -s, --snapshot                 specify this is a snapshot version"],
+>-    -u, --alwaysUpdate             this module will publish overwrite the same version on the server, and will always update when install, if -s not specify, the version remain unchanged"],
+>-    -o, --overwrite                if -s exist, it will overwrite the version into package.json"]
 
 # 参数额外说明
 - repository参数包含两部分，一部分是服务域名和端口，另一部分是repository name，对于swift就是container，对于localfile就是文件名

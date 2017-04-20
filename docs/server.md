@@ -1,6 +1,9 @@
 # 中央公共服务
 在安装模块的时候，一般在本地机器上会存有模块的缓存，但这样缓存信息只能单台机器享有，为了使多台机器共享模块缓存，需要搭建中央公共服务来提供服务，该服务还涉及权限认证，避免普通用户修改影响到公共资源。
 
+# SNAPSHOT
+启动的时候默认会有SNAPSHOT和RELEASE的区分，可通过配置storageSnapshotConfig和storageConfig来分别指定，当storageSnapshotConfig不存在时，会默认等同于storageConfigs。
+
 # 权限
 避免任何人都能修改缓存信息，增加了token校验，如果设置了token参数，在更新的时候会校验请求头里token的值。
 

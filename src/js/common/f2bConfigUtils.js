@@ -13,7 +13,7 @@ var _ = require('lodash'),
     fsExtra = require('fs-extra'),
     Constant = require('./constant')['F2B'];
 
-function Config(cwd, config){
+function Config(cwd, config, options, root){
     console.debug('f2b:', config);
     var configs = this.configs = [];
 
@@ -30,8 +30,11 @@ function Config(cwd, config){
             });
         }
     } else {
+        //校验工程命名
+        options.nameReg && utils.checkName(config.project||root.name, options.nameReg);
+
         configs.push({
-            project: config.project,
+            project: config.project || root.name,
             version: config.version,
             path: config.path,
             type: config.type
@@ -52,14 +55,22 @@ Config.prototype.format = function(){
     });
 };
 
-module.exports = {
-    getConfig: function(cwd){
+var utils = module.exports = {
+    getConfig: function(cwd, options){
         var content = fsExtra.readJsonSync(path.join(cwd, Constant.CONFIG_FILE)),
             config = content[Constant.CONFIG_KEY];
         if(typeof config === 'undefined'){
             throw new Error('Can`t find ' + Constant.CONFIG_KEY + ' in ' + Constant.CONFIG_FILE);
         } else {
-            return new Config(cwd, config);
+            return new Config(cwd, config, options, content);
+        }
+    },
+    checkName: function(name, nameReg){
+        if(!nameReg){
+            return;
+        }
+        if(!RegExp(nameReg).test(name)){
+            throw new Error('命名不符合规则' + nameReg + '!!!');
         }
     }
 };

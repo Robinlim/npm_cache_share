@@ -9,8 +9,8 @@
 'use strict'
 
 var _ = require('lodash'),
-    f2bConfigUtils = require('../common/f2bConfigUtils'),
-    swiftUtils = require('../common/swiftUtils');
+    swiftUtils = require('../common/swiftUtils'),
+    utils = require('../common/utils');
 
 /*@Command({
     "name": "swift [action] [name]",
@@ -27,11 +27,12 @@ module.exports = {
     run: function(action, name, options) {
         try {
             var params = swiftUtils.getConfig(options, 'resourceSwift'),
+                snapshotParams = swiftUtils.getConfig(options, 'resourceSnapshotSwift'),
                 command = { query:1, delete:1 };
             params.name = name;
 
             if(command[action]){
-                this[action](params, this.exit);
+                this[action]( utils.isSnapshot(name) && snapshotParams || params, this.exit);
             }else{
                 throw new Error('非法swift指令操作:' + action);
             }

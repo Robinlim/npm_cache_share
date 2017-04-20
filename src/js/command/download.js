@@ -7,6 +7,7 @@
 */
 
 var swiftUtils = require('../common/swiftUtils'),
+    utils = require('../common/utils'),
     _ = require('lodash');
 
 var __cwd = process.cwd();
@@ -24,10 +25,10 @@ var __cwd = process.cwd();
 module.exports = {
     run: function(name, path, options){
         try{
-            var params = _.extend({}, swiftUtils.getConfig(options, 'resourceSwift'), {
-                name: name,
-                path: path
-            });
+            var params = _.extend({}, swiftUtils.getConfig(options, utils.isSnapshot(name) ? 'resourceSnapshotSwift' : 'resourceSwift'), {
+                    name: name,
+                    path: path
+                });
             swiftUtils.download(params, this.exit);
         }catch(err){
             this.exit(err);

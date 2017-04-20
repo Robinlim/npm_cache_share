@@ -55,6 +55,20 @@ module.exports = {
             }
         });
     },
+    npmDedupe: function() {
+        console.info('执行npm dedupe');
+        //将层次结构重新组织
+        shellUtils.exec(this.npmPath + ' dedupe', {
+            async: false
+        });
+    },
+    npmPrune: function() {
+        console.info('执行npm prune');
+        //删除多余的模块
+        shellUtils.exec(this.npmPath + ' prune', {
+            async: false
+        });
+    },
     npmShrinkwrap: function(cbk){
         shellUtils.exec(this.npmPath + ' shrinkwrap', function(code, stdout, stderr){
             if (code!== 0) {

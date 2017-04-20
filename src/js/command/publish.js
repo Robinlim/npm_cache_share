@@ -12,11 +12,12 @@ var fs = require('fs'),
     path = require('path'),
     fsExtra = require('fs-extra'),
     fstream = require('fstream'),
-    fignore = require("fstream-ignore"),
+    fignore = require('fstream-ignore'),
     Factory = require('../annotation/Factory'),
     utils = require('../common/utils'),
     npmUtils = require('../common/npmUtils'),
     shellUtils = require('../common/shellUtils'),
+    f2bConfigUtils = require('../common/f2bConfigUtils'),
     constant = require('../common/constant');
 
 var __cwd = process.cwd(),
@@ -28,18 +29,20 @@ var __cwd = process.cwd(),
 /*@Command({
     "name": "publish",
     "alias":"p",
-    "des":"Publish a dir as a package to center cache server",
+    "des":"Publish a dir as a package to center cache server，only for node type",
     options:[
         ["-c, --type [type]", "server type node/npm, default is node", "node"],
         ["-e, --repository [repository]", "specify the repository, format as HOST:PORT/REPOSITORY-NAME"],
         ["-t, --token [token]", "use the token to access the npm_cache_share server"],
         ["-p, --password [password]", "use the password to access certain package"],
         ["-b, --dependOnEnv", "whether the package is depend on environment meaning whether this package itself need node-gyp compile"],
-        ["-s, --cancelAlwaysSync", "mark this package to be NOT sync on each install action"],
-
-        ["-r, --registry [registry]", "specify the npm registry"]
+        ["-r, --registry [registry]", "specify the npm registry"],
+        ["-s, --snapshot", "specify this is a snapshot version"],
+        ["-u, --alwaysUpdate", "this module will publish overwrite the same version on the server, and will always update when install, if -s not specify, the version remain unchanged"],
+        ["-o, --overwrite", "if -s exist, it will overwrite the version into package.json"]
     ]
 })*/
+
 module.exports = {
     run: function(options){
         console.info('******************开始发布******************');
@@ -67,19 +70,34 @@ module.exports = {
             exit(e);
             return;
         }
-        var moduleName = packageInfo.name,
-            moduleVersion = packageInfo.version,
-            packageName = utils.getModuleName(moduleName, moduleVersion),
+
+        //校验工程命名
+        var moduleName = packageInfo.name;
+        f2bConfigUtils.checkName(moduleName, options.nameReg);
+
+        var moduleVersion = packageInfo.version;
+        if(utils.isSnapshot(moduleVersion)){
+            options.snapshot = true;
+        }else if(options.snapshot){
+            moduleVersion += (options.SNAPSHOTLINK || '-') + constant.VERSION_TYPE.SNAPSHOT;
+        }
+
+        if(options.snapshot){
+            console.info('将发布SNAPSHOT版本，每次发布都会覆盖现有同名版本。');
+        }else if(options.alwaysUpdate){
+            console.info('设定该模块每次发布都会覆盖现有同名版本，并且安装时都会拉取最新。');
+        }
+
+        var packageName = utils.getModuleName(moduleName, moduleVersion),
             packageNameWithEnv = utils.getModuleNameForPlatform(moduleName, moduleVersion),
             realName = options.dependOnEnv?packageNameWithEnv:packageName;
         console.info('即将上传的包名称：', realName);
-        var alwaysSync = !options.cancelAlwaysSync;
-        console.info('该包在本地安装时'+(alwaysSync?'':'不')+'会每次从中央缓存同步最新代码状态。');
+
 
         // info value in form-data must be a string or buffer
         var info = {
             name: moduleName,
-            alwaysSync: alwaysSync?'on':'off',
+            alwaysSync: options.snapshot || options.alwaysUpdate ?'on':'off',
             isPrivate: 'on',
             user: 'default',
             password: options.password || ''
@@ -106,19 +124,35 @@ module.exports = {
             registry.check([packageName], [], function(avaliable, data){
                 if(avaliable){
                     if(data && data[realName]){
-                        console.info('中央缓存已存在', realName, ',本次上传将覆盖之前的包！');
+                        if(utils.isSnapshot(realName) || options.alwaysUpdate){
+                            console.info('中央缓存已存在', realName, ',本次上传将覆盖之前的包！');
+                        }else{
+                            exit('中央缓存已存在' + realName + ',请更新版本！！！');
+                            return;
+                        }
                     }
                     registry.put(uploadDir, info, function(err){
+                        //将版本重写package.json
+                        options.snapshot && options.overwrite && rewritePkg();
+
                         console.info('删除临时目录');
                         shellUtils.rm('-rf', uploadDir);
+
                         exit(err);
                     });
                 } else {
-                    console.error('中央缓存服务不可用，无法上传！');
+                    console.error('中央缓存服务不可用，无法上传！s');
                 }
             });
         });
         source.pipe(target);
+
+        //重写version
+        function rewritePkg() {
+            console.info('更新package.json里的版本信息');
+            packageInfo.version = moduleVersion;
+            fsExtra.writeJsonSync(npmPackagePath, packageInfo);
+        }
     },
     /**
      * 发布到npm

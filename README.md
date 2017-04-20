@@ -25,6 +25,12 @@
 - [包发布与安装](./docs/modules.md)
 - [架构](./docs/architecture.md)
 
+## 工程命名
+在pacakage.json中针对name的格式进行约束，只有满足了该格式才允许继续，可参见[工程命名](./docs/projecName.md)，注意需要符合npm的命名要求
+
+## SNAPSHOT和RELEASE
+区分SNAPSHOT和RELEASE版本，根据文件名来自动识别是NAPSHOT，还是RELEASE，可参加[SNAPSHOT和RELEASE](./docs/version.md)
+
 ## 注意
 > 针对optionalDependecise里的包，明确知道系统环境不符合，可以在配置文件中配置npmPlatBinds来过滤这些模块。
 > 例子：安装fsevents包，需要OS是darwin，但当前环境是linux，此时可以设置 npmPlatBinds = {"fsevents": 1}
@@ -78,13 +84,16 @@ Options:
      -t,--token         仅type=node，指定公共服务上传所需要校验的token
      -p,--password      每个包上传时可以设置一个密码，覆盖该包时必须使用该密码
      -b, --dependOnEnv  标明该包是否依赖环境（node-gyp）
-     -s, --cancelAlwaysSync 默认上传的包每次都会跳过本地缓存而使用中央缓存，设置该项将允许包使用本地缓存
+     -s, --snapshot     作为快照版本上传，发布始终覆盖，安装始终更新，忽略本地缓存
+     -u, --alwaysUpdate 覆盖服务器上同名版本（在单机服务的情况下安装会始终更新，忽略本地缓存），version内容不变
+     -o, --override     如果指定-s参数，则会将新的version更新文件信息，默认不更新    
 
    of 'upload','download','qupload','qdownload'
      -h, --host         swift仓库的地址
      -u, --user         swift仓库的账户        
      -w, --pass         swift仓库的密码
      -c, --container    需要上传／下载的目标容器
+     -f, --forceUpdate  该参数只有qupload和upload使用，会覆盖服务器上同名版本
      -a, --auto         该参数只有qupload和qdownload使用，为true则通过package.json里的信息来指定container，否则就通过container参数或者全局配置文件里resourceSwift来指定
      -z, --compressType 指定压缩方式，zip或者tar，默认为tar
 
@@ -99,3 +108,7 @@ Options:
 
 ## 历史版本
 [历史版本](./docs/history.md)
+
+## 问题
+- 如果发现执行ncs install时资源404的场景，可以到swift容器中查看是否存在，如果不存在，则可能是服务器缓存上传
+导致，可以重启中央缓存服务。

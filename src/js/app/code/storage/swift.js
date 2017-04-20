@@ -8,51 +8,61 @@
 
 var _ = require('lodash'),
     cache = require('./cache'),
-    Swift = require('../../../lib/swiftClient');
+    Swift = require('../../../lib/swiftClient'),
+    Utils = require('../../../common/utils');
 
 /*@Factory("swift")*/
-function swift(config){
+function swift(config, snapshotConfig){
     var self = this;
-    this.avaliable = false;
-    this.config = {
-        host: config[0],//'l-swift1.ops.dev.cn0.qunar.com',
-        user: config[1],//'test:tester',
-        pass: config[2] //'testing'
-    };
-    this.user = this.config.user.split(':')[0];
-    var storage = new Swift(this.config, function(err, res){
-        if(err) {
-            handleInitError(err);
-        } else if(storage.account && storage.token){
-            self.avaliable = true;
-            self.init();
-        } else {
-            handleInitError(new Error('Request token fail:'+res.statusCode));
-        }
-    });
-    this.storage = storage;
+    //SNAPSHOT版本
+    this.snapshot = init(snapshotConfig, true);
+    //正式版本
+    this.release = init(config, false);
+
+    function init(opts, isSnapshot) {
+        var rs = {
+            avaliable: false,
+            config: {
+                host: opts[0],//'l-swift1.ops.dev.cn0.qunar.com',
+                user: opts[1],//'test:tester',
+                pass: opts[2] //'testing'
+            }
+        };
+        rs.user = rs.config.user.split(':')[0];
+        rs.storage = new Swift(rs.config, function(err, res){
+            if(err) {
+                handleInitError(err);
+            } else if(rs.storage.account && rs.storage.token){
+                rs.avaliable = true;
+                self.init(isSnapshot);
+            } else {
+                handleInitError(new Error('Request token fail:'+res.statusCode));
+            }
+        });
+        return rs;
+    }
 }
 
-swift.prototype.init = function(){
+swift.prototype.init = function(isSnapshot){
     var self = this;
-    self.listRepository(function(err, list){
+    self.listRepository(isSnapshot, function(err, list){
         if(err){
             handleInitError(err);
             return;
         }
         _.forEach(list, function(el){
             var repository = el.name;
-            cache.addRepository(repository, {
+            cache.addRepository(isSnapshot, repository, {
                 size: el.bytes,
                 count: el.count
             });
-            self.listPackages(repository, function(e, pcks){
+            self.listPackages(isSnapshot, repository, function(e, pcks){
                 if(e){
                     handleInitError(e);
                     return;
                 }
                 _.forEach(pcks, function(pl){
-                    cache.addPackage(repository, pl.name);
+                    cache.addPackage(isSnapshot, repository, pl.name);
                 });
             });
         });
@@ -61,36 +71,39 @@ swift.prototype.init = function(){
 
 swift.prototype.sync = function(){
     cache.clear();
-    this.init();
+    //SNAPSHOT
+    this.init(true);
+    //RELEASE
+    this.init(false);
 };
 
 swift.prototype.check = function(){
-    return this.avaliable;
+    return this.snapshot.avaliable && this.release.avaliable;
 };
 
-swift.prototype.createRepository = function(repository, cbk){
-    this.storage.createContainer(repository, function(err, res){
+swift.prototype.createRepository = function(isSnapshot, repository, cbk){
+    this.getConfig(isSnapshot).storage.createContainer(repository, function(err, res){
         if(err) {
             cbk(err);
         } else {
-            cache.addRepository(repository);
+            cache.addRepository(isSnapshot, repository);
             cbk(null, res);
         }
     });
 };
 
-swift.prototype.listRepository = function(cbk){
+swift.prototype.listRepository = function(isSnapshot, cbk){
     // eg:［{"count": 5, "bytes": 36464, "name": "template"}］
-    this.storage.listContainers(handlerResponse(cbk));
+    this.getConfig(isSnapshot).storage.listContainers(handlerResponse(cbk));
 };
 
-swift.prototype.listPackages = function(repository, cbk){
+swift.prototype.listPackages = function(isSnapshot, repository, cbk){
     // eg: [{"hash": "9f6e6800cfae7749eb6c486619254b9c", "last_modified": "2016-08-11T07:20:38.174980", "bytes": 3, "name": "/abssc/11.txt", "content_type": "text/plain"},{..}]
-    this.storage.listObjects(repository, handlerResponse(cbk));
+    this.getConfig(isSnapshot).storage.listObjects(repository, handlerResponse(cbk));
 };
 
-swift.prototype.listPackageInfo = function(repository, name, cbk){
-    this.storage.retrieveObjectMetadata(repository, name, function(err, res){
+swift.prototype.listPackageInfo = function(isSnapshot, repository, name, cbk){
+    this.getConfig(isSnapshot).storage.retrieveObjectMetadata(repository, name, function(err, res){
         if(err || res.statusCode !== 200){
             cbk(err);
             return;
@@ -120,19 +133,27 @@ swift.prototype.listPackageInfo = function(repository, name, cbk){
 };
 
 swift.prototype.get = function(repository, name, res){
+    var opts = this.getConfig(name);
     res.setHeader('modulename', name);
-    res.redirect(['http:/', this.config.host, this.user, repository, name].join('/'));
+    res.redirect(['http:/', opts.config.host, opts.user, repository, name].join('/'));
 };
 
 swift.prototype.put = function(repository, name, stream, cbk){
-    this.storage.createObjectWithStream(repository, name, stream, function(err){
+    this.getConfig(name).storage.createObjectWithStream(repository, name, stream, function(err){
         if(err) {
             cbk(err);
         } else {
-            cache.addPackage(repository, name);
+            cache.addPackage(Utils.isSnapshot(name), repository, name);
             cbk();
         }
     });
+};
+
+swift.prototype.getConfig = function(name) {
+    if(typeof name == 'boolean'){
+        return name ? this.snapshot : this.release;
+    }
+    return Utils.isSnapshot(name) ? this.snapshot : this.release;
 };
 
 /**

@@ -10,7 +10,8 @@
 
 var _ = require('lodash'),
     f2bConfigUtils = require('../common/f2bConfigUtils'),
-    swiftUtils = require('../common/swiftUtils');
+    swiftUtils = require('../common/swiftUtils'),
+    utils = require('../common/utils'),;
 
 var __cwd = process.cwd();
 /*@Command({
@@ -22,6 +23,7 @@ var __cwd = process.cwd();
         ["-u, --user [user]", "user of swift"],
         ["-p, --pass [pass]", "pass of swift"],
         ["-c, --container [container]", "container in swift"],
+        ["-f, --forceUpdate", "if exists, module on the server will be overrided"],
         ["-a, --auto", "create container automatically according to package.json,use project parameter in f2b, it will ignore container parameter in command"]
     ]
 })*/
@@ -35,7 +37,8 @@ module.exports = {
             }
 
             var params = swiftUtils.getConfig(options, 'resourceSwift', whitelist),
-                rs = f2bConfigUtils.getConfig(__cwd).format(),
+                snapshotParams = swiftUtils.getConfig(options, 'resourceSnapshotSwift', whitelist),
+                rs = f2bConfigUtils.getConfig(__cwd, options).format(),
                 self = this;
 
             //如果指定container，则对象创建在该container下
@@ -43,13 +46,13 @@ module.exports = {
                 _.each(rs, function(cf){
                     var p = _.extend({
                         destpath: cf.destpath
-                    }, cf, params);
+                    }, cf, utils.isSnapshot(cf.name) && snapshotParams || params);
                     swiftUtils.ensureContainerExist(p, function(err, res){
                         if(err){
                             self.exit(err);
                             return;
                         }
-                        swiftUtils.upload(p, self.exit);
+                        swiftUtils.upload(p, self.exit, options.forceUpdate);
                     });
                 });
             //如果没有指定container，则会根据rs里的container值来创建（该值等同于package.json中的project），对象会存放在该container下
@@ -57,13 +60,13 @@ module.exports = {
                 _.each(rs, function(cf){
                     var p = _.extend({
                         destpath: cf.destpath
-                    }, params, cf);
+                    }, utils.isSnapshot(cf.name) && snapshotParams || params, cf);
                     swiftUtils.ensureContainerExist(p, function(err, res){
                         if(err){
                             self.exit(err);
                             return;
                         }
-                        swiftUtils.upload(p, self.exit);
+                        swiftUtils.upload(p, self.exit, options.forceUpdate);
                     });
                 });
             }

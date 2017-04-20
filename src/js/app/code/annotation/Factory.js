@@ -34,13 +34,14 @@ var Factory = module.exports = require('node-annotation').Annotation.extend({
      * 根据key获取值
      * @param  {String} k   key value
      * @param  {Object} ops instance option
+     * @param  {Object} snapshotOpts instance option
      * @return {Object}
      */
-    instance: function(k, ops){
+    instance: function(k, ops, snapshotOpts){
         if(!this._items[k]){
             throw new Error('Unrecongnize storage type:'+k);
         };
         var classType = this._items[k].instance();
-        return new classType(ops);
+        return new classType(ops, snapshotOpts);
     }
 });

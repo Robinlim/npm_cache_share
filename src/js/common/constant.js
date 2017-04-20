@@ -41,11 +41,14 @@ module.exports = {
         'name',
         'storage',
         'storageConfig',
+        'storageSnapshotConfig',
         'installTimeout',
         'npmPlatBinds',
         'swift',
         'resourceSwift',
-        'compressType'
+        'resourceSnapshotSwift',
+        'compressType',
+        'nameReg'
     ],
     ALWAYS_SYNC_FLAG: 2,
     F2B: {
@@ -56,5 +59,9 @@ module.exports = {
     COMPRESS_TYPE: {
         TAR: 'tar',
         ZIP: 'zip'
+    },
+    VERSION_TYPE:{
+        SNAPSHOT: 'SNAPSHOT',
+        RELEASE: 'RELEASE'
     }
 }

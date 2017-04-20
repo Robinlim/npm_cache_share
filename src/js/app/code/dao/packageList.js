@@ -55,7 +55,9 @@ module.exports = {
         var hit = {};
         _.forEach(list, function(el){
             var name = utils.splitModuleName(el);
-            if(_map[name] && _map[name].alwaysSync){
+            //只要含有SNAPSHOT标示就算，由于存在本地会导致多机情况下实效，最低要保证SNAPSHOT版本的更新
+            //TODO redis解决
+            if((_map[name] && _map[name].alwaysSync) || utils.isSnapshot(el)){
                 hit[el] = constant.ALWAYS_SYNC_FLAG;
             }
         });

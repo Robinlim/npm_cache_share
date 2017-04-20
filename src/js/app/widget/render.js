@@ -61,6 +61,7 @@ module.exports = {
             style: defaultStylesheet.concat(iconStyle(['box'], true)),
             name: params.name,
             repository: params.repository,
+            versionType: params.versionType,
             size: (params.stat.size/1024).toFixed(2) + 'Kb',
             create_time: params.stat.birthtime?params.stat.birthtime.toLocaleString():'',
             last_modified_time: params.stat.mtime.toLocaleString()

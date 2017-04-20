@@ -39,9 +39,9 @@ module.exports = {
                 port: opts.port || '8888',
                 token: opts.token,   //请求校验
                 storage: opts.storage || 'localfile',
-                storageConfig: opts.storageConfig
-            }, process.env);
-
+                storageConfig: opts.storageConfig,
+                storageSnapshotConfig: opts.storageSnapshotConfig || opts.storageConfig
+            }, process.env); 
         // 没有pm2或者指定了useFork就使用fork子进程方式
         if (!pm2 || opts.useFork) {
             console.info('Connot find pm2, will start server with fork.');

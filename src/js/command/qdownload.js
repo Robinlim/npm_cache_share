@@ -11,7 +11,8 @@
 var _ = require('lodash'),
     asyncMap = require("slide").asyncMap,
     f2bConfigUtils = require('../common/f2bConfigUtils'),
-    swiftUtils = require('../common/swiftUtils');
+    swiftUtils = require('../common/swiftUtils'),
+    utils = require('../common/utils');
 
 var __cwd = process.cwd();
 /*@Command({
@@ -36,11 +37,12 @@ module.exports = {
             }
 
             var params = swiftUtils.getConfig(options, 'resourceSwift', whitelist),
-                rs = f2bConfigUtils.getConfig(__cwd).format(),
+                snapshotParams = swiftUtils.getConfig(options, 'resourceSnapshotSwift', whitelist),
+                rs = f2bConfigUtils.getConfig(__cwd, options).format(),
                 self = this;
 
             asyncMap(rs, function(el, cb){
-                var p = _.extend({}, params, el, {
+                var p = _.extend({}, utils.isSnapshot(el.name) && snapshotParams || params, el, {
                     name: el.name + '.' + el.compressType
                 });
                 //如果auto为true,则将package.json中f2b里的key值作为container来下载对象，否则container取参数或者配置文件里的。

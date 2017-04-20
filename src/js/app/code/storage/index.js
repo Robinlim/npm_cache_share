@@ -12,18 +12,19 @@ var Factory = require('../annotation/Factory'),
 
 var storage = null;
 
-function getStorage(storageType, opts){
+function getStorage(storageType, opts, snapshotOpts){
     if(!storage){
-        storage = Factory.instance(storageType, opts);
+        storage = Factory.instance(storageType, opts, snapshotOpts);
     }
     return storage;
 };
 
 
 module.exports = {
-    init: function(type, opts){
+    init: function(type, opts, snapshotOpts){
+        opts == snapshotOpts && cache.same();
         // opts can be a STRING ! ‘undefined’
-        getStorage(type, opts === 'undefined' ? [] : (opts || "").split('|'));
+        getStorage(type, opts === 'undefined' ? [] : (opts || "").split('|'), snapshotOpts === 'undefined' ? [] : (snapshotOpts || "").split('|'));
     },
     sync: function(){
         var sto = getStorage();

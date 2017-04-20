@@ -149,7 +149,7 @@ module.exports = {
                                 callback(err1);
                             } else {
                                 if(children){
-                                    installUtils.parse(childrenPath, this.registry, children, self.opts, callback);
+                                    installUtils.parse(childrenPath, self.registry, children, self.opts, callback);
                                 } else {
                                     // 子模块默认指定--prodcution
                                     var opts = _.extend({
@@ -189,11 +189,13 @@ module.exports = {
                 packageInfo[dependenceKey][this.module.name] = this.module.isPrivate?
                     this.module.url : this.module.version;
                 try {
-                    fsExtra.writeJson(npmPackagePath, packageInfo);
+                    fsExtra.writeJsonSync(npmPackagePath, packageInfo);
                 } catch (e) {
                     callback(e);
                     return;
                 }
+                npmUtils.npmDedupe();
+                npmUtils.npmPrune();
                 // 安装特定模块后重新npm-shrinkwrap
                 npmUtils.npmShrinkwrap(callback);
             } else {
