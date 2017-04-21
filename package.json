@@ -25,6 +25,10 @@
   "engines": [
     "node"
   ],
+  "bugs": {
+      "url": "https://github.com/Robinlim/npm_cache_share/issues",
+      "email": "robinlim9@aliyun.com"
+  },
   "dependencies": {
     "ansi-styles": "^2.2.1",
     "archiver": "^1.3.0",
