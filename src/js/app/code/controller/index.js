@@ -122,7 +122,6 @@ module.exports = {
                         storage.put(repository, file + fileExt, riverCompress, function(err){
                             if (err) {
                                 console.error(file + fileExt + ' upload to swift is wrong: ', err.stack);
-                                return;
                             }
                             count++;
                             if (count == modules.length) {
