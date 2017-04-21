@@ -12,6 +12,7 @@ var _ = require('lodash'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
     stream = require('stream'),
+    multiparty = require('multiparty'),
     utils = require('../../../common/utils'),
     shellUtils = require('../../../common/shellUtils'),
     constant = require('../../../common/constant'),
@@ -67,7 +68,6 @@ module.exports = {
             return;
         }
 
-        var multiparty = require('multiparty');
         // parse a file upload
         var form = new multiparty.Form({
             encoding: 'utf-8',
