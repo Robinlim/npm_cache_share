@@ -56,14 +56,14 @@ module.exports = {
         });
     },
     npmDedupe: function() {
-        console.info('执行npm dedupe');
+        console.info('模块重组');
         //将层次结构重新组织
         shellUtils.exec(this.npmPath + ' dedupe', {
             async: false
         });
     },
     npmPrune: function() {
-        console.info('执行npm prune');
+        console.info('清除多余模块');
         //删除多余的模块
         shellUtils.exec(this.npmPath + ' prune', {
             async: false

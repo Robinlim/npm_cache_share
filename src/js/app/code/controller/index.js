@@ -105,13 +105,10 @@ module.exports = {
             }
             if (files.modules.length != 0) {
                 var file = files.modules[0].path,
-                    target = path.resolve(TEMPDIR, String(Date.now())),
-                    river = new stream.PassThrough();
+                    target = path.resolve(TEMPDIR, String(Date.now()));
                 console.info('开始接收文件！' + files.modules[0].originalFilename);
 
-                fs.createReadStream(file).pipe(river);
-
-                river.pipe(utils.extract(file, target, function(){
+                fs.createReadStream(file).pipe(utils.extract(file, target, function(){
                     //删除压缩文件
                     shellUtils.rm('-f', file);
                     //压缩每个模块
@@ -145,17 +142,18 @@ module.exports = {
             });
         });
     },
-    /*@RequestMapping("/list")*/
+    /*@RequestMapping("/list/{versionType}")*/
     /*@ResponseBody*/
-    list: function(req, res, reqData){
+    list: function(req, res, versionType, reqData){
+        var isSnapshotB = isSnapshot(versionType);
         if(reqData.repository){
             if(reqData.name){
-                res.end(storage.listPackages(reqData.repository,reqData.name));
+                res.end(storage.listPackages(isSnapshotB, reqData.repository,reqData.name));
             } else {
-                res.end(storage.listModules(reqData.repository));
+                res.end(storage.listModules(isSnapshotB, reqData.repository));
             }
         } else {
-            res.end(storage.listAll());
+            res.end(storage.listAll(isSnapshotB));
         }
     },
     /*@RequestMapping("/{repository}/info")*/
@@ -164,7 +162,7 @@ module.exports = {
         var name = reqData.name,
             version = reqData.version,
             platform = reqData.platform,
-            all = storage.listPackages(repository, name) || [],
+            all = storage.listPackages(utils.isSnapshot(version), repository, name) || [],
             fileExt = utils.getFileExt(),
             packages = _.map(all, function(el){
                 return _.trimEnd(el, fileExt);
@@ -209,4 +207,8 @@ function resolveRepository(name){
     var repositoryPath = path.join(modulesCachePath, name || 'default');
     fsExtra.ensureDirSync(repositoryPath);
     return repositoryPath;
+}
+
+function isSnapshot(versionType) {
+    return versionType.toUpperCase() == constant.VERSION_TYPE.SNAPSHOT;
 }

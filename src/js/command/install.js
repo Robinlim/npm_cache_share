@@ -194,7 +194,6 @@ module.exports = {
                     callback(e);
                     return;
                 }
-                npmUtils.npmDedupe();
                 npmUtils.npmPrune();
                 // 安装特定模块后重新npm-shrinkwrap
                 npmUtils.npmShrinkwrap(callback);
