@@ -53,9 +53,9 @@ example package.json
 {
   	...
  	"f2b": {
-  		"project": "sample_project",
-  		"version": "btag-1234567",
-  		"path": "./ver",
+        "project": "sample_project",
+        "version": "btag-1234567",
+        "path": "./ver",
         "type": "zip"
 	}
     ...

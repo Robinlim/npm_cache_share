@@ -26,13 +26,12 @@ var _ = require('lodash'),
 module.exports = {
     run: function(action, name, options) {
         try {
-            var params = swiftUtils.getConfig(options, 'resourceSwift'),
-                snapshotParams = swiftUtils.getConfig(options, 'resourceSnapshotSwift'),
+            var params = swiftUtils.getConfig(options, utils.isSnapshot(name) ? 'resourceSnapshotSwift' : 'resourceSwift'),
                 command = { query:1, delete:1 };
             params.name = name;
 
             if(command[action]){
-                this[action]( utils.isSnapshot(name) && snapshotParams || params, this.exit);
+                this[action](params, this.exit);
             }else{
                 throw new Error('非法swift指令操作:' + action);
             }
