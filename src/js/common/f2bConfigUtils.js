@@ -30,9 +30,6 @@ function Config(cwd, config, options, root){
             });
         }
     } else {
-        //校验工程命名
-        options.nameReg && utils.checkName(config.project||root.name, options.nameReg);
-
         configs.push({
             project: config.project || root.name,
             version: config.version,

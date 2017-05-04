@@ -42,17 +42,17 @@ module.exports = {
         this.base = base;
         // 缓存注册中心实例
         this.registry = registry;
-        //构建安装参数
+        // 构建安装参数
         this.opts = opts;
 
-        //确保本地缓存文件夹及node_modules存在并可写入
+        // 确保本地缓存文件夹及node_modules存在并可写入
         utils.ensureDirWriteablSync(__cache);
         utils.ensureDirWriteablSync(path.resolve(__cache, MODULECHECKER));
         utils.ensureDirWriteablSync(path.resolve(__cache, LIBNAME));
         utils.ensureDirWriteablSync(path.resolve(__cache, UPLOADDIR));
         // 清空uploadDir
         fsExtra.emptyDirSync(path.resolve(__cache, UPLOADDIR));
-        //确保工程目录node_modules存在并可写入
+        // 确保工程目录node_modules存在并可写入
         utils.ensureDirWriteablSync(path.resolve(base, LIBNAME));
 
         // 所需全部依赖 过滤到不恰当的依赖
@@ -138,11 +138,11 @@ module.exports = {
             }),
             _.bind(function(packageName, cb){
                 console.debug('下载模块', packageName);
-                if(this.serverCache[packageName] == constant.ALWAYS_SYNC_FLAG){
+                if(this.serverCache[packageName].flag == constant.ALWAYS_SYNC_FLAG){
                     // 每次都同步的模块在下载前会先清空本地
                     fsExtra.emptyDirSync(path.resolve(__cache, packageName));
                 }
-                this.registry.get(packageName, __cache, function(err){
+                this.registry.get(packageName, this.serverCache[packageName].url, __cache, function(err){
                     if(err){
                         cb(err);
                     } else {

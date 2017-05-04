@@ -133,17 +133,28 @@ swift.prototype.listPackageInfo = function(isSnapshot, repository, name, cbk){
 };
 
 swift.prototype.get = function(repository, name, res){
-    var opts = this.getConfig(name);
-    res.setHeader('modulename', name);
-    res.redirect(['http:/', opts.config.host, opts.user, repository, name].join('/'));
+    var opts = this.getConfig(name),
+        url = ['http:/', opts.config.host, opts.user, repository, name].join('/');
+    if(res){
+        res.setHeader('modulename', name);
+        res.redirect(url);
+    }else{
+        return url;
+    }
 };
 
 swift.prototype.put = function(repository, name, stream, cbk){
-    this.getConfig(name).storage.createObjectWithStream(repository, name, stream, function(err){
+    var storage = this.getConfig(name).storage;
+    storage.createObjectWithStream(repository, name, stream, function(err){
         if(err) {
             cbk(err);
         } else {
-            cache.addPackage(Utils.isSnapshot(name), repository, name);
+            //由于存在上传swift后仍然有不存在的情况，但缓存里已经记录，导致最终获取失败，故增加校验
+            storage.retrieveObjectMetadata(repository, name, function(err, res){
+                if(!err && res && res.statusCode != 404){
+                    cache.addPackage(Utils.isSnapshot(name), repository, name);
+                }
+            });
             cbk();
         }
     });

@@ -24,7 +24,7 @@ module.exports = {
     init: function(type, opts, snapshotOpts){
         opts == snapshotOpts && cache.same();
         // opts can be a STRING ! ‘undefined’
-        getStorage(type, opts === 'undefined' ? [] : (opts || "").split('|'), snapshotOpts === 'undefined' ? [] : (snapshotOpts || "").split('|'));
+        cache.setStorage(getStorage(type, opts === 'undefined' ? [] : (opts || "").split('|'), snapshotOpts === 'undefined' ? [] : (snapshotOpts || "").split('|')));
     },
     sync: function(){
         var sto = getStorage();

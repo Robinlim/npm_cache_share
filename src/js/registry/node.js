@@ -28,24 +28,15 @@ function nodeRegistry(config) {
 /**
  * 从公共缓存拉取模块
  * @param  {String}   moduleName            不含环境的模块名
+ * @param  {String}   moduleUrl             资源路径
  * @param  {path}     dir                   将要放置到的目录路径
  * @param  {Function} cb                    [description]
  * @return {void}                         [description]
  */
-nodeRegistry.prototype.get = function(packageName, dir, cb) {
-    var moduleName = packageName;
-
+nodeRegistry.prototype.get = function(moduleName, moduleUrl, dir, cb) {
     request
         .get({
-            url: ['http:/', this.server, 'fetch', packageName].join('/')
-            // !!已弃用,当前包完整名称在check时一次性全部取到，无需此处额外处理
-            //    某些存储（swift）时采用重定向下载，但是需要从服务器的原始返回中获取信息，
-            // followRedirect : function(response){
-            //     if(response.headers.modulename){
-            //         moduleName = response.headers.modulename
-            //     }
-            //     return true;
-            // }
+            url: moduleUrl || ['http:/', this.server, 'fetch', moduleName].join('/')
         })
         .on('response', function(response) {
             if (response.statusCode == 200) {
@@ -58,7 +49,7 @@ nodeRegistry.prototype.get = function(packageName, dir, cb) {
                 }));
                 return;
             } else {
-                cb(new Error('下载模块异常:'+packageName+',statusCode:'+response.statusCode));
+                cb(new Error('下载模块异常:'+moduleName+',statusCode:'+response.statusCode));
             }
         })
         .on('error', function(err) {

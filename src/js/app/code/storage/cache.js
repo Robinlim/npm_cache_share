@@ -16,7 +16,8 @@ var _ = require('lodash'),
  * @type {Object}
  */
 var _cache = {},
-    _snapshotCache = {};
+    _snapshotCache = {},
+    storage;
 
 module.exports = {
     same: function(){
@@ -157,7 +158,7 @@ module.exports = {
             return {};
         }
         var modules = _cache[repository].modules,
-            snapshotModules = _snapshotCache[repository].modules,
+            snapshotModules = _snapshotCache[repository] ? _snapshotCache[repository].modules : {},
             hit = {};
         _.forEach(list, function(name){
             var isSnapshot = utils.isSnapshot(name),
@@ -170,11 +171,14 @@ module.exports = {
                 packageNameForPlatform = utils.joinPackageName(name, platform),
                 packageName = name;
             if(packages.indexOf(packageNameForPlatform + fileExt) > -1){
-                hit[packageNameForPlatform] = 1;
+                hit[packageNameForPlatform] = {url: storage.get(repository, packageNameForPlatform + fileExt)};
             } else if (packages.indexOf(packageName + fileExt) > -1){
-                hit[packageName] = 1;
+                hit[packageName] = {url: storage.get(repository, packageName + fileExt)};
             }
         });
         return hit;
+    },
+    setStorage: function(st){
+        storage = st;
     }
 };

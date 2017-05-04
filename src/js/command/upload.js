@@ -27,6 +27,10 @@ var __cwd = process.cwd();
 module.exports = {
     run: function(path, name, options){
         try{
+            if(!name){
+                console.error('请指定文件别名！！！指令为`ncs upload [path] [name]`');
+                process.exit(1);
+            }
             var params = _.extend({}, swiftUtils.getConfig(options, utils.isSnapshot(name) ? 'resourceSnapshotSwift': 'resourceSwift'), {
                     name: name,
                     path: swiftUtils.check(path),

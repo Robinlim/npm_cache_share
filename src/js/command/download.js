@@ -25,6 +25,9 @@ var __cwd = process.cwd();
 module.exports = {
     run: function(name, path, options){
         try{
+            if(!path){
+                this.exit('请指定下载至本地的路径！！！指令为`ncs download [name] [path]`');
+            }
             var params = _.extend({}, swiftUtils.getConfig(options, utils.isSnapshot(name) ? 'resourceSnapshotSwift' : 'resourceSwift'), {
                     name: name,
                     path: path
