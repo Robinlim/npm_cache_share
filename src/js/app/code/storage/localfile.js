@@ -2,8 +2,8 @@
 * @Author: wyw.wang <wyw>
 * @Date:   2016-10-11 18:04
 * @Email:  wyw.wang@qunar.com
-* @Last modified by:   wyw
-* @Last modified time: 2016-10-12 10:29
+* @Last modified by:   robin
+* @Last modified time: 2017-05-08 10:37
 */
 
 var _ = require('lodash'),
@@ -13,7 +13,7 @@ var _ = require('lodash'),
     utils = require('../../../common/utils');
 
 
-var cache = require('./cache');
+var cache = require('../cache');
 
 /*@Factory("localfile")*/
 function localfile(config){

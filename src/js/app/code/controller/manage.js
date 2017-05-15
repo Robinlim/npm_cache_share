@@ -44,20 +44,20 @@ module.exports = {
             fileList: fileList,
             backpath: '/versionType',
             backname: 'versionType',
-            view: 'repository'
+            view: 'details'
         }, res);
     },
     /*@RequestMapping(["/versionType/{versionType}"])*/
     repository: function(versionType, req, res){
         var fileList = _.map(storage.listRepository(isSnapshot(versionType)), function(v, k){
-            return {name: v.name, stat: v.stat, icon: 'drive'}
+            return {name: v.name, stat: v.stat, icon: 'folder'}
         });
         renderTool.renderDirectory({
             title: versionType,
             fileList: fileList,
             backpath: '/versionType',
             backname: versionType,
-            view: 'repository'
+            view: 'details'
         }, res);
     },
     /*@RequestMapping("/versionType/{versionType}/{repository}")*/
@@ -70,7 +70,7 @@ module.exports = {
             fileList: fileList,
             backpath: '/versionType/' + versionType,
             backname: repository,
-            view: 'details'
+            view: 'repository'
         }, res);
     },
     /*@RequestMapping("/versionType/{versionType}/{repository}/{name}")*/

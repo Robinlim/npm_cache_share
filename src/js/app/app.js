@@ -18,7 +18,8 @@ var utils = require('../common/utils');
 var app = express();
 
 // 同步client的debug方法
-console.debug = console.info;
+require('../common/console');
+DEBUG = process.env.DEBUG
 
 // 如果存在版本文件,则初始化版本号，ref/ver为版本号存放目录,版本文件形式与fekit保持一致
 var versionPath = path.join(__dirname, 'ref/ver/versions.mapping'),
@@ -57,7 +58,11 @@ app.get('/healthcheck.html', function(req, res) {
     var cont = fs.readFileSync(healthcheck).toString();
     res.end(cont);
 });
-require('./code/storage').init(process.env.storage, process.env.storageConfig, process.env.storageSnapshotConfig);
-require('./code/dao/packageList').load();
+//初始化缓存
+require('./code/cache').ready().then(function(){
+    //初始化存储
+    require('./code/storage').init(process.env.storage, process.env.storageConfig, process.env.storageSnapshotConfig);
+    require('./code/dao/packageList').load();
+});
 
 module.exports = app;

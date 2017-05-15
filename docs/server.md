@@ -7,6 +7,9 @@
 # 权限
 避免任何人都能修改缓存信息，增加了token校验，如果设置了token参数，在更新的时候会校验请求头里token的值。
 
+# zookeeper
+zookeeper是一个分布式应用程序协调服务，可以在配置文件里配置zookeeper对应的服务地址来开启，格式为 * host:port * , 如果涉及到多进程或者多机部署时一定要设置，否则模块状态会有问题。
+
 # 指令
 > Usage: server|s [options] [command] [name]
 >
@@ -23,5 +26,4 @@
 >-    -n --name [name]                     app name only for pm2
 
 ## 注意
-- 如果storage选择swift，只能启动单机单进程，由于要记录swift的信息，并维护ncs操作的更新，如果只是做单机级别的多进程共享意义不大，更加提倡多机的方式来部署，会考虑redis或者memcached这样分布式缓存服务。
-- pm2的版本2.4.2以上，有些低版本会有问题。
+- 如果storage选择swift，只能启动单机单进程，由于要记录swift的信息，并维护ncs操作的更新，当前提供zookeeper来保证多进程或者多机之间模块信息的同步

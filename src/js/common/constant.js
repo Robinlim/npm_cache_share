@@ -48,7 +48,8 @@ module.exports = {
         'resourceSwift',
         'resourceSnapshotSwift',
         'compressType',
-        'nameReg'
+        'nameReg',
+        'zookeeper'
     ],
     ALWAYS_SYNC_FLAG: 2,
     F2B: {

@@ -8,7 +8,7 @@
 */
 
 'use strict';
-/*@AutoLoad*/
+/*@AutoLoad(1)*/
 var Factory = module.exports = require('node-annotation').Annotation.extend({
     /**
      * compile the model

@@ -2,12 +2,12 @@
 * @Author: wyw.wang <wyw>
 * @Date:   2016-10-11 18:04
 * @Email:  wyw.wang@qunar.com
-* @Last modified by:   wyw
-* @Last modified time: 2016-10-12 10:29
+* @Last modified by:   robin
+* @Last modified time: 2017-05-08 10:37
 */
 
 var _ = require('lodash'),
-    cache = require('./cache'),
+    cache = require('../cache'),
     Swift = require('../../../lib/swiftClient'),
     Utils = require('../../../common/utils');
 

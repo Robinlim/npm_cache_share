@@ -102,6 +102,43 @@ module.exports = {
         });
     },
     /**
+     * 删除容器
+     * @param  {object}   params   {
+     *                                  host: swift的地址
+     *                                  user: swift账户名
+     *                                  pass: swift账户密码
+     *                                  container: swift容器名
+     *                             }
+     * @param  {Function} callback
+     * @return {void}
+     */
+    deleteContainer: function(params, callback){
+        var swift = new Swift({
+            host: params.host,
+            user: params.user,
+            pass: params.pass
+        }, function(err, res){
+            if(err) {
+                console.error('实例化Swift失败：', err.stack || err);
+                callback(err);
+            } else {
+                swift.deleteContainer(params.container, function(err, res){
+                    if(err){
+                        if(err.statusCode == 404) {
+                            callback(null, false);
+                        }else{
+                            console.error('删除容器信息失败：', err.stack || err);
+                            callback(err);
+                        }
+                        return;
+                    }else if(res && res.statusCode != 404){
+                        callback(null, true);
+                    }
+                });
+            }
+        });
+    },
+    /**
      * 查看对象是否存在
      * @param  {[type]}   params   [description]
      * @param  {Function} callback [description]

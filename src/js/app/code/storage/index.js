@@ -2,13 +2,13 @@
 * @Author: wyw.wang <wyw>
 * @Date:   2016-10-12 10:37
 * @Email:  wyw.wang@qunar.com
-* @Last modified by:   wyw
-* @Last modified time: 2016-10-12 10:37
+* @Last modified by:   robin
+* @Last modified time: 2017-05-08 10:37
 */
 
 
 var Factory = require('../annotation/Factory'),
-    cache = require('./cache');
+    cache = require('../cache');
 
 var storage = null;
 
@@ -46,9 +46,9 @@ module.exports = {
         var sto = getStorage();
         return sto.put.apply(sto, arguments);
     },
-    listAll: cache.listAll,
-    listRepository: cache.listRepository,
-    listModules: cache.listModules,
-    listPackages: cache.listPackages,
-    diffPackages: cache.diffPackages
+    listAll: cache.listAll.bind(cache),
+    listRepository: cache.listRepository.bind(cache),
+    listModules: cache.listModules.bind(cache),
+    listPackages: cache.listPackages.bind(cache),
+    diffPackages: cache.diffPackages.bind(cache)
 };

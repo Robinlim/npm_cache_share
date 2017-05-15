@@ -27,7 +27,7 @@ module.exports = {
     run: function(action, name, options) {
         try {
             var params = swiftUtils.getConfig(options, utils.isSnapshot(name) ? 'resourceSnapshotSwift' : 'resourceSwift'),
-                command = { query:1, delete:1 };
+                command = { query:1, delete:1 , deleteContainer:1};
             params.name = name;
 
             if(command[action]){
@@ -62,6 +62,19 @@ module.exports = {
         swiftUtils.deleteObject(params, function(err, res){
             if(!err){
                 console.info('删除对象完成!!');
+            }
+            callback(err, res);
+        });
+    },
+    /**
+     * 删除对象
+     * @param  {Object}   params [description]
+     * @param  {Function} callback [description]
+     */
+    deleteContainer: function(params, callback){
+        swiftUtils.deleteContainer(params, function(err, res){
+            if(!err){
+                console.info('删除容器完成!!');
             }
             callback(err, res);
         });

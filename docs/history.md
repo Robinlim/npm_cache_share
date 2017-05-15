@@ -1,4 +1,8 @@
 # 历史版本
+1.0.34
+   - repository对于带协议头的支持
+   - server端支持zookeeper，解决多进程同步的问题
+
 1.0.33
 
    - 增加config配置说明

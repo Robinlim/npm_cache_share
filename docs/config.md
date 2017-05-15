@@ -27,6 +27,7 @@
     "storage": "swift",
     "storageConfig": "指定模块（组件）RELEASE版本的swift源，格式为 host|user|pass",
     "storageSnapshotConfig": "指定模块（组件）SNAPSHOT版本的swift源，格式为 host|user|pass",
+    "zookeeper": "启用zookeeper服务，格式为 host:port"
 }
 
 ```

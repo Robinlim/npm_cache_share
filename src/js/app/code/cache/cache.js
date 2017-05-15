@@ -2,8 +2,8 @@
 * @Author: wyw.wang <wyw>
 * @Date:   2016-10-14 14:07
 * @Email:  wyw.wang@qunar.com
-* @Last modified by:   wyw
-* @Last modified time: 2016-10-14 14:07
+* @Last modified by:   robin
+* @Last modified time: 2017-05-08 10:37
 */
 
 
@@ -15,21 +15,37 @@ var _ = require('lodash'),
  * 缓存所有仓库和包的索引信息
  * @type {Object}
  */
-var _cache = {},
-    _snapshotCache = {},
-    storage;
+function Cache(){
+    this._cache = {};
+    this._snapshotCache = {};
+    this.storage = null;
 
-module.exports = {
+}
+
+Cache.prototype = {
+    /**
+     * 缓存就绪后执行
+     * @return {Promise}
+     */
+    ready: function(){
+        return new Promise(function(resolve, reject){
+            resolve();
+        });
+    },
+    /**
+     * RELEASE和SNAPSHOT是一致的
+     * @return {[type]} [description]
+     */
     same: function(){
-        _cache = _snapshotCache = {};
+        this._cache = this._snapshotCache = {};
     },
     /**
      * 清空缓存
      * @return {[type]} [description]
      */
     clear: function(){
-        _cache = {};
-        _snapshotCache = {};
+        this._cache = {};
+        this._snapshotCache = {};
     },
     /**
      * 增加仓库
@@ -38,16 +54,15 @@ module.exports = {
      * @param {Object} stat 仓库状态
      */
     addRepository: function(isSnapshot, name, stat){
-        var cache = isSnapshot ? _snapshotCache : _cache;
-        if(cache[name]) {
-            return false;
-        } else {
-            cache[name] = {
-                name: name,
-                stat: stat,
-                modules: {}
-            }
-            return true;
+        var cache = this.listAll(isSnapshot);
+        if(cache[name]){
+            cache[name].stat = stat;
+            return;
+        }
+        cache[name] = {
+            name: name,
+            stat: stat,
+            modules: {}
         }
     },
     /**
@@ -58,9 +73,9 @@ module.exports = {
      */
     delRepository: function(isSnapshot, name) {
         if(isSnapshot){
-            return delete _snapshotCache[name];
+            return delete this._snapshotCache[name];
         }
-        return delete _cache[name];
+        return delete this._cache[name];
     },
     /**
      * 追加包到仓库
@@ -69,7 +84,7 @@ module.exports = {
      * @param {String} name       包名称，形如“five@0.0.1”
      */
     addPackage: function(isSnapshot, repository, name){
-        var cache = isSnapshot ? _snapshotCache : _cache;
+        var cache = this.listAll(isSnapshot);
         if(!cache[repository]){
             return false;
         }
@@ -91,7 +106,7 @@ module.exports = {
      * @return {boolean}           是否删除成功
      */
     delPackage: function(isSnapshot, repository, name) {
-        var cache = isSnapshot ? _snapshotCache : _cache;
+        var cache = this.listAll(isSnapshot);
         if(!cache[repository]){
             return false;
         }
@@ -112,7 +127,7 @@ module.exports = {
      * @return {Object} 缓存对象
      */
     listAll: function(isSnapshot) {
-        return isSnapshot ? _snapshotCache : _cache;
+        return isSnapshot ? this._snapshotCache : this._cache;
     },
     /**
      * 返回仓库列表
@@ -120,7 +135,7 @@ module.exports = {
      * @return {Array} 数组每项包含name，stat
      */
     listRepository: function(isSnapshot){
-        var cache = isSnapshot ? _snapshotCache : _cache;
+        var cache = this.listAll(isSnapshot);
         return _.map(cache, function(v, k){
             return {name: k, stat: v.stat};
         });
@@ -132,8 +147,8 @@ module.exports = {
      * @return {Array}            数组每项为模块名（不含版本号以及环境）
      */
     listModules: function(isSnapshot, repository){
-        var cache = isSnapshot ? _snapshotCache : _cache;
-        return _.keys(cache[repository].modules);
+        var cache = this.listAll(isSnapshot);
+        return cache[repository] ? _.keys(cache[repository].modules) : [];
     },
     /**
      * 返回模块下的包列表
@@ -143,7 +158,7 @@ module.exports = {
      * @return {Array}            数组每项为包名称（含版本号以及环境）
      */
     listPackages: function(isSnapshot, repository, name){
-        var cache = isSnapshot ? _snapshotCache : _cache;
+        var cache = this.listAll(isSnapshot);
         return cache[repository].modules[name];
     },
     /**
@@ -154,11 +169,11 @@ module.exports = {
      * @return {HashMap}            缓存存在的模块列表（包含版本号和环境）
      */
     diffPackages: function(repository, list, platform){
-        if(!_cache[repository] && !_snapshotCache[repository]){
+        if(!this._cache[repository] && !this._snapshotCache[repository]){
             return {};
         }
-        var modules = _cache[repository].modules,
-            snapshotModules = _snapshotCache[repository] ? _snapshotCache[repository].modules : {},
+        var modules = this._cache[repository].modules,
+            snapshotModules = this._snapshotCache[repository] ? this._snapshotCache[repository].modules : {},
             hit = {};
         _.forEach(list, function(name){
             var isSnapshot = utils.isSnapshot(name),
@@ -179,6 +194,8 @@ module.exports = {
         return hit;
     },
     setStorage: function(st){
-        storage = st;
+        this.storage = st;
     }
 };
+/*@Factory("cache")*/
+module.exports = Cache;

@@ -36,7 +36,7 @@ function nodeRegistry(config) {
 nodeRegistry.prototype.get = function(moduleName, moduleUrl, dir, cb) {
     request
         .get({
-            url: moduleUrl || ['http:/', this.server, 'fetch', moduleName].join('/')
+            url: moduleUrl || generateUrl()
         })
         .on('response', function(response) {
             if (response.statusCode == 200) {
@@ -56,6 +56,12 @@ nodeRegistry.prototype.get = function(moduleName, moduleUrl, dir, cb) {
             console.error(err);
             cb(err);
         });
+    function generateUrl(){
+        if(RegExp("https?:\/\/").test(this.server)){
+            return [this.server, 'fetch', moduleName].join('/');
+        }
+        return ['http:/', this.server, 'fetch', moduleName].join('/');
+    }
 };
 
 
