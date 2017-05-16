@@ -78,6 +78,14 @@ module.exports = {
         var repositoryPath = resolveRepository(repository),
             packageList = this.packageList;
         form.parse(req, function(err, fields, files) {
+            if(err){
+                console.error(err);
+                res.end({
+                    status: 500,
+                    message: '文件流出错!!!'
+                });
+                return;
+            }
             console.info('接收到的附加信息', fields);
             // TODO: mutliparty的fields的每个字段都是数组，暂时先全取数组第一项
             if(fields && fields.name){

@@ -26,4 +26,5 @@ zookeeper是一个分布式应用程序协调服务，可以在配置文件里�
 >-    -n --name [name]                     app name only for pm2
 
 ## 注意
-- 如果storage选择swift，只能启动单机单进程，由于要记录swift的信息，并维护ncs操作的更新，当前提供zookeeper来保证多进程或者多机之间模块信息的同步
+- 如果storage选择swift，只能启动单机单进程，由于要记录swift的信息，并维护ncs操作的更新，需要通过zookeeper来保证多进程或者多机之间模块信息的同步，所以需要开启zookeeper
+- 服务启动请使用sudo权限
