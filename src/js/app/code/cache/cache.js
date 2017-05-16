@@ -174,6 +174,7 @@ Cache.prototype = {
         }
         var modules = this._cache[repository].modules,
             snapshotModules = this._snapshotCache[repository] ? this._snapshotCache[repository].modules : {},
+            storage = this.storage,
             hit = {};
         _.forEach(list, function(name){
             var isSnapshot = utils.isSnapshot(name),

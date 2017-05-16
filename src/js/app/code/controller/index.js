@@ -16,8 +16,7 @@ var _ = require('lodash'),
     utils = require('../../../common/utils'),
     shellUtils = require('../../../common/shellUtils'),
     constant = require('../../../common/constant'),
-    storage = require('../storage'),
-    packageList = require('../dao/packageList');
+    storage = require('../storage');
 
 var modulesCachePath = utils.getServerCachePath(),
     fileExt = utils.getFileExt(),
@@ -29,6 +28,8 @@ fsExtra.ensureDirSync(TEMPDIR);
 
 /*@Controller*/
 module.exports = {
+    /*@Autowired("privatemodules")*/
+    packageList: null,
     /*@RequestMapping(["/{repository}/check","/check"])*/
     /*@ResponseBody*/
     check: function(req, res, reqData, repository){
@@ -47,7 +48,7 @@ module.exports = {
             message: 'success',
             data: _.extend(
                 storage.diffPackages(repository || 'default', list, platform),
-                packageList.diffSync(checkSyncList)
+                this.packageList.diffSync(checkSyncList)
             )
         });
     },
@@ -74,7 +75,8 @@ module.exports = {
             uploadDir: TEMPDIR
         });
 
-        var repositoryPath = resolveRepository(repository);
+        var repositoryPath = resolveRepository(repository),
+            packageList = this.packageList;
         form.parse(req, function(err, fields, files) {
             console.info('接收到的附加信息', fields);
             // TODO: mutliparty的fields的每个字段都是数组，暂时先全取数组第一项
@@ -173,7 +175,7 @@ module.exports = {
                 isPrivate: false
             };
         // 判断包是否是私有包
-        rtn.isPrivate = packageList.checkPrivate(name);
+        rtn.isPrivate = this.packageList.checkPrivate(name);
         if(rtn.isPrivate){
             if(!version || version === 'latest'){
                 rtn.version = utils.getLastestVersion(packages);

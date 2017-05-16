@@ -89,7 +89,6 @@ nodeRegistry.prototype.put = function(dir, info, callback) {
     }).on('finish', function() {
         console.info('同步模块至服务http://' + self.server);
         var formData = info || {};
-
         request.post({
             headers: {
                 token: self.token

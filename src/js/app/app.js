@@ -62,7 +62,7 @@ app.get('/healthcheck.html', function(req, res) {
 require('./code/cache').ready().then(function(){
     //初始化存储
     require('./code/storage').init(process.env.storage, process.env.storageConfig, process.env.storageSnapshotConfig);
-    require('./code/dao/packageList').load();
+    require('./code/dao').load();
 });
 
 module.exports = app;

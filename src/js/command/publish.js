@@ -131,6 +131,7 @@ module.exports = {
                             return;
                         }
                     }
+                    console.debug('请求附加信息：' + JSON.stringify(info));
                     registry.put(uploadDir, info, function(err){
                         //将版本重写package.json
                         options.snapshot && options.overwrite && rewritePkg();

@@ -17,16 +17,18 @@ var serverCachePath = utils.getServerCachePath(),
     packageListName = 'packageList.json',
     packageListPath = path.join(serverCachePath, packageListName);
 
-var _map = {};
+function PackageList(){
+    this._map = {};
+}
 
-module.exports = {
+PackageList.protoype = {
     /**
      * 加载包配置信息
      * @return {void} [description]
      */
     load: function(){
         if(fs.existsSync(packageListPath)){
-            _map = fsExtra.readJsonSync(packageListPath);
+            this._map = fsExtra.readJsonSync(packageListPath);
         }
     },
     /**
@@ -36,7 +38,7 @@ module.exports = {
      */
     add: function(name, info){
         console.log('[synclist] change', name, info);
-        _map[name] = info;
+        this._map[name] = info;
         this.save();
     },
     /**
@@ -44,7 +46,7 @@ module.exports = {
      * @return {void} [description]
      */
     save: function(){
-        fsExtra.writeJsonSync(packageListPath, _map);
+        fsExtra.writeJsonSync(packageListPath, this._map);
     },
     /**
      * 比较出需要同步的包
@@ -52,7 +54,8 @@ module.exports = {
      * @return {map}      需要同步的依赖包
      */
     diffSync: function(list){
-        var hit = {};
+        var hit = {},
+            _map = this._map;
         _.forEach(list, function(el){
             var name = utils.splitModuleName(el);
             //只要含有SNAPSHOT标示就算，由于存在本地会导致多机情况下实效，最低要保证SNAPSHOT版本的更新
@@ -71,7 +74,7 @@ module.exports = {
      * @return {boolean}      [description]
      */
     checkPrivate: function(name){
-        return _map[name] && _map[name].isPrivate;
+        return this._map[name] && this._map[name].isPrivate;
     },
     /**
      * 判断对一个私有模块是否有权限
@@ -80,6 +83,7 @@ module.exports = {
      * @return {boolean}          [description]
      */
     auth: function(name, password){
+        var _map = this._map;
         if(_map[name] && _map[name].isPrivate && _map[name].password){
             return password === _map[name].password;
         } else {
@@ -87,3 +91,6 @@ module.exports = {
         }
     }
 }
+
+/*@Factory("packageList")*/
+module.exports = PackageList;
