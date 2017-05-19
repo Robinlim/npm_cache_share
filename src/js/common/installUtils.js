@@ -272,6 +272,7 @@ module.exports = {
                     self.localCache[tpmc] = 1;
                     fs.writeFileSync(path.resolve(__cache, MODULECHECKER, tpmc), '');
                 }
+                
                 //删除多余的node_modules空文件夹
                 if (i == len - 1 && v.parent) {
                     shellUtils.rm('-rf', path.resolve(v.parent.realpath, LIBNAME));

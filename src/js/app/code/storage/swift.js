@@ -70,11 +70,14 @@ swift.prototype.init = function(isSnapshot){
 };
 
 swift.prototype.sync = function(){
-    cache.clear();
-    //SNAPSHOT
-    this.init(true);
-    //RELEASE
-    this.init(false);
+    var self = this;
+    cache.clear().then(function(){
+        console.info('重新加载本地缓存');
+        //SNAPSHOT
+        self.init(true);
+        //RELEASE
+        self.init(false);
+    });
 };
 
 swift.prototype.check = function(){

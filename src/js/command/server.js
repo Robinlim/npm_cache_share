@@ -42,7 +42,7 @@ module.exports = {
                 storageConfig: opts.storageConfig,
                 storageSnapshotConfig: opts.storageSnapshotConfig || opts.storageConfig,
                 zookeeper: opts.zookeeper,
-                DEBUG: global.DEBUG
+                DEBUG: !!global.DEBUG
             }, process.env);
         // 没有pm2或者指定了useFork就使用fork子进程方式
         if (!pm2 || opts.useFork) {

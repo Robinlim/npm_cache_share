@@ -5,6 +5,7 @@ var _ = require('lodash'),
 
 var zk,
     eventCache = {},
+    bindsEvent = {},
     ZKROOT = '/npm_cache_share';
 
 module.exports = {
@@ -39,6 +40,20 @@ module.exports = {
         var self = this;
         path = generatePath(path);
         return new Promise(function(resolve, reject){
+            if(bindsEvent[Event.NODE_DATA_CHANGED + path]){
+                zk.getData(path, function(error, data, stat){
+                    //初次获取节点数据
+                    if(error){
+                        console.error(error);
+                        reject(error);
+                        return;
+                    }
+                    //data为Buffer类型，转换为String
+                    resolve((data || "").toString('utf8'));
+                });
+                return;
+            }
+            bindsEvent[Event.NODE_DATA_CHANGED + path] = 1;
             zk.getData(path, function (event) {
                 watchEvent(event);
             }, function(error, data, stat){
@@ -132,6 +147,18 @@ module.exports = {
         var self = this;
         path = generatePath(path);
         return new Promise(function (resolve, reject) {
+            if(bindsEvent[Event.NODE_CHILDREN_CHANGED + path]){
+                zk.getChildren(path, function(error, children, stats){
+                    if(error){
+                        console.error(error);
+                        reject(error);
+                        return;
+                    }
+                    resolve(children || []);
+                });
+                return;
+            }
+            bindsEvent[Event.NODE_CHILDREN_CHANGED + path] = 1;
             zk.getChildren(path, function(event){
                 watchEvent(event);
             }, function(error, children, stats){
@@ -140,7 +167,7 @@ module.exports = {
                     reject(error);
                     return;
                 }
-                resolve(children);
+                resolve(children || []);
             });
         });
 

@@ -4,29 +4,34 @@
 
 src/js下的代码结构及功能如下：
 
-    ├── annotation	自定义注解
-    │   ├── Command.js	命令注解，所有命令被此注解注册
-    │   ├── Factory.js	注册registry的工厂模式注解
-    │   └── Flow		流程注解，用于代码中的流程控制（类似async库里的流程函数）
-    ├── app		中央缓存服务（对应registry中的node类型）
-    │   ├── app.js	server服务app
-    │   ├── code	server代码
-    │   │   ├── annotation	自定义注解
-    │   │   │   └── Factory.js	注册storage的工厂模式注解
-    │   │   ├── controller	接口控制器
-    │   │   │   ├── index.js	包含上传、下载、依赖版本check等接口
-    │   │   │   └── manage.js	包含列出包与相关管理接口
-    │   │   ├── dao		
+    ├── annotation	             自定义注解
+    │   ├── Command.js	         命令注解，所有命令被此注解注册
+    │   ├── Factory.js	         注册registry的工厂模式注解
+    │   └── Flow		         流程注解，用于代码中的流程控制（类似async库里的流程函数）
+    ├── app		                 中央缓存服务（对应registry中的node类型）
+    │   ├── app.js	             server服务app
+    │   ├── code	             server代码
+    │   │   ├── annotation	     自定义注解
+    │   │   │   └── Factory.js	 注册storage的工厂模式注解
+    │   │   ├── cache	         缓存所有仓库和包的索引信息
+    │   │   │   └── index.js
+    │   │   │   └── cache.js
+    │   │   │   └── zkCache.js
+    │   │   ├── controller	     接口控制器
+    │   │   │   ├── index.js	 包含上传、下载、依赖版本check等接口
+    │   │   │   └── manage.js	 包含列出包与相关管理接口
+    │   │   ├── dao		         私有模块信息
+    │   │   │   └── index.js
     │   │   │   └── packageList.js
-    │   │   └── storage		包存储适配器
-    │   │       ├── cache.js	缓存所有仓库和包的索引信息
-    │   │       ├── index.js	入口
-    │   │       ├── localfile.js	对接本地文件系统的包存储
-    │   │       └── swift.js		对接swift的包存储
-    │   ├── index.js	server启动入口
-    │   ├── public		包管理界面浏览器代码（html、js、css）
+    │   │   │   └── zkPackageList.js
+    │   │   └── storage		     包存储适配器
+    │   │       ├── index.js	 入口
+    │   │       ├── localfile.js 对接本地文件系统的包存储
+    │   │       └── swift.js     对接swift的包存储
+    │   ├── index.js	         server启动入口
+    │   ├── public		         包管理界面浏览器代码（html、js、css）
     │   └── widget		
-    ├── command		客户端命令
+    ├── command		             客户端命令
     │   ├── clean.js
     │   ├── config.js
     │   ├── download.js
@@ -34,7 +39,7 @@ src/js下的代码结构及功能如下：
     │   ├── publish.js
     │   ├── server.js
     │   └── ...
-    ├── common		公共模块
+    ├── common		            公共模块
     │   ├── checkUtils.js		检查npm-srhinkwrap.json与package.json一致性工具
     │   ├── console.js			打印着色工具
     │   ├── constant.js			公共常量
@@ -44,11 +49,11 @@ src/js下的代码结构及功能如下：
     │   ├── npmUtils.js			执行npm命令工具
     │   ├── shellUtils.js		执行shell命令工具
     │   └── utils.js			
-    ├── lib		外部依赖
-    │   └── swiftClient		修改过的swift客户端
-    └── registry	客户端对应的服务端接口
-        ├── nexus.js	对接nexus服务端（已废弃）
-        └── node.js		对接nodejs服务端
+    ├── lib		                外部依赖
+    │   └── swiftClient		    修改过的swift客户端
+    └── registry	            客户端对应的服务端接口
+        ├── nexus.js	        对接nexus服务端（已废弃）
+        └── node.js		        对接nodejs服务端
 
 # 调试说明
 

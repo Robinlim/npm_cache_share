@@ -46,6 +46,9 @@ Cache.prototype = {
     clear: function(){
         this._cache = {};
         this._snapshotCache = {};
+        return new Promise(function(resolve, reject){
+            resolve();
+        });
     },
     /**
      * 增加仓库
@@ -119,6 +122,23 @@ Cache.prototype = {
             if(modules[moduleName].length === 0){
                 delete modules[moduleName];
             }
+        }
+    },
+    /**
+     * 从仓库中删除模块
+     * @param  {Boolean} isSnapshot 是否是snapshot
+     * @param  {String} repository 仓库名称
+     * @param  {String} moduleName 模块名称
+     * @return {void}
+     */
+    delModule: function(isSnapshot, repository, moduleName) {
+        var cache = this.listAll(isSnapshot);
+        if(!cache[repository]){
+            return false;
+        }
+        var modules = cache[repository].modules;
+        if(cache[repository].modules[moduleName]){
+            delete cache[repository].modules[moduleName];
         }
     },
     /**
@@ -196,6 +216,9 @@ Cache.prototype = {
     },
     setStorage: function(st){
         this.storage = st;
+    },
+    getStorage: function() {
+        return this.storage;
     }
 };
 /*@Factory("cache")*/

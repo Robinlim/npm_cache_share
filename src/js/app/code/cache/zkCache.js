@@ -12,6 +12,8 @@ var _ = require('lodash'),
     Cache = require('./cache'),
     zkClient = require('../../../common/zkClient'),
     utils = require('../../../common/utils'),
+    slide = require("slide"),
+    asyncMap = slide.asyncMap,
     NODE_STEP = {
         ROOT: 0,
         USER: 1,
@@ -46,35 +48,131 @@ ZkCache.prototype = {
         return new Promise(function(resolve, reject){
             //连接zookeeper
             zkClient.connect().then(function(){
-                init(self._user, false);
-
-                if(self._user != self._snapshotUser){
-                    init(self._snapshotUser, true);
-                }
-
-                resolve();
+                init(self._user, false).then(function(){
+                    if(self._user != self._snapshotUser){
+                        init(self._snapshotUser, true).then(function(){
+                            resolve();
+                        });
+                    }else{
+                        resolve();
+                    }
+                });
             });
         });
 
         function init(user, isSnapshot) {
-            zkClient.exist(user).then(function(isExist){
-                if(isExist){
-                    //监听用户节点
-                    monitorNode.call(self, isSnapshot, user, cache, function(isSnapshot, path, cache){
-                        //监听容器节点
-                        monitorNode.call(self, isSnapshot, path, cache, null, NODE_STEP.CONTAINER);
-                    }, NODE_STEP.USER);
-                    return;
-                }
-                zkClient.mkdirp(user).then(function(){
-                    //监听用户节点
-                    monitorNode.call(self, isSnapshot, user, cache, function(isSnapshot, path, cache){
-                        //监听容器节点
-                        monitorNode.call(self, isSnapshot, path, cache, null, NODE_STEP.CONTAINER);
-                    }, NODE_STEP.USER);
+            return new Promise(function(resolve, reject){
+                zkClient.exist(user).then(function(isExist){
+                    if(isExist){
+                        //监听用户节点
+                        monitorNode.call(self, isSnapshot, user, cache, function(isSnapshot, path, cache){
+                            //监听容器节点
+                            return monitorNode.call(self, isSnapshot, path, cache, null, NODE_STEP.CONTAINER);
+                        }, NODE_STEP.USER).then(function(){
+                            resolve();
+                        });
+                        return;
+                    }
+                    zkClient.mkdirp(user).then(function(){
+                        //监听用户节点
+                        monitorNode.call(self, isSnapshot, user, cache, function(isSnapshot, path, cache){
+                            //监听容器节点
+                            monitorNode.call(self, isSnapshot, path, cache, null, NODE_STEP.CONTAINER);
+                        }, NODE_STEP.USER).then(function(){
+                            resolve();
+                        });
+                    });
                 });
             });
         }
+    },
+    /**
+     * 同步swift，删除zookeeper上多余的节点，当swift和zookeeper不一致时
+     * @param {Boolean} isSnapshot 是否是snapshot
+     * @return {void}
+     */
+    prune: function(isSnapshot) {
+        var self = this,
+            cache = this._cache,
+            storage = cache.getStorage(),
+            moduleName, remoteRepos, tmp, p;
+        return new Promise(function(resolve, reject){
+            //获取所有容器
+            storage.listRepository(isSnapshot, function(err, list){
+                if(err){
+                    console.error(err);
+                    return;
+                }
+                remoteRepos = {};
+                //遍历远程所有容器
+                _.forEach(list, function(el){
+                    remoteRepos[el.name] = 1;
+                });
+
+                //遍历zookeeper的容器
+                p = generatePath.call(self, isSnapshot);
+                zkClient.getChildren(p).then(function(repositories){
+                    asyncMap(repositories, function(repository, cb){
+                        //如果存在，则匹配各模块
+                        if(remoteRepos[repository]){
+                            console.info('同步swift上' + repository + '容器内容至zookeeper上');
+                            storage.listPackages(isSnapshot, repository, function(e, pcks){
+                                if(e){
+                                    console.error(err);
+                                    cb(err);
+                                    return;
+                                }
+                                tmp = {};
+                                //遍历所有模块
+                                _.forEach(pcks, function(pl){
+                                    moduleName = utils.splitModuleName(pl.name);
+                                    tmp[moduleName] = tmp[moduleName] ? [tmp[moduleName], pl.name].join(',') : pl.name;
+                                });
+                                //获取所有的对象
+                                p = generatePath.call(self, isSnapshot, repository);
+                                zkClient.getChildren(p).then(function(children){
+                                    //删除多余版本
+                                    asyncMap(children, function(name, cb){
+                                        if(tmp[name]){
+                                            p = generatePath.call(self, isSnapshot, repository, name);
+                                            zkClient.setData(p, tmp[name]).then(function(){
+                                                tmp[name] = null;
+                                                delete tmp[name];
+                                                cb();
+                                            });
+                                        }else{
+                                            console.debug('删除容器' + repository + '下模块:' + name);
+                                            self.delModule(isSnapshot, repository, name);
+                                            cb();
+                                        }
+                                    }, function(){
+                                        //新增模块
+                                        _.forEach(tmp, function(v, k){
+                                            console.debug('新增容器' + repository + '下模块版本' + v);
+                                            _.forEach(v.split(','), function(m){
+                                                m && self.addPackage(isSnapshot, repository, m);
+                                            });
+                                        });
+                                        cb();
+                                    });
+                                });
+                            });
+                        }else{
+                            //删除不存在的容器
+                            console.debug('删除多余容器:' + repository);
+                            self.delRepository(isSnapshot, repository);
+                            cb();
+                        }
+                    }, function(err){
+                        if(err){
+                            reject();
+                            return;
+                        }
+                        resolve();
+                    });
+                });
+            });
+        });
     },
     /**
      * RELEASE和SNAPSHOT是一致的
@@ -88,7 +186,14 @@ ZkCache.prototype = {
      * @return {void}
      */
     clear: function(){
-        this._cache.clear();
+        var self = this;
+        return new Promise(function(resolve, reject){
+            self.prune().then(function(){
+                console.info('清除本地缓存');
+                self._cache.clear();
+                resolve();
+            });
+        });
     },
     /**
      * 增加仓库
@@ -130,8 +235,17 @@ ZkCache.prototype = {
      * @return {boolean}     是否删除成功
      */
     delRepository: function(isSnapshot, name) {
-        var path = generatePath.call(this, isSnapshot, name);
-        zkClient.remove(path);
+        var self = this,
+            path = generatePath.call(this, isSnapshot, name), p;
+        zkClient.getChildren(path).then(function(children){
+            asyncMap(children, function(c, cb){
+                p = generatePath.call(self, isSnapshot, name, c);
+                console.debug('删除子节点：' + p);
+                zkClient.remove(p).then(cb);
+            }, function(){
+                zkClient.remove(path);
+            });
+        });
     },
     /**
      * 追加包到仓库
@@ -171,7 +285,7 @@ ZkCache.prototype = {
      * @param  {Boolean} isSnapshot 是否是snapshot
      * @param  {String} repository 仓库名称
      * @param  {String} name       包名称
-     * @return {boolean}           是否删除成功
+     * @return {void}
      */
     delPackage: function(isSnapshot, repository, name) {
         var moduleName = utils.splitModuleName(name),
@@ -181,13 +295,24 @@ ZkCache.prototype = {
             zkClient.exist(path).then(function(isExist){
                 if(isExist){
                     zkClient.getData(path).then(function(data){
-                        zkClient.setData(path, replaceName(data, name));
+                        zkClient.setData(path, deleteVersion(data, name));
                     });
                 }
             });
         }else{
-            zkClient.setData(path, replaceName(modules[moduleName].join(','), name));
+            zkClient.setData(path, deleteVersion(modules[moduleName].join(','), name));
         }
+    },
+    /**
+     * 从仓库中删除模块
+     * @param  {Boolean} isSnapshot 是否是snapshot
+     * @param  {String} repository 仓库名称
+     * @param  {String} moduleName 模块名称
+     * @return {void}
+     */
+    delModule: function(isSnapshot, repository, moduleName) {
+        var path = generatePath.call(this, isSnapshot, repository, moduleName);
+        zkClient.remove(path);
     },
     /**
      * 返回缓存全部内容
@@ -257,6 +382,9 @@ function getUser(config){
 */
 function generatePath(isSnapshot, repository, moduleName){
     var user = isSnapshot ? this._snapshotUser : this._user;
+    if(!repository){
+        return user;
+    }
     return moduleName ? [user, repository, moduleName].join('/') : [user, repository].join('/');
 }
 /**
@@ -270,66 +398,79 @@ function generatePath(isSnapshot, repository, moduleName){
  */
 function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
     var childrens, p, repository;
-    //获取初始节点数
-    zkClient.getChildren(path).then(function(data){
-        //获取容器名称
-        if(nodeStep == NODE_STEP.CONTAINER){
-            repository = path.split('/').pop();
-        }
-        childrens =  data;
-        console.debug('获取' + path + '节点下所有子节点:' + data);
-        //监听当前节点下的子节点
-        _.forEach(childrens, function(v){
-            p = [path, v].join('/');
-            //添加容器节点
-            if(nodeStep == NODE_STEP.USER){
-                console.debug('新增' + v + '容器');
-                cache.addRepository(isSnapshot, v);
+    return new Promise(function(resolve, reject){
+        //获取初始节点数
+        zkClient.getChildren(path).then(function(data){
+            //获取容器名称
+            if(nodeStep == NODE_STEP.CONTAINER){
+                repository = path.split('/').pop();
             }
-            callback && callback(isSnapshot, p, cache);
-            //监听数据
-            monitorData(isSnapshot, p, cache, repository || v, null, nodeStep == NODE_STEP.CONTAINER);
-        });
-    }).then(function(){
-        console.debug('新增' + path + '节点监听');
-        //注册用户节点事件
-        zkClient.register(zkClient.Event.NODE_CHILDREN_CHANGED, path, function(data){
-            console.debug('触发' + path + '节点监听事件');
-            var addChanges = _.difference(data, childrens),
-                rmChanges = _.difference(childrens, data);
-            if(addChanges.length == 0 && rmChanges.length == 0){
-                console.debug(path + '没有变化');
-                return;
-            }
-            //新增节点处理
-            _.forEach(addChanges, function(v){
+            childrens =  data;
+            console.debug('获取' + path + '节点下所有子节点:' + data);
+
+            //监听当前节点下的子节点
+            asyncMap(childrens, function(v, cb){
                 p = [path, v].join('/');
                 //添加容器节点
                 if(nodeStep == NODE_STEP.USER){
                     console.debug('新增' + v + '容器');
                     cache.addRepository(isSnapshot, v);
-                    callback && callback(isSnapshot, p, cache);
+                }
+                if(callback){
+                    callback(isSnapshot, p, cache).then(function(){
+                            cb();
+                    });
+                }else{
+                    cb();
                 }
                 //监听数据
                 monitorData(isSnapshot, p, cache, repository || v, null, nodeStep == NODE_STEP.CONTAINER);
+            }, function(){
+                resolve();
             });
-            //删除节点处理
-            _.forEach(rmChanges, function(v){
-                p = [path, v].join('/');
-                //删除容器节点
-                if(nodeStep == NODE_STEP.USER){
-                    console.debug('删除' + v + '容器');
-                    //删除子节点监听
-                    _.forEach(cache.listModules(), function(c){
-                        console.log('删除监听' + [p, c].join('/'));
-                        zkClient.unregister(zkClient.Event.NODE_DATA_CHANGED, [p, c].join('/'));
-                        zkClient.unregister(zkClient.Event.NODE_CHILDREN_CHANGED, [p, c].join('/'));
-                    });
-                    cache.delRepository(isSnapshot, v);
+        }).then(function(){
+            console.debug('新增' + path + '节点监听');
+            //注册用户节点事件
+            zkClient.register(zkClient.Event.NODE_CHILDREN_CHANGED, path, function(data){
+                console.debug('触发' + path + '节点监听事件');
+                var addChanges = _.difference(data, childrens),
+                    rmChanges = _.difference(childrens, data);
+                if(addChanges.length == 0 && rmChanges.length == 0){
+                    console.debug(path + '没有变化');
+                    return;
                 }
-                zkClient.unregister(zkClient.Event.NODE_DATA_CHANGED, p);
+                //新增节点处理
+                _.forEach(addChanges, function(v){
+                    p = [path, v].join('/');
+                    //添加容器节点
+                    if(nodeStep == NODE_STEP.USER){
+                        console.debug('新增' + v + '容器');
+                        cache.addRepository(isSnapshot, v);
+                        callback && callback(isSnapshot, p, cache);
+                    }
+                    //监听数据
+                    monitorData(isSnapshot, p, cache, repository || v, null, nodeStep == NODE_STEP.CONTAINER);
+                });
+                //删除节点处理
+                _.forEach(rmChanges, function(v){
+                    p = [path, v].join('/');
+                    //删除容器节点
+                    if(nodeStep == NODE_STEP.USER){
+                        console.debug('删除' + v + '容器');
+                        //删除子节点监听
+                        _.forEach(cache.listModules(isSnapshot, v), function(c){
+                            console.info('删除监听' + [p, c].join('/'));
+                            zkClient.unregister(zkClient.Event.NODE_DATA_CHANGED, [p, c].join('/'));
+                            zkClient.unregister(zkClient.Event.NODE_CHILDREN_CHANGED, [p, c].join('/'));
+                        });
+                        cache.delRepository(isSnapshot, v);
+                    }else{
+                        cache.delModule(isSnapshot, path.split('/').pop(), v);
+                    }
+                    zkClient.unregister(zkClient.Event.NODE_DATA_CHANGED, p);
+                });
+                childrens = data;
             });
-            childrens = data;
         });
     });
 }
@@ -396,13 +537,24 @@ function monitorData(isSnapshot, path, cache, repository, callback, isModule) {
         });
     });
 }
-function replaceName(name, match) {
-    name = name.replace(RegExp('(?=[^,]' + match + '(?=(,|$)),?'), '');
-    if(_.endsWith(name, ',')){
-        name = name.substr(0, name.length -1);
+/**
+ * 删除对应版本
+ * @param  {String} name  所有版本信息
+ * @param  {String} match 待删除版本
+ * @return {String}
+ */
+function deleteVersion(versions, version) {
+    versions = versions.replace(RegExp('(?=[^,]' + version + '(?=(,|$)),?'), '');
+    if(_.endsWith(versions, ',')){
+        versions = versions.substr(0, versions.length -1);
     }
-    return name;
+    return versions;
 }
+/**
+ * 数据处理，如果是json格式就转成json对象
+ * @param  {Object} data
+ * @return {Object}
+ */
 function dataDeal(data){
     if(RegExp('^{[^}]+}$').test(data)){
         return JSON.parse(data);
