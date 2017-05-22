@@ -30,6 +30,7 @@ module.exports = {
         name: 1
     },
     NPM_MAX_BUNDLE: 50,
+    LOAD_MAX_RESOUCE: 100,
     CONFIGKEY: [
         'registry',
         'token',

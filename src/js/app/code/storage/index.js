@@ -8,7 +8,8 @@
 
 
 var Factory = require('../annotation/Factory'),
-    cache = require('../cache');
+    cache = require('../cache'),
+    _ = require('lodash');
 
 var storage = null;
 
@@ -46,9 +47,9 @@ module.exports = {
         var sto = getStorage();
         return sto.put.apply(sto, arguments);
     },
-    listAll: cache.listAll.bind(cache),
-    listRepository: cache.listRepository.bind(cache),
-    listModules: cache.listModules.bind(cache),
-    listPackages: cache.listPackages.bind(cache),
-    diffPackages: cache.diffPackages.bind(cache)
+    listAll: _.bind(cache.listAll, cache),
+    listRepository: _.bind(cache.listRepository, cache),
+    listModules: _.bind(cache.listModules, cache),
+    listPackages: _.bind(cache.listPackages, cache),
+    diffPackages: _.bind(cache.diffPackages, cache)
 };

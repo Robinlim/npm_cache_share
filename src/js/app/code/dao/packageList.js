@@ -21,7 +21,7 @@ function PackageList(){
     this._map = {};
 }
 
-PackageList.protoype = {
+PackageList.prototype = {
     /**
      * 加载包配置信息
      * @return {void} [description]

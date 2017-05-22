@@ -132,27 +132,43 @@ module.exports = {
         } else {
             console.info('从公共缓存下载模块');
         }
-        asyncMap(
-            _.map(this.serverCache, function(v,k){
+        var rs = _.map(this.serverCache, function(v,k){
                 return k;
             }),
-            _.bind(function(packageName, cb){
-                console.debug('下载模块', packageName);
-                if(this.serverCache[packageName].flag == constant.ALWAYS_SYNC_FLAG){
-                    // 每次都同步的模块在下载前会先清空本地
-                    fsExtra.emptyDirSync(path.resolve(__cache, packageName));
+            self = this, start = 0, count = constant.LOAD_MAX_RESOUCE;
+
+        //控制分批下载资源，会受服务的网络连接数的限制
+        (function loadCtrl(){
+            loadResource(rs.slice(start, start = start + count), function(){
+                if(start >= rs.length){
+                    callback();
+                    return;
                 }
-                this.registry.get(packageName, this.serverCache[packageName].url, __cache, function(err){
-                    if(err){
-                        cb(err);
-                    } else {
-                        fs.writeFileSync(path.resolve(__cache, MODULECHECKER, packageName), '');
-                        cb();
+                loadCtrl();
+            });
+        })();
+        //同时下载资源
+        function loadResource(resource, callback){
+            asyncMap(
+                resource,
+                _.bind(function(packageName, cb){
+                    console.debug('下载模块', packageName);
+                    if(this.serverCache[packageName].flag == constant.ALWAYS_SYNC_FLAG){
+                        // 每次都同步的模块在下载前会先清空本地
+                        fsExtra.emptyDirSync(path.resolve(__cache, packageName));
                     }
-                });
-            }, this),
-            callback
-        );
+                    this.registry.get(packageName, this.serverCache[packageName].url, __cache, function(err){
+                        if(err){
+                            cb(err);
+                        } else {
+                            fs.writeFileSync(path.resolve(__cache, MODULECHECKER, packageName), '');
+                            cb();
+                        }
+                    });
+                }, self),
+                callback
+            );
+        }
     },
     /**
      * 安装缺失模块
@@ -272,7 +288,7 @@ module.exports = {
                     self.localCache[tpmc] = 1;
                     fs.writeFileSync(path.resolve(__cache, MODULECHECKER, tpmc), '');
                 }
-                
+
                 //删除多余的node_modules空文件夹
                 if (i == len - 1 && v.parent) {
                     shellUtils.rm('-rf', path.resolve(v.parent.realpath, LIBNAME));
