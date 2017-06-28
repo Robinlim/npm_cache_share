@@ -154,7 +154,7 @@ swift.prototype.put = function(repository, name, stream, cbk){
         } else {
             //由于存在上传swift后仍然有不存在的情况，但缓存里已经记录，导致最终获取失败，故增加校验
             storage.retrieveObjectMetadata(repository, name, function(err, res){
-                if(!err && res && res.statusCode != 404){
+                if(!err && res && res.statusCode == 200){
                     cache.addPackage(Utils.isSnapshot(name), repository, name);
                 }
             });

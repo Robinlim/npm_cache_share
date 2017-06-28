@@ -75,7 +75,7 @@ function request(options, callback, pipe) {
     , method: 'GET'
     , headers: {
         'X-Auth-Token': this.token
-      //, 'X-Storage-Token': this.token
+      , 'X-Storage-Token': this.token
     }
   }, options);
 
