@@ -12,10 +12,13 @@ var _ = require('lodash'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
     readline = require('readline'),
-    checkUtils = require('./checkUtils');
+    checkUtils = require('./checkUtils'),
+    utils = require('./utils');
 
 var NPMSHRINKWRAP = 'npm-shrinkwrap.json',
-    YARNLOCKFILE = 'yarn.lock';
+    YARNLOCKFILE = 'yarn.lock',
+    NPMVERSIONREG = /([0-9]+\.[0-9]+\.[\s\S]+)\.tgz/,
+    VERSIONSTART = /^[0-9]+/;
 
 module.exports = {
     readManifest: function(base, name, cbk){
@@ -52,6 +55,7 @@ function parseNpmShrinkwrap(filepath, dir, name, cbk){
     try {
         shrinkwrap = fsExtra.readJsonSync(filepath);
         checkUtils.npmShrinkwrapCheck(dir, shrinkwrap);
+        regVersion(shrinkwrap);
     } catch (e) {
         cbk(e);
         return;
@@ -211,4 +215,21 @@ function parseYarnLockfile(filepath, cbk){
         //console.debug(JSON.stringify(dependencies));
         cbk(null, _.cloneDeep(dependencies));
     })
+}
+
+/**
+ * 由于npm5生成的npm-shrinkwrap.json里的格式变更，需要适配
+ * @param {*} shrinkwrap 
+ */
+function regVersion(shrinkwrap){
+    //npm5就开始存在lockfileVersion，用来判断shrinkwrap的版本
+    if(!shrinkwrap.lockfileVersion){
+        return shrinkwrap;
+    }
+    utils.traverseDependencies(shrinkwrap.dependencies, function(v, k){
+        if(VERSIONSTART.test(v.version)){
+            return;
+        }
+        v.version = NPMVERSIONREG.exec(v.version)[1];
+    });
 }

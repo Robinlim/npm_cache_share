@@ -1,4 +1,7 @@
 # 历史版本
+1.0.36
+   - 支持npm5生成npm-shrinkwrap.json中version的格式
+
 1.0.35
    - 修复服务端缓存与swift不同步的问题
 
