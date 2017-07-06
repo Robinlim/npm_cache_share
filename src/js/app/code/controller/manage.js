@@ -89,9 +89,9 @@ module.exports = {
     /*@RequestMapping("/versionType/{versionType}/{repository}/{name}/{subname}")*/
     info: function(req, res, versionType, repository, subname){
         var filename = decodeURIComponent(subname);
-        var stat = storage.listPackageInfo(isSnapshot(versionType), repository, filename, function(err, stat){
+        storage.listPackageInfo(isSnapshot(versionType), repository, filename, function(err, stat){
             if(err){
-                res.status(404).end(err);
+                res.status(err.statusCode || 404).end(err.message || err.stack || err);
             } else {
                 renderTool.renderInfo({
                     name: filename,

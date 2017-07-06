@@ -1,4 +1,8 @@
 # 历史版本
+1.0.37
+   - 解决服务端查看包大小出错问题
+   - 解决qupload无法上传问题
+
 1.0.36
    - 支持npm5生成npm-shrinkwrap.json中version的格式
 

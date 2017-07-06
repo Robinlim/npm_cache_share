@@ -108,7 +108,10 @@ swift.prototype.listPackages = function(isSnapshot, repository, cbk){
 swift.prototype.listPackageInfo = function(isSnapshot, repository, name, cbk){
     this.getConfig(isSnapshot).storage.retrieveObjectMetadata(repository, name, function(err, res){
         if(err || res.statusCode !== 200){
-            cbk(err);
+            cbk(err || {
+                statusCode: res.statusCode,
+                message: res.body
+            });
             return;
         }
         var header = res.headers;

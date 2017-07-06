@@ -57,7 +57,7 @@ module.exports = {
                             callback(err);
                         }
                         return;
-                    }else if(res && res.statusCode == 200){
+                    }else if(res && res.statusCode < 400){
                         callback(null, res);
                     }
                 });
@@ -94,7 +94,7 @@ module.exports = {
                             callback(err);
                         }
                         return;
-                    }else if(res && res.statusCode == 200){
+                    }else if(res && res.statusCode < 400){
                         callback(null, true);
                     }
                 });
@@ -131,7 +131,7 @@ module.exports = {
                             callback(err);
                         }
                         return;
-                    }else if(res && res.statusCode == 200){
+                    }else if(res && res.statusCode < 400){
                         callback(null, true);
                     }
                 });
@@ -166,7 +166,7 @@ module.exports = {
                             callback(err);
                         }
                         return;
-                    }else if(res && res.statusCode == 200){
+                    }else if(res && res.statusCode < 400){
                         callback(null, res);
                     }
                 });
@@ -201,7 +201,7 @@ module.exports = {
                             callback(err);
                         }
                         return;
-                    }else if(res && res.statusCode == 200){
+                    }else if(res && res.statusCode < 400){
                         callback(null, res);
                     }
                 });
