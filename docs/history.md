@@ -1,4 +1,8 @@
 # 历史版本
+1.0.38
+   - 修复npm-shrinkwrap中模块值为空对象的情景
+   - 修复yarn.lock中dependencies模块带双引号的情景
+
 1.0.37
    - 解决服务端查看包大小出错问题
    - 解决qupload无法上传问题

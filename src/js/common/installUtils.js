@@ -313,6 +313,9 @@ module.exports = {
         fsExtra.ensureDirSync(pmp);
         //循环同步依赖模块
         utils.traverseDependencies(this.dependencies, function(v, k, modulePath) {
+            if(!v.version){
+                return;
+            }
             mn = utils.getModuleName(k, v.version);
             if (!cache[mn]) {
                 mn = utils.getModuleNameForPlatform(k, v.version);

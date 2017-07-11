@@ -71,7 +71,7 @@ function parseYarnLockfile(filepath, cbk){
     var NAMEREG = /\"*(@*[^\@]*)\@/,
         VERSIONREG = /\s*version "([^"]*)"/,
         DEPENDREG = /\s*dependencies:/,
-        KVREG = /\s*(\S*)\s*"([^"]*)"/;
+        KVREG = /\s*"?([^\s"]*)"?\s*"([^"]*)"/;
     var rl = readline.createInterface({
             input: fs.createReadStream(filepath)
         });
@@ -227,7 +227,7 @@ function regVersion(shrinkwrap){
         return shrinkwrap;
     }
     utils.traverseDependencies(shrinkwrap.dependencies, function(v, k){
-        if(VERSIONSTART.test(v.version)){
+        if(!v.version || VERSIONSTART.test(v.version)){
             return;
         }
         v.version = NPMVERSIONREG.exec(v.version)[1];
