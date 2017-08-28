@@ -28,3 +28,10 @@ zookeeper是一个分布式应用程序协调服务，可以在配置文件里�
 ## 注意
 - 如果storage选择swift，只能启动单机单进程，由于要记录swift的信息，并维护ncs操作的更新，需要通过zookeeper来保证多进程或者多机之间模块信息的同步，所以需要开启zookeeper
 - 服务启动请使用sudo权限
+
+# 策略控制台
+## /strategy 访问路径
+## 策略分类
+- ignoreCache: 会忽略本地缓存以及公共缓存，每次都会重新安装
+- alwaysUpdate: 会忽略本地缓存，每次都从公共缓存获取，比如SNAPSHOT版本默认会采用这种方式
+- postInstall: 会在安装完成之后，执行对应模块package.json里scripts配置的脚本，比如postinstall,多个值以逗号分隔

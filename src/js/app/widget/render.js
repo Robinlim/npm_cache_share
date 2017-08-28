@@ -23,12 +23,12 @@ var cache = {};
  * Stylesheet.
  */
 
-var defaultStylesheet = fs.readFileSync(join(__dirname, '../public/style.css'), 'utf8');
+var defaultStylesheet = fs.readFileSync(join(__dirname, '../public/tree/style.css'), 'utf8');
 
 module.exports = {
     templatesPath: {
-        directory: join(__dirname, '../public/directory.html'),
-        info : join(__dirname, '../public/info.html')
+        directory: join(__dirname, '../public/tree/directory.html'),
+        info : join(__dirname, '../public/tree/info.html')
     },
     templates: {
         directory: null,
@@ -179,7 +179,7 @@ function iconStyle(iconNames, useIcons) {
 
 function load(icon) {
   if (cache[icon]) return cache[icon];
-  return cache[icon] = fs.readFileSync(path.join(__dirname, '../public/icons/' + icon + '.png'), 'base64');
+  return cache[icon] = fs.readFileSync(path.join(__dirname, '../public/tree/icons/' + icon + '.png'), 'base64');
 }
 
 /**

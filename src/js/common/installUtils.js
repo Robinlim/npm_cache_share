@@ -24,7 +24,8 @@ var utils = require('./utils'),
 var LIBNAME = constant.LIBNAME,
     UPLOADDIR = constant.UPLOADDIR,
     MODULECHECKER = constant.MODULECHECKER,
-    __cache = utils.getCachePath();
+    __cache = utils.getCachePath(),
+    __cwd = process.cwd();
 
 module.exports = {
     /**
@@ -48,12 +49,16 @@ module.exports = {
         // 确保本地缓存文件夹及node_modules存在并可写入
         utils.ensureDirWriteablSync(__cache);
         utils.ensureDirWriteablSync(path.resolve(__cache, MODULECHECKER));
-        utils.ensureDirWriteablSync(path.resolve(__cache, LIBNAME));
+        // utils.ensureDirWriteablSync(path.resolve(__cache, LIBNAME));
         utils.ensureDirWriteablSync(path.resolve(__cache, UPLOADDIR));
         // 清空uploadDir
         fsExtra.emptyDirSync(path.resolve(__cache, UPLOADDIR));
+        // 清空临时node_modules
+        fsExtra.emptyDirSync(path.resolve(__cache, LIBNAME));
         // 确保工程目录node_modules存在并可写入
         utils.ensureDirWriteablSync(path.resolve(base, LIBNAME));
+        //清空工程目录里的node_modules
+        fsExtra.emptyDirSync(path.resolve(base, LIBNAME));
 
         // 所需全部依赖 过滤到不恰当的依赖
         this.dependencies = npmUtils.filter(dependencies);
@@ -88,10 +93,19 @@ module.exports = {
         //判断公共缓存是否存在
         if (this.registry && this.registry.check) {
             // 公共缓存拥有的模块
-            this.serverCache = this.checkServer().await();
+            var data = this.checkServer().await();
+            this.serverCache = data.downloads || {};
             console.debug('将从中央缓存拉取的包：', this.serverCache);
-            this.needInstall = this.compareServer(this.needFetch);
+            //需要强制与公共缓存更新的包
+            this.alwaysUpdates = data.alwaysUpdates || {};
+            console.debug('需要强制与公共缓存更新的包：', this.alwaysUpdates);
+            //需要安装的包
+            this.installs = data.installs || {};
+            this.needInstall = this.compareServer(this.needFetch, this.installs);
             console.debug('需要初次安装的包：', this.needInstall);
+            //需要安装后执行的模块
+            this.postinstall = data.postinstall || {};
+            console.debug('需要安装后执行的模块：', this.postinstall);
         } else {
             delete this.registry;
             this.needInstall = this.needFetch;
@@ -132,6 +146,7 @@ module.exports = {
         } else {
             console.info('从公共缓存下载模块');
         }
+        //转换成数组
         var rs = _.map(this.serverCache, function(v,k){
                 return k;
             }),
@@ -153,10 +168,6 @@ module.exports = {
                 resource,
                 _.bind(function(packageName, cb){
                     console.debug('下载模块', packageName);
-                    if(this.serverCache[packageName].flag == constant.ALWAYS_SYNC_FLAG){
-                        // 每次都同步的模块在下载前会先清空本地
-                        fsExtra.emptyDirSync(path.resolve(__cache, packageName));
-                    }
                     this.registry.get(packageName, this.serverCache[packageName].url, __cache, function(err){
                         if(err){
                             cb(err);
@@ -183,22 +194,29 @@ module.exports = {
         } else {
             console.info('从npm安装缺失模块');
         }
-        var packageNames = [];
-        var bundles = [],
-            map = {};
+        var installs = this.installs,
+            alwaysUpdates = this.alwaysUpdates,
+            bundles = [],
+            forInstlBundles = [],
+            map = {}, bundlesTmp;
+        //处理模块安装的批次，相同模块不同版本的安装批次不一样
         _.forEach(this.needInstall, function(el) {
             var name = el.name,
-                bundleId = 0;
+                bundleId = 0,
+                bundlesTmp = bundles;
+            if(installs[name] || alwaysUpdates[name]){
+                bundlesTmp = forInstlBundles;
+            }
             if(!map[name]) {
                 map[name] = 1;
             } else {
                 bundleId = map[name]
                 map[name]++;
             }
-            if(!bundles[bundleId]) {
-                bundles[bundleId] = [];
+            if(!bundlesTmp[bundleId]) {
+                bundlesTmp[bundleId] = [];
             }
-            bundles[bundleId].unshift([name, el.version].join('@'));
+            bundlesTmp[bundleId].unshift([name, el.version].join('@'));
         });
 
         console.debug('即将分批安装的模块：',bundles);
@@ -206,51 +224,56 @@ module.exports = {
             total: this.needInstall.length,
             cur: 0
         };
-        //安装模块
+        //安装模块，在临时目录上执行
         _.forEach(bundles, _.bind(function(el){
-            this._installBundle(el, counter);
-            this._syncLocal(el).await();
+            this._installBundle(el, __cache, counter);
+            this._syncLocal(el, __cache).await();
+        }, this));
+        //安装模块，在工程路径上执行
+        _.forEach(forInstlBundles, _.bind(function(el){
+            this._installBundle(el, this.base, counter, true);
+            this._syncLocal(el, this.base).await();
         }, this));
     },
     /**
      * 批量安装一批npm依赖
-     * @param  {Array} pcks 需要被安装的包，每一项为“name@version”形式
-     * @param {Object} counter 一个用于进度的计数器
+     * @param {Array} pcks      需要被安装的包，每一项为“name@version”形式
+     * @param {String} curPath  安装所在的路径
+     * @param {Object} counter  一个用于进度的计数器
+     * @param {Boolean} notSave 是否不同步到package.json
      * @return {Array}
      */
-    _installBundle: function(pcks, counter){
+    _installBundle: function(pcks, curPath, counter, notSave){
         var maxBundle = constant.NPM_MAX_BUNDLE;
         for(var i = 0; i < pcks.length; i += maxBundle){
             var start = i, end = i+maxBundle < pcks.length ? i+maxBundle : pcks.length,
                 part = pcks.slice(start, end);
             console.debug('安装模块', part);
-            try {
-                npmUtils.npmInstallWithoutSave(part, this.opts, {
-                    cwd: __cache,
-                    silent: !global.DEBUG
-                });
-            } catch (e) {
-                console.error(e);
-                process.exit(1);
-            }
+            npmUtils.npmInstallModules(part, this.opts, {
+                cwd: curPath,
+                silent: !global.DEBUG
+            }, notSave);
             counter.cur += part.length;
             console.info('已安装：', counter.cur, '/', counter.total);
         }
     },
     /**
      * 同步本地模块
-     * @param  {Array}   files    需要被同步的文件名称
-     * @param  {Function} callback 完成后的回调
+     * @param  {Array} files        需要被同步的文件名称
+     * @param  {String} curPath     安装所在的路径
+     * @param  {Function} callback  完成后的回调
      * @return {void}            [description]
      */
     /*@AsyncWrap*/
-    _syncLocal: function(files, callback) {
+    _syncLocal: function(files, curPath, callback) {
         var self = this,
+            installs = this.installs,
+            alwaysUpdates = this.alwaysUpdates,
             pcks = [],
             filesArr = [];
 
         _.forEach(files, function(file, i) {
-            var filePath = path.resolve(__cache, LIBNAME, utils.splitModuleName(file));
+            var filePath = path.resolve(curPath, LIBNAME, utils.splitModuleName(file));
             //存在私有域@开头的，只会存在一级
             if (!shellUtils.test('-f', path.resolve(filePath, 'package.json'))) {
                 shellUtils.ls(filePath).forEach(function(file, j) {
@@ -275,20 +298,22 @@ module.exports = {
                 callback(err);
             }
             utils.traverseTree(pcks, function(v, i, len) {
-                var tpmc = utils.getModuleName(v.package.name, v.package.version, v.package.dependencies, v.realpath);
+                var name = v.package.name,
+                    tpmc = utils.getModuleName(name, v.package.version, v.package.dependencies, v.realpath),
+                    target;
+                //如果是强制安装策略，或者强制更新策略，则不同步到服务器
                 //如果公共缓存不存在该模块，则移动至上传目录
-                if(!self.serverCache[tpmc]){
-                    var target = path.resolve(__cache, UPLOADDIR, tpmc);
+                if(!self.serverCache[tpmc] && !(installs[name] || alwaysUpdates[name])){
+                    target = path.resolve(__cache, UPLOADDIR, tpmc);
                     shellUtils.cp('-rf', path.resolve(v.realpath), target);
                 }
                 //如果本地缓存不存在，则移动至本地缓存目录
                 if(!self.localCache[tpmc]){
-                    var target = path.resolve(__cache, tpmc);
+                    target = path.resolve(__cache, tpmc);
                     shellUtils.cp('-rf', path.resolve(v.realpath), target);
                     self.localCache[tpmc] = 1;
                     fs.writeFileSync(path.resolve(__cache, MODULECHECKER, tpmc), '');
                 }
-
                 //删除多余的node_modules空文件夹
                 if (i == len - 1 && v.parent) {
                     shellUtils.rm('-rf', path.resolve(v.parent.realpath, LIBNAME));
@@ -308,6 +333,8 @@ module.exports = {
         var self = this,
             pmp = path.resolve(this.base, LIBNAME),
             cache = utils.lsDirectory(__cache),
+            postinstall = this.postinstall, 
+            postRunsPath = {},
             mn, tmp;
         //确保文件路径存在
         fsExtra.ensureDirSync(pmp);
@@ -325,6 +352,9 @@ module.exports = {
             } else {
                 tmp = path.resolve(pmp, k);
             }
+             if(postinstall[k]){
+                postRunsPath[k] = tmp;
+            }
             fsExtra.ensureDirSync(path.resolve(tmp, '..'));
             if(shellUtils.test('-d', path.resolve(__cache, mn))){
                 // 先删除原有的目录
@@ -336,6 +366,20 @@ module.exports = {
                 process.exit(1);
             }
         }, this.base);
+        console.info('开始执行定制脚本');
+        //执行npm run postinstall,或者其他自定义脚本
+        _.map(postRunsPath, function(v, k){
+            _.forEach(postinstall[k].split(','), function(ac){
+                npmUtils.npmRunScript(ac, {
+                    cwd: postRunsPath[k],
+                    async: false       
+                }, function(err){
+                    if(err){
+                        throw err;
+                    }
+                });                
+            });
+        });
     },
     /**
      * 同步远程服务
@@ -369,6 +413,7 @@ module.exports = {
             list = _.map(this.needFetch, 'full'),
             checkSyncList = [],
             localCache = this.localCache;
+        //对比出本地存在的依赖模块
         _.forEach(this.dependenciesArr, function(el){
             if(localCache[el.full]){
                 checkSyncList.push(el.full);
@@ -394,9 +439,27 @@ module.exports = {
     /**
      * 对比公共缓存服务未安装的模块
      * @param  {JSON} dependencies 模块依赖，打平后只有一级
+     * @param  {JSON} installs     避免重复
      * @return {JSON}
      */
-    compareServer: function(dependencies) {
-        return utils.compareCache(dependencies, this.serverCache);
+    compareServer: function(dependencies, installs) {
+        var repeats = {},
+            modules = utils.compareCache(dependencies, this.serverCache, function(el){
+                if(installs[el.name]){
+                    repeats[el.name] = 1;
+                }
+            });
+        //增加强制安装策略的模块，有可能是本地缓存的模块
+        _.forEach(installs, function(v, k){
+            console.info(k);
+            if(!repeats[k]){
+                modules.push({
+                    name: k,
+                    version: utils.splitModuleVersion(v),
+                    full: v
+                });
+            }
+        });
+        return modules;
     }
 };

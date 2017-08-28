@@ -35,7 +35,7 @@ var utils = require('../common/utils'),
         ["-t, --token [token]", "use the token to access the npm_cache_share server"],
         ["-a, --auth [auth]", "use auth to access the Nexus Server, like username:password format"],
         ["-p, --production", "will not install modules listed in devDependencies"],
-        ["-n, --npm [npm]", "specify the npm path to execute", "npm"],
+        ["-n, --npm [npm]", "specify the npm path to execute"],
         ["-l, --lockfile [lockfile]", "specify the filename of lockfile,default npm-shrinkwrap.json"],
         ["--noOptional", "will prevent optional dependencies from being installed"],
         ["--save", "module will be added to the package.json as dependencies, default true"],
@@ -51,6 +51,7 @@ module.exports = {
         this.forceNpm = false;
         this.registry = Factory.instance(options.type, options);
         this.opts = options;
+        //安装超时处理
         if(options.installTimeout){
             console.debug('安装超时时间：',options.installTimeout,'s');
             setTimeout(function(){
@@ -68,7 +69,7 @@ module.exports = {
     /*@Step*/
     preinstall: function(callback){
         //指定npm路径
-        this.opts.npm && npmUtils.config(this.opts.npm);
+        npmUtils.config(this.opts.npm);
         var self = this;
         if (self.moduleName) { // 指定了模块名称则安装特定模块
             var name = utils.splitModuleName(self.moduleName),
@@ -176,10 +177,13 @@ module.exports = {
                 console.info('我们默认会自动save，所以你无需追加--save字段，如果想取消自动的--save，请使用--nosave');
             }
             if(!this.opts['nosave'] || this.opts['saveDev']){
-                try {
-                    var packageInfo = fsExtra.readJsonSync(npmPackagePath);
-                } catch (e) {
-                    callback(e);
+                var packageInfo;
+                //获取package.json
+                if(fs.existsSync(npmPackagePath)){
+                    packageInfo = fsExtra.readJsonSync(npmPackagePath);
+                }
+                if(!packageInfo){
+                    callback('package.json not exist!!!');
                     return;
                 }
                 var dependenceKey = this.opts['saveDev'] ? 'devDependencies' : 'dependencies';
@@ -223,7 +227,7 @@ module.exports = {
     exit: function(code){
         var endTime = new Date().getTime();
         console.info('总共耗时：', parseInt((endTime - this.startTime)/1000), 's');
-        console.info('******************安装结束******************');
+        console.info('******************安装' + (code == 1 ? '失败' : '成功') +'******************');
         process.exit(code);
     }
 }

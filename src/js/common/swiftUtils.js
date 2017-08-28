@@ -396,7 +396,7 @@ module.exports = {
                 host: options.host || swiftConfig[0],
                 user: options.user || swiftConfig[1],
                 pass: options.pass || swiftConfig[2],
-                container: options.container || swiftConfig[3]
+                container: options.container
             }, whitelist);
         return params;
     }

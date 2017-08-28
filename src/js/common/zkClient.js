@@ -40,6 +40,7 @@ module.exports = {
         var self = this;
         path = generatePath(path);
         return new Promise(function(resolve, reject){
+            //由于要监听节点数据变化需要通过该函数第二个参数来指定，每次处理就需要重新监听
             if(bindsEvent[Event.NODE_DATA_CHANGED + path]){
                 zk.getData(path, function(error, data, stat){
                     //初次获取节点数据
@@ -147,6 +148,7 @@ module.exports = {
         var self = this;
         path = generatePath(path);
         return new Promise(function (resolve, reject) {
+            //由于要监听子节点变化需要通过该函数第二个参数来指定，每次处理就需要重新监听
             if(bindsEvent[Event.NODE_CHILDREN_CHANGED + path]){
                 zk.getChildren(path, function(error, children, stats){
                     if(error){
@@ -254,6 +256,7 @@ module.exports = {
      */
     register: function(type, path, callback) {
         path = generatePath(path);
+        console.debug('注册' + path + '节点的' + type + '类型监听');
         if(!eventCache[type]){
             eventCache[type] = {};
         }
@@ -270,7 +273,10 @@ module.exports = {
             return;
         }
         path = generatePath(path);
+        console.debug('注销' + path + '节点的' + type + '类型监听');
         eventCache[type][path] = null;
+        bindsEvent[type + path] = 0;
+        delete bindsEvent[type + path];
     }
 }
 /**

@@ -33,6 +33,13 @@ ZkPackageList.prototype = {
             }
             oriData = data;
             _.forEach(data, function(v){
+                //监听节点数据变更
+                zkClient.register(zkClient.Event.NODE_DATA_CHANGED, [ROOT, v].join('/'), function(data){
+                    if(data){
+                        console.debug('设置模块' + v + '的信息');
+                        _map[v] = JSON.parse(data);
+                    }
+                });
                 zkClient.getData([ROOT, v].join('/')).then(function(data){
                     if(data){
                         _map[v] = JSON.parse(data);
@@ -45,10 +52,19 @@ ZkPackageList.prototype = {
             console.debug('触发' + ROOT + '节点监听事件');
             var addChanges = _.difference(data, oriData),
                 rmChanges = _.difference(oriData, data);
+            //置换成新的缓存
+            oriData = data;
             //新增模块处理
             _.forEach(addChanges, function(v){
                 if(v){
-                    console.debug('监听' + [ROOT, v].join('/') + '节点数据信息');
+                    //由于新增节点的同时可能获取数据，故需要马上获取数据
+                    zkClient.getData([ROOT, v].join('/')).then(function(data){
+                        if(data){
+                            console.debug('初始化' + [ROOT, v].join('/') + '节点数据');
+                            _map[v] = JSON.parse(data);
+                        }
+                    });
+                    //监听节点数据变更
                     zkClient.register(zkClient.Event.NODE_DATA_CHANGED, [ROOT, v].join('/'), function(data){
                         if(data){
                             console.debug('设置模块' + v + '的信息');
@@ -59,27 +75,57 @@ ZkPackageList.prototype = {
             });
             //删除模块处理
             _.forEach(rmChanges, function(v){
-                console.debug('注销' + [ROOT, v].join('/') + '节点的数据监听');
+                //注销监听
                 zkClient.unregister(zkClient.Event.NODE_DATA_CHANGED, [ROOT, v].join('/'));
+                //删除节点对应的内存映射
+                _map[v] = null;
+                delete _map[v];
             });
         });
     },
     /**
-     * 追加一个包的信息
-     * @param {string} name 包名称
-     * @param {json} info 包信息
+     * 列出指定策略的模块
      */
-    add: function(name, info){
-        console.log('[synclist] change', name, info);
+    list: function(){
+        return this._map;
+    },
+    /**
+     * 追加一个包的信息
+     * @param {string} name     包名称
+     * @param {json} info       包信息
+     * @param {Function} cbk    回调函数
+     */
+    add: function(name, info, cbk){
+        console.info('[synclist] add:', name, JSON.stringify(info));
         var p = [ROOT, name].join('/');
         zkClient.exist(p).then(function(isExist){
             if(isExist){
-                zkClient.setData(p, JSON.stringify(info));
+                zkClient.setData(p, JSON.stringify(info)).then(function(){
+                    cbk();
+                });
                 return;
             }
             zkClient.mkdirp(p).then(function(){
-                zkClient.setData(p, JSON.stringify(info));
+                zkClient.setData(p, JSON.stringify(info)).then(function(){
+                    cbk();
+                });
             });
+        });
+    },
+    /**
+     * 删除一个包的信息
+     * @param {string} name  包名称
+     * @param {Function} cbk 回调函数
+     */
+    remove: function(name, cbk){
+        console.info('[synclist] remove:', name);
+        var p = [ROOT, name].join('/');
+        zkClient.exist(p).then(function(isExist){
+            if(isExist){
+                zkClient.remove(p).then(function(){
+                    cbk();
+                });
+            }
         });
     },
     /**
@@ -91,16 +137,21 @@ ZkPackageList.prototype = {
         var hit = {},
             _map = this._map;
         _.forEach(list, function(el){
-            var name = utils.splitModuleName(el);
+            var name = utils.splitModuleName(el),
+                moduleStrategy = _map[name];
             //只要含有SNAPSHOT标示就算，由于存在本地会导致多机情况下实效，最低要保证SNAPSHOT版本的更新
-            //TODO redis解决
-            if((_map[name] && _map[name].alwaysSync) || utils.isSnapshot(el)){
-                hit[el] = {
-                    flag: constant.ALWAYS_SYNC_FLAG
-                };
+            if(moduleStrategy || utils.isSnapshot(el)){
+                moduleStrategy[constant.CACHESTRATEGY.ALWAYSUPDATE] = 1;
+                hit[el] = moduleStrategy;
             }
         });
         return hit;
+    },
+    /**
+     * 列出指定策略的模块
+     */
+    list: function(){
+        return this._map;
     },
     /**
      * 判断一个包是否是私有模块

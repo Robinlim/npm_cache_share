@@ -75,8 +75,7 @@ module.exports = {
     },
     /*@RequestMapping("/versionType/{versionType}/{repository}/{name}")*/
     packages: function(req, res, versionType, repository, name){
-        var name = decodeURIComponent(name),
-            fileList = _.map(storage.listPackages(isSnapshot(versionType), repository, name), function(v, k){
+        var fileList = _.map(storage.listPackages(isSnapshot(versionType), repository, decodeURIComponent(name)), function(v, k){
             return {name: v, icon: 'box'}
         });
         renderTool.renderDirectory({
@@ -94,7 +93,7 @@ module.exports = {
                 res.status(err.statusCode || 404).end(err.message || err.stack || err);
             } else {
                 renderTool.renderInfo({
-                    name: filename,
+                    name: subname,
                     stat: stat,
                     repository: repository,
                     versionType: versionType
@@ -110,7 +109,7 @@ module.exports = {
     /*@ExceptionHandler*/
     /*@ResponseBody*/
     error: function(err, req, res){
-        console.log(err.stack);
+        console.info(err.stack);
         res.status(500).end(err.message || err);
     }
 }

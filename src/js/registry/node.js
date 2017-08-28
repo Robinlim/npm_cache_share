@@ -20,7 +20,8 @@ var UPLOADDIR = constant.UPLOADDIR;
 
 /*@Factory("node")*/
 function nodeRegistry(config) {
-    this.server = config.repository;
+    //兼容http://有无场景
+    this.server = RegExp("https?:\/\/").test(config.repository) ? config.repository : 'http://' + config.repository;
     this.token = config.token;
     this.fileExt = utils.getFileExt();
 }
@@ -57,13 +58,9 @@ nodeRegistry.prototype.get = function(moduleName, moduleUrl, dir, cb) {
             cb(err);
         });
     function generateUrl(){
-        if(RegExp("https?:\/\/").test(this.server)){
-            return [this.server, 'fetch', moduleName].join('/');
-        }
-        return ['http:/', this.server, 'fetch', moduleName].join('/');
+        return [this.server, 'fetch', moduleName].join('/');
     }
 };
-
 
 /**
  * 上传模块目录到公共缓存
@@ -87,13 +84,13 @@ nodeRegistry.prototype.put = function(dir, info, callback) {
         console.error(err);
         callback(err);
     }).on('finish', function() {
-        console.info('同步模块至服务http://' + self.server);
+        console.info('同步模块至服务' + self.server);
         var formData = info || {};
         request.post({
             headers: {
                 token: self.token
             },
-            url: 'http://' + self.server + '/upload',
+            url: self.server + '/upload',
             formData: _.extend(formData, {
                 modules: fs.createReadStream(tmpFile)
             })
@@ -143,7 +140,7 @@ nodeRegistry.prototype.check = function(list, checkSyncList, cb) {
     };
     request
         .post({
-            url: 'http://' + self.server + '/check',
+            url: self.server + '/check',
             form: form
         }, function(err, response, body) {
             if(err){
@@ -169,7 +166,7 @@ nodeRegistry.prototype.check = function(list, checkSyncList, cb) {
 
 nodeRegistry.prototype.info = function(name, version, cb){
     var self = this,
-        url = 'http://' + this.server + '/info';
+        url = this.server + '/info';
     request.post({
         url: url,
         form: {
@@ -193,7 +190,7 @@ nodeRegistry.prototype.info = function(name, version, cb){
                 cb(true);
             } else {
                 if(res.data.full){
-                    res.data.url = ['http:/', self.server, 'fetch', res.data.full].join('/');
+                    res.data.url = [self.server, 'fetch', res.data.full].join('/');
                 }
                 cb(null, res.data);
             }

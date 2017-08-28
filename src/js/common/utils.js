@@ -143,15 +143,17 @@ var utils = module.exports = {
     /**
      * 对比依赖和缓存，返回所需模块
      * @param  {Array} dependencies 模块依赖
-     * @param  {JSON} cache        模块缓存
+     * @param  {JSON}  cache        模块缓存
+     * @param  {Function} callback  回调函数
      * @return {JSON}
      */
-    compareCache: function(dependencies, cache) {
+    compareCache: function(dependencies, cache, callback) {
         var news = [];
         _.forEach(dependencies, function(el){
-            if (!cache[utils.getModuleName(el.name, el.version)]
+            if (el.version && !cache[utils.getModuleName(el.name, el.version)]
             && !cache[utils.getModuleNameForPlatform(el.name, el.version)]) {
                 news.push(el);
+                callback && callback(el);
             }
         });
         return news;

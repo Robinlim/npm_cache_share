@@ -13,15 +13,15 @@ var joinArgs = function(args) {
 };
 
 console.info = function() {
-  return console.log(ansi.green.open, '>[npm-cache-share]', joinArgs(arguments), ansi.green.close);
+  return console.log(ansi.green.open, '>[npm-cache-share]', new Date(), joinArgs(arguments), ansi.green.close);
 };
 
 console.warn = function(){
-  return console.log(ansi.yellow.open, '>[npm-cache-share]', joinArgs(arguments), ansi.yellow.close)
+  return console.log(ansi.yellow.open, '>[npm-cache-share]', new Date(), joinArgs(arguments), ansi.yellow.close)
 };
 
 console.error = function() {
-  return console.log(ansi.red.open, '>[npm-cache-share]', joinArgs(arguments), ansi.red.close);
+  return console.log(ansi.red.open, '>[npm-cache-share]', new Date(), joinArgs(arguments), ansi.red.close);
 };
 
 console.debug = function() {

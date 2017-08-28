@@ -32,14 +32,34 @@ PackageList.prototype = {
         }
     },
     /**
+     * 列出指定策略的模块
+     */
+    list: function(){
+        return this._map;
+    },
+    /**
      * 追加一个包的信息
      * @param {string} name 包名称
      * @param {json} info 包信息
+     * @param {Function} cbk 回调函数
      */
-    add: function(name, info){
-        console.log('[synclist] change', name, info);
+    add: function(name, info, cbk){
+        console.info('[synclist] add:', name, JSON.stringify(info));
         this._map[name] = info;
         this.save();
+        cbk();
+    },
+     /**
+     * 删除一个包的信息
+     * @param {string} name 包名称
+     * @param {Function} cbk 回调函数
+     */
+    remove: function(name, cbk){
+        console.info('[synclist] remove:', name);
+        this._map[name] = null;
+        delete this._map[name];
+        this.save();
+        cbk();
     },
     /**
      * 固化包信息到文件
@@ -57,12 +77,12 @@ PackageList.prototype = {
         var hit = {},
             _map = this._map;
         _.forEach(list, function(el){
-            var name = utils.splitModuleName(el);
+            var name = utils.splitModuleName(el),
+                moduleStrategy = _map[name];
             //只要含有SNAPSHOT标示就算，由于存在本地会导致多机情况下实效，最低要保证SNAPSHOT版本的更新
-            //TODO redis解决
-            if((_map[name] && _map[name].alwaysSync) || utils.isSnapshot(el)){
+            if((moduleStrategy && moduleStrategy[constant.CACHESTRATEGY.ALWAYSUPDATE]) || utils.isSnapshot(el)){
                 hit[el] = {
-                    flag: constant.ALWAYS_SYNC_FLAG
+                    flag: constant.CACHESTRATEGY.ALWAYSUPDATE
                 };
             }
         });

@@ -44,7 +44,6 @@ ZkCache.prototype = {
     ready: function(){
         var cache = this._cache,
             self = this;
-
         return new Promise(function(resolve, reject){
             //连接zookeeper
             zkClient.connect().then(function(){
@@ -69,6 +68,7 @@ ZkCache.prototype = {
                             //监听容器节点
                             return monitorNode.call(self, isSnapshot, path, cache, null, NODE_STEP.CONTAINER);
                         }, NODE_STEP.USER).then(function(){
+                            console.info('monitor');
                             resolve();
                         });
                         return;
@@ -333,8 +333,8 @@ ZkCache.prototype = {
     /**
      * 返回模块列表
      * @param  {Boolean} isSnapshot 是否是snapshot
-     * @param  {string} repository 仓库名称
-     * @return {Array}            数组每项为模块名（不含版本号以及环境）
+     * @param  {string} repository  仓库名称
+     * @return {Array}              数组每项为模块名（不含版本号以及环境）
      */
     listModules: function(isSnapshot, repository){
         return this._cache.listModules.apply(this._cache, arguments);
@@ -342,9 +342,9 @@ ZkCache.prototype = {
     /**
      * 返回模块下的包列表
      * @param  {Boolean} isSnapshot 是否是snapshot
-     * @param  {string} repository 仓库名称
-     * @param  {string} name       模块名
-     * @return {Array}            数组每项为包名称（含版本号以及环境）
+     * @param  {string} repository  仓库名称
+     * @param  {string} name        模块名
+     * @return {Array}              数组每项为包名称（含版本号以及环境）
      */
     listPackages: function(isSnapshot, repository, name){
         return this._cache.listPackages.apply(this._cache, arguments);
@@ -352,11 +352,12 @@ ZkCache.prototype = {
     /**
      * 比较需要的模块与缓存内容，返回缓存中存在的包名称
      * @param  {string} repository 仓库名称
-     * @param  {Array} list       所需的模块列表（包含版本号，不含环境）
+     * @param  {Array} list        所需的模块列表（包含版本号，不含环境）
+     * @param  {Array} userLocals  用户本地缓存 
      * @param  {string} platform   环境信息
-     * @return {HashMap}            缓存存在的模块列表（包含版本号和环境）
+     * @return {HashMap}           缓存存在的模块列表（包含版本号和环境）
      */
-    diffPackages: function(repository, list, platform){
+    diffPackages: function(repository, list, userLocals, platform){
         return this._cache.diffPackages.apply(this._cache, arguments);
     },
     setStorage: function(st){
@@ -429,7 +430,6 @@ function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
                 resolve();
             });
         }).then(function(){
-            console.debug('新增' + path + '节点监听');
             //注册用户节点事件
             zkClient.register(zkClient.Event.NODE_CHILDREN_CHANGED, path, function(data){
                 console.debug('触发' + path + '节点监听事件');
@@ -459,7 +459,6 @@ function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
                         console.debug('删除' + v + '容器');
                         //删除子节点监听
                         _.forEach(cache.listModules(isSnapshot, v), function(c){
-                            console.info('删除监听' + [p, c].join('/'));
                             zkClient.unregister(zkClient.Event.NODE_DATA_CHANGED, [p, c].join('/'));
                             zkClient.unregister(zkClient.Event.NODE_CHILDREN_CHANGED, [p, c].join('/'));
                         });
@@ -505,7 +504,6 @@ function monitorData(isSnapshot, path, cache, repository, callback, isModule) {
         oriData = data;
         callback && callback(isSnapshot, repository, data);
     }).then(function(){
-        console.debug('新增' + path + '节点数据监听');
         //监听节点数据变更
         zkClient.register(zkClient.Event.NODE_DATA_CHANGED, path, function(data) {
             if(isModule){

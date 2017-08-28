@@ -31,7 +31,7 @@ module.exports = {
     /*@Autowired("privatemodules")*/
     packageList: null,
     /*@RequestMapping(["/{repository}/check","/check"])*/
-    /*@ResponseBody*/
+    /*@ResponseBodyDeal*/
     check: function(req, res, reqData, repository){
         var list = reqData.list || [],
             checkSyncList = reqData.checkSyncList || [],
@@ -46,20 +46,17 @@ module.exports = {
         res.end({
             status: 0,
             message: 'success',
-            data: _.extend(
-                storage.diffPackages(repository || 'default', list, platform),
-                this.packageList.diffSync(checkSyncList)
-            )
+            data: storage.diffPackages(repository || 'default', list, checkSyncList, platform, this.packageList.list())
         });
     },
     /*@RequestMapping(["/{repository}/fetch/{name}","/fetch/{name}"])*/
     fetch: function(req, res, repository, name) {
-        console.log('[fetch]', repository || 'default', name);
+        console.info('[fetch]', repository || 'default', name);
         var filename = decodeURIComponent(name) + fileExt;
         storage.get(repository || 'default', filename, res);
     },
     /*@RequestMapping(["/{repository}/upload","/upload"])*/
-    /*@ResponseBody*/
+    /*@ResponseBodyDeal*/
     upload: function(req, res, repository) {
         // check token for permission,if token exists
         if(token && token !== req.headers.token){
@@ -97,6 +94,14 @@ module.exports = {
                         isPrivate: fields.isPrivate && (fields.isPrivate[0] === 'on'),
                         user: fields.user[0],
                         password: password
+                    }, function(err){
+                        if(err){
+                            res.end({
+                                status: 500,
+                                message: err.stack || err
+                            });
+                            return;
+                        }
                     });
                 } else {
                     res.end({
@@ -152,7 +157,7 @@ module.exports = {
         });
     },
     /*@RequestMapping("/list/{versionType}")*/
-    /*@ResponseBody*/
+    /*@ResponseBodyDeal*/
     list: function(req, res, versionType, reqData){
         var isSnapshotB = isSnapshot(versionType);
         if(reqData.repository){
@@ -166,7 +171,7 @@ module.exports = {
         }
     },
     /*@RequestMapping("/{repository}/info")*/
-    /*@ResponseBody*/
+    /*@ResponseBodyDeal*/
     info: function(req, res, reqData, repository){
         var name = reqData.name,
             version = reqData.version,
@@ -205,9 +210,9 @@ module.exports = {
         });
     },
     /*@ExceptionHandler*/
-    /*@ResponseBody*/
+    /*@ResponseBodyDeal*/
     error: function(err, req, res){
-        console.error(err.stack);
+        console.error(err.stack || err);
         res.status(500).end(err.stack || err);
     }
 }

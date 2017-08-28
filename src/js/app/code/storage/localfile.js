@@ -36,7 +36,7 @@ localfile.prototype.init = function(){
         });
     });
     fs.watch(self.dir, function(event, filename){
-        console.log('[watch]', self.dir, event, filename);
+        console.info('[watch]', self.dir, event, filename);
         if(filename){
             _cacheRepository(self.dir, filename);
         } else {
@@ -56,7 +56,7 @@ function _cacheRepository(base, name){
     var filepath = path.resolve(base, name),
         check = _checkPath(filepath),
         stat;
-    console.log('[file change]', check.type, filepath);
+    console.info('[file change]', check.type, filepath);
     if( (check.type === 'create')
         && (stat = check.stat)
         && stat.isDirectory() ){
@@ -80,7 +80,7 @@ function _traverseModule(repository, dir){
         });
     });
     fs.watch(dir, function(event, filename){
-        console.log('[watch]', dir, event, filename);
+        console.info('[watch]', dir, event, filename);
         if(filename){
             _cacheModule(dir, repository, filename);
         } else {
@@ -101,7 +101,7 @@ function _cacheModule(dir, repository, name){
     var filepath = path.join(dir, name),
         check = _checkPath(filepath);
 
-    console.log('[file change]', check.type, filepath);
+    console.info('[file change]', check.type, filepath);
     if( check.type === 'create' ){
         cache.addPackage(repository, name);
     } else if (check.type === 'delete'){
@@ -142,14 +142,6 @@ localfile.prototype.createRepository = function(repository, cbk){
     fs.mkdir(dirpath, cbk);
 };
 
-// localfile.prototype.listRepository = function(cbk){
-//
-// };
-//
-// localfile.prototype.listPackages = function(repository, cbk){
-//
-// };
-//
 localfile.prototype.listPackageInfo = function(repository, name, cbk){
     fs.stat(path.join(this.dir, repository, name), cbk);
 };

@@ -52,7 +52,6 @@ module.exports = {
         'nameReg',
         'zookeeper'
     ],
-    ALWAYS_SYNC_FLAG: 2,
     F2B: {
         CONFIG_FILE: 'package.json',
         CONFIG_KEY: 'f2b',
@@ -65,5 +64,13 @@ module.exports = {
     VERSION_TYPE:{
         SNAPSHOT: 'SNAPSHOT',
         RELEASE: 'RELEASE'
+    },
+    CACHESTRATEGY: {
+        //强制更新，始终从中央缓存获取的，含有SNAPSHOT标示的默认为该策略
+        ALWAYSUPDATE: 'alwaysUpdate',
+        //强制安装，忽略本地缓存和中央缓存
+        IGNORECACHE: 'ignoreCache',
+        //模块包安装后运行指定脚本
+        POSTINSTALL: 'postInstall'
     }
 }

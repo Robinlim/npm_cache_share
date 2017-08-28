@@ -6,8 +6,6 @@
 * @Last modified time: 2017-02-27 18:56
 */
 
-
-
 var _ = require('lodash'),
     path = require('path'),
     fsExtra = require('fs-extra'),

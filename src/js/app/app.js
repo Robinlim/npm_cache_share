@@ -21,17 +21,9 @@ var app = express();
 require('../common/console');
 global.DEBUG = process.env.DEBUG == 'true';
 
-// 如果存在版本文件,则初始化版本号，ref/ver为版本号存放目录,版本文件形式与fekit保持一致
-var versionPath = path.join(__dirname, 'ref/ver/versions.mapping'),
-    versions = [];
-if(fs.existsSync(versionPath)){
-    fs.readFileSync(versionPath, 'utf-8')
-    .split('\n').forEach(function(item) {
-        var r = item.split('#');
-        versions[r[0]] = r[1];
-    });
-}
-
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
 app.use(favicon(__dirname + '/favicon.ico'));
 app.enable('trust proxy');
 
@@ -61,8 +53,9 @@ app.get('/healthcheck.html', function(req, res) {
 //初始化缓存
 require('./code/cache').ready().then(function(){
     //初始化存储
-    require('./code/storage').init(process.env.storage, process.env.storageConfig, process.env.storageSnapshotConfig);
-    require('./code/dao').load();
+    require('./code/storage').init(process.env.storage, process.env.storageConfig, process.env.storageSnapshotConfig);    
 });
+//加载缓存策略
+require('./code/dao').load();
 
 module.exports = app;

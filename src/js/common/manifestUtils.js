@@ -13,6 +13,7 @@ var _ = require('lodash'),
     fsExtra = require('fs-extra'),
     readline = require('readline'),
     checkUtils = require('./checkUtils'),
+    npmUtils = require('./npmUtils'),
     utils = require('./utils');
 
 var NPMSHRINKWRAP = 'npm-shrinkwrap.json',
@@ -31,7 +32,7 @@ module.exports = {
             } else if(fs.existsSync(yarnLockfilePath)){
                 parseYarnLockfile(yarnLockfilePath, cbk);
             } else {
-                console.warn('缺少npm-shrinkwrap.json并未指定其lockfile，此次安装将直接使用npm install');
+                console.warn('缺少npm-shrinkwrap.json或者yarn.lock，并且未指定其lockfile，此次安装将直接使用' + (npmUtils.checkYarn ? 'yarn' : 'npm') + ' install');
                 cbk();
             }
         } else {
