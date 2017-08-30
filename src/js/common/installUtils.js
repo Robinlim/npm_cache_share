@@ -139,18 +139,19 @@ module.exports = {
      */
     /*@AsyncWrap*/
     download: function(callback){
-        if(_.keys(this.serverCache).length === 0) {
+        //转换成数组
+        var rs = _.map(this.serverCache, function(v,k){
+                return k;
+            });
+        if(rs.length === 0) {
             console.info('没有需要下载的模块');
             callback();
             return;
         } else {
             console.info('从公共缓存下载模块');
         }
-        //转换成数组
-        var rs = _.map(this.serverCache, function(v,k){
-                return k;
-            }),
-            self = this, start = 0, count = constant.LOAD_MAX_RESOUCE;
+        var self = this, start = 0, count = constant.LOAD_MAX_RESOUCE;
+        
 
         //控制分批下载资源，会受服务的网络连接数的限制
         (function loadCtrl(){
@@ -170,7 +171,8 @@ module.exports = {
                     console.debug('下载模块', packageName);
                     this.registry.get(packageName, this.serverCache[packageName].url, __cache, function(err){
                         if(err){
-                            cb(err);
+                            console.error(packageName + ' ', err);
+                            process.exit(1);
                         } else {
                             fs.writeFileSync(path.resolve(__cache, MODULECHECKER, packageName), '');
                             cb();
@@ -451,7 +453,6 @@ module.exports = {
             });
         //增加强制安装策略的模块，有可能是本地缓存的模块
         _.forEach(installs, function(v, k){
-            console.info(k);
             if(!repeats[k]){
                 modules.push({
                     name: k,

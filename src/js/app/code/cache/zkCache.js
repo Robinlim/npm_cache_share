@@ -33,6 +33,9 @@ function ZkCache(opts){
     zkClient.init(opts.zookeeper);
     //用户
     this._user = getUser(opts.storageConfig);
+    if(!this._user){
+        throw new Error("请配置swift用户信息");
+    }
     this._snapshotUser = getUser(opts.storageSnapshotConfig);
 }
 
@@ -68,7 +71,6 @@ ZkCache.prototype = {
                             //监听容器节点
                             return monitorNode.call(self, isSnapshot, path, cache, null, NODE_STEP.CONTAINER);
                         }, NODE_STEP.USER).then(function(){
-                            console.info('monitor');
                             resolve();
                         });
                         return;
@@ -372,7 +374,7 @@ module.exports = ZkCache;
  * @return {String}
  */
 function getUser(config){
-    return config.split('|')[1].split(':')[0];
+    return RegExp(/\|([^:]+):[^|]+\|/).exec(config)[1];
 }
 /**
 * 生成节点路径

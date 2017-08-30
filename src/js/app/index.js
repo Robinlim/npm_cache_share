@@ -24,6 +24,6 @@ nodeAnnotation.start(path.resolve(__dirname, 'code'), function(){
     var app = require('./app');
     nodeAnnotation.app(app);
     var server = app.listen(process.env.port || '8888', function() {
-        console.info('Express server listening on port %d', server.address().port);
+        console.info('Express server listening on port ', server.address().port);
     });
 });

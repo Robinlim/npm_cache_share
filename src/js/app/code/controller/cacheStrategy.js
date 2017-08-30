@@ -4,7 +4,7 @@ var _ = require('lodash'),
     fs = require('fs'),
     fsExtra = require('fs-extra'),
     utils = require('../../../common/utils'),
-    constant = require('../../../common/constant');
+    CACHESTRATEGY = require('../../../common/constant').CACHESTRATEGY;
 
 var modulesCachePath = utils.getServerCachePath(),
     fileExt = utils.getFileExt();
@@ -18,9 +18,6 @@ module.exports = {
     packageList: null,
     /*@RequestMapping("/strategy")*/
     strategy: function(req, res){
-        // res.end({
-        //     modules: this.packageList.list() || {}
-        // });
         res.render('strategy', {
             modules: this.packageList.list()
         });
@@ -29,14 +26,18 @@ module.exports = {
     /*@ResponseBodyDeal*/
     add: function(req, res, reqData){
         var name = reqData.moduleName,
-            moduleStragety = this.packageList.list()[name];
-        if(!moduleStragety){
-            moduleStragety ={};
+            strategy = reqData.strategy;
+        if(!strategy[CACHESTRATEGY.ALWAYSUPDATE]
+            && !strategy[CACHESTRATEGY.IGNORECACHE]
+            && !strategy[CACHESTRATEGY.POSTINSTALL]){
+            res.end({
+                status: 400,
+                message: '模块策略不能为空'
+            });
+            return;
         }
-
         //添加模块策略
-        moduleStragety[reqData.strategy] = reqData.value || 1;
-        this.packageList.add(name, moduleStragety, function(err){
+        this.packageList.add(name, strategy, function(err){
             if(err){
                 res.end({
                     status: 500,
@@ -52,8 +53,7 @@ module.exports = {
     /*@RequestMapping("/strategy/api/remove")*/
     /*@ResponseBodyDeal*/
     remove: function(req, res, reqData){
-        var name = reqData.moduleName,
-            moduleStragety = this.packageList.list()[name];
+        var name = reqData.moduleName;
         if(!moduleStragety){
             res.end({
                 status: 500,
@@ -61,23 +61,9 @@ module.exports = {
             });
             return;
         }
-        //删除该模块策略
-        moduleStragety[reqData.strategy] = null;
-        delete moduleStragety[reqData.strategy];
-        //获取当前模块的策略数
-        var len = _.keys(moduleStragety).length;
-        //为0，就删除该模块
-        if(len == 0){
-            this.packageList.remove(name, function(err){
-                rs(err);
-            });
-            return;
-        }
-        //否则更新模块策略
-        this.packageList.add(name, moduleStragety, function(err){
+        this.packageList.remove(name, function(err){
             rs(err);
         });
-
         function rs(err){
             if(err){
                 res.end({
@@ -90,6 +76,7 @@ module.exports = {
                 status: 200
             });
         }
+        return;
     },
     /*@ExceptionHandler*/
     /*@ResponseBodyDeal*/
