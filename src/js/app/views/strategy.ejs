@@ -6,13 +6,80 @@
     <title>模块策略管理</title>
     <link type="text/css" rel="stylesheet" href="/styles/strategy.css">
   </head>
-  <body>
-    <div>强制更新策略</div>
-    <ul>
-    <% for(var key in modules) {%>
-    <li><%= key %></li>
-    <% } %>
-   </ul> 
-  <script type="text/javascript" src="/scripts/strategy/index.js" charset="UTF-8"></script>
-  </body>
+<body>
+<div class="m-wrap">
+    <div class="m-title">模块策略管理</div>
+    <div class="m-box"><button class="m-button" id="js-create-new">新增策略</button></div>
+
+    <table cellspacing="0" cellpadding="0" border="0" class="m-table">
+        <colgroup>
+            <col name="column_1" width="180" />
+            <col name="column_2" width="180" />
+            <col name="column_3" width="180" />
+            <col name="column_4" width="180" />
+            <col name="column_5" width="180" />
+        </colgroup>
+        <thead>
+            <tr>
+                <th colspan="1" rowspan="2">
+                    <div class="cell">模块名</div>
+                </th>
+                <th colspan="3" rowspan="1">
+                    <div class="cell">策略名</div>
+                </th>
+                <th colspan="1" rowspan="2" class="column_5">
+                    <div class="cell">操作</div>
+                </th>
+            </tr>
+            <tr>
+                <th colspan="1" rowspan="1" class="column_2">
+                    <div class="cell">忽略本地缓存</div>
+                </th>
+                <th colspan="1" rowspan="1" class="column_3">
+                    <div class="cell">强制安装</div>
+                </th>
+                <th colspan="1" rowspan="1" class="column_4">
+                    <div class="cell">安装后执行</div>
+                </th>
+            </tr>
+        </thead>
+        <tbody id="js-table-list"></tbody>
+    </table>
+    <!--dialog-->
+    <div class="m-dialog-wrap" id="js-create-dialog" style="display:none">
+        <div class="m-dialog">
+            <div class="m-dialog-title">
+                <span>新增策略</span>
+                <span class="close js-close-dialog">&times;</span>
+            </div>
+            <div class="m-dialog-content">
+                <form id="js-create-form">
+                    <div class="m-dialog-item">模块名：<input type="input" name="moduleName" class="m-el-input"></div>
+                    <p>选择策略：</p>
+                    <div class="m-dialog-item">
+                        <label><input type="checkbox" name="alwaysUpdate" class="m-el-checkbox">忽略本地缓存</label>
+                    </div>
+                    <div class="m-dialog-item">
+                        <label><input type="checkbox" name="ignoreCache" class="m-el-checkbox">强制安装</label>
+                    </div>
+                    <div class="m-dialog-item">
+                        <label><input type="checkbox" name="postInstall" class="m-el-checkbox js-change-post">安装后执行</label>
+                        <div class="m-el-item">
+                            <span class="m-el-radio">
+                                <input type="input" name="postInstallVal" class="m-el-input" value="">
+                            </span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="m-dialog-footer">
+                <button class="m-button m-button-primary js-confirm-dialog">确定</button>
+                <button class="m-button js-cancel-dialog">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="/scripts/strategy/index.js"></script>
+
+</body>
 </html>

@@ -1,0 +1,178 @@
+html,body,div,table,th,tr,td,ul,li,button{ margin:0; padding:0;}
+a{text-decoration: none;}
+input{ outline: none;}
+html,body{ color: #48576a;}
+.m-wrap{
+    margin: 0 auto;
+    padding: 80px 100px;
+}
+.m-title{
+    font-size: 20px;
+}
+.m-box{
+    margin: 15px 0;
+}
+.m-table{
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    background-color: #fff;
+    border: 1px solid #dfe6ec;
+    font-size: 14px;
+    color: #1f2d3d;
+}
+.m-table tr{
+    background: #fff;
+}
+.m-table tr:hover{
+    background: #eef1f6;
+}
+.m-table th,.m-table td{
+    height: 40px;
+    min-width: 0;
+    box-sizing: border-box;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    position: relative;
+    border-bottom: 1px solid #dfe6ec;
+    border-right: 1px solid #dfe6ec;
+}
+.m-table th{
+    white-space: nowrap;
+    overflow: hidden;
+    background-color: #eef1f6;
+}
+.m-table td{
+    transition: background-color .25s ease;
+    border-bottom: 1px solid #dfe6ec;
+}
+.m-table tr:last-child td{
+    border-bottom: 0;
+}
+.m-table td:last-child{
+    border-right: 0;
+}
+.m-table .cell {
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-all;
+    line-height: 24px;
+    padding: 0 18px;
+    text-align: center;
+}
+.m-table .column_5{
+    text-align: center;
+}
+
+.m-button{
+    display: inline-block;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    background: #fff;
+    border: 1px solid #bfcbd9;
+    border-color: #c4c4c4;
+    color: #1f2d3d;
+    -webkit-appearance: none;
+    text-align: center;
+    box-sizing: border-box;
+    outline: none;
+    margin: 0;
+    padding: 10px 15px;
+    font-size: 14px;
+    border-radius: 4px;
+}
+.m-button-small{
+    background: none;
+    outline: none;
+    border: none;
+    padding: 7px 9px;
+    font-size: 12px;
+    border-radius: 4px;
+    color: #20a0ff;
+}
+.m-button-primary{
+    color: #fff;
+    background-color: #20a0ff;
+    border-color: #20a0ff;
+}
+.m-button:hover{
+    border-color:#20a0ff;
+    color: #20a0ff
+}
+.m-button-primary:hover{
+    color: #fff;
+}
+.m-dialog-wrap{
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,.5);
+}
+.m-dialog{
+    position: absolute;
+    width: 40%;
+    left: 50%;
+    top: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    background: #fff;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+    box-sizing: border-box;
+    margin-bottom: 50px;
+}
+.m-dialog .close{
+    position: absolute;
+    right: 0;
+    top: 0;
+    display: block;
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    color: #bfcbd9;
+    font-size: 30px;
+    text-align: center;
+    cursor: pointer;
+}
+.m-dialog-title{
+    padding: 20px 20px 0;
+    line-height: 1;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2d3d;
+}
+.m-dialog-content{
+    padding: 30px 40px;
+    color: #48576a;
+    font-size: 14px;
+}
+.m-dialog-content .m-dialog-item{
+    padding: 12px 0;
+}
+.m-dialog-content .m-el-item{
+    display: inline-block;
+    margin-left: 20px;
+}
+.m-dialog-content .m-el-radio{
+    margin-right: 10px;
+}
+.m-dialog-content .m-el-input{
+    width: 200px;
+    padding: 7px 10px;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+}
+.m-dialog-content .m-el-input[disabled]{
+    background: #efefef;
+}
+.m-dialog-footer{
+    padding: 10px 20px 15px;
+    text-align: right;
+    box-sizing: border-box;
+}
