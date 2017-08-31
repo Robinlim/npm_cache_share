@@ -32,6 +32,6 @@ zookeeper是一个分布式应用程序协调服务，可以在配置文件里�
 # 策略控制台
 ## /strategy 访问路径
 ## 策略分类
-- ignoreCache: 会忽略本地缓存以及公共缓存，每次都会重新安装
-- alwaysUpdate: 会忽略本地缓存，每次都从公共缓存获取，比如SNAPSHOT版本默认会采用这种方式
-- postInstall: 会在安装完成之后，执行对应模块package.json里scripts配置的脚本，比如postinstall,多个值以逗号分隔
+- 强制安装(ignoreCache): 会忽略本地缓存以及公共缓存，每次都会重新安装
+- 忽略本地缓存(alwaysUpdate): 会忽略本地缓存，每次都从公共缓存获取，比如SNAPSHOT版本默认会采用这种方式
+- 安装后执行(postInstall): 会在安装完成之后，执行对应模块package.json里scripts配置的脚本，比如postinstall,多个值以逗号分隔

@@ -37,6 +37,7 @@
 > 针对optionalDependecise里的包，明确知道系统环境不符合，可以在配置文件中配置npmPlatBinds来过滤这些模块。
 > 例子：安装fsevents包，需要OS是darwin，但当前环境是linux，此时可以设置 npmPlatBinds = {"fsevents": 1}
 > 如果存在依赖的模块需要额外执行安装后操作，或者有需要强制更新指定模块的，请挪驾[中央公共服务](./docs/server.md)查看
+> 如果遇到域名解析失败，getaddrinfo这种的，可以在服务端配置storageConfig的host时直接使用IP
 
 <h1 id="command">指令</h1>
 

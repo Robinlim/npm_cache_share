@@ -39,3 +39,4 @@ Thumbs.db
 /npm_cache_share
 /test
 token.json
+.vscode/

@@ -22,7 +22,7 @@ module.exports = {
     createRepository: function(versionType, repository, req, res){
         storage.createRepository(isSnapshot(versionType), repository, function(err){
             if(err) {
-                res.statusCode(500).end(err);
+                res.statusCode(500).end(String(err.message || err.stack || err));
             } else {
                 res.end('success!');
             }
@@ -90,7 +90,7 @@ module.exports = {
         var filename = decodeURIComponent(subname);
         storage.listPackageInfo(isSnapshot(versionType), repository, filename, function(err, stat){
             if(err){
-                res.status(err.statusCode || 404).end(err.message || err.stack || err);
+                res.status(err.statusCode || 404).end(String(err.message || err.stack || err));
             } else {
                 renderTool.renderInfo({
                     name: subname,

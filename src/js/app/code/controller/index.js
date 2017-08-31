@@ -83,7 +83,7 @@ module.exports = {
                 });
                 return;
             }
-            console.info('接收到的附加信息', fields);
+            console.info('接收到的附加信息', JSON.stringify(fields));
             // TODO: mutliparty的fields的每个字段都是数组，暂时先全取数组第一项
             if(fields && fields.name){
                 var name = fields.name[0],
@@ -137,6 +137,8 @@ module.exports = {
                         storage.put(repository, file + fileExt, riverCompress, function(err){
                             if (err) {
                                 console.error(file + fileExt + ' upload to swift is wrong: ', err.stack);
+                            }else{
+                                console.debug(file + fileExt + ' upload to swift done');
                             }
                             count++;
                             if (count == modules.length) {

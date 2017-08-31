@@ -1,7 +1,11 @@
 # 历史版本
-1.0.39
+1.0.39 需要同时更新Client和Server
    - 兼容npm5中无版本号的问题
-   - 兼容模块策略管理
+   - 安装遇到getaddrinfo时结束安装
+   - 模块策略管理，当前支持三种策略
+        * 强制安装(ignoreCache): 会忽略本地缓存以及公共缓存，每次都会重新安装
+        * 忽略本地缓存(alwaysUpdate): 会忽略本地缓存，每次都从公共缓存获取，比如SNAPSHOT版本默认会采用这种方式
+        * 安装后执行(postInstall): 会在安装完成之后，执行对应模块package.json里scripts配置的脚本，比如postinstall,多个值以逗号分隔
 
 1.0.38
    - 修复npm-shrinkwrap中模块值为空对象的情景

@@ -61,8 +61,9 @@ module.exports = {
     /*@RequestMapping("/strategy/api/remove")*/
     /*@ResponseBodyDeal*/
     remove: function(req, res, reqData){
-        var name = reqData.moduleName;
-        if(!name){
+        var name = reqData.moduleName,
+            moduleStragety = this.packageList.list();
+        if(!moduleStragety){
             res.end({
                 status: 500,
                 errmsg: '不存在该缓存策略'
@@ -90,6 +91,6 @@ module.exports = {
     /*@ResponseBodyDeal*/
     error: function(err, req, res){
         console.info(err.stack);
-        res.status(500).end(err.message || err);
+        res.status(500).end(err.message || err.stack || err);
     }
 }
