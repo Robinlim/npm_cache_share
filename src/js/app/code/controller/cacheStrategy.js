@@ -22,6 +22,14 @@ module.exports = {
             modules: this.packageList.list()
         });
     },
+    /*@RequestMapping("/strategy/api/list")*/
+    /*@ResponseBodyDeal*/
+    list: function(req, res){
+        res.end({
+            status: 200,
+            modules: this.packageList.list()
+        });
+    },
     /*@RequestMapping("/strategy/api/add")*/
     /*@ResponseBodyDeal*/
     add: function(req, res, reqData){
@@ -54,7 +62,7 @@ module.exports = {
     /*@ResponseBodyDeal*/
     remove: function(req, res, reqData){
         var name = reqData.moduleName;
-        if(!moduleStragety){
+        if(!name){
             res.end({
                 status: 500,
                 errmsg: '不存在该缓存策略'
