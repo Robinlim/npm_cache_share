@@ -5,7 +5,7 @@
 }
 
 body {
-  padding: 80px 100px;
+  padding: 80px;
   font: 13px "Helvetica Neue", "Lucida Grande", "Arial";
   background: #ECE9E9 -webkit-gradient(linear, 0% 0%, 0% 100%, from(#fff), to(#ECE9E9));
   background: #ECE9E9 -moz-linear-gradient(top, #fff, #ECE9E9);
@@ -167,7 +167,7 @@ ul#files.view-details li.header {
   border-radius: 5px;
 }
 .view-details .name {
-  width: 60%;
+  width: 40%;
   background-position: 8px 5px;
 }
 .view-details .size {
@@ -194,13 +194,49 @@ ul#files.view-details li.header {
 #info-table td {
     padding: 2px;
 }
-
+/*left menu*/
+.m-left-menu{
+    float: left;
+    width: 200px;
+    font-size: 18px;
+    font-weight: bold;
+}
+.m-left-menu ul{
+    width: 100%;
+    overflow: hidden;
+}
+.m-left-menu li{
+    line-height: 40px;
+}
+.m-left-menu li a{
+    color: #a6a7a6;
+}
+.m-left-menu li a:before{
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 12px;
+    border-left: 2px solid #a6a7a6;
+    margin-right: 5px;
+}
+.m-left-menu .cur{
+    color: #000;
+}
+.m-left-menu .cur:before{
+    border-left: 2px solid #000;
+}
+.main-content{
+    margin-left: 200px;
+}
 /*mobile*/
 @media (max-width: 768px) {
   body {
     font-size: 13px;
     line-height: 16px;
     padding: 0;
+  }
+  .main-content{
+      margin-left: 0;
   }
   #search {
     position: static;
@@ -266,5 +302,18 @@ ul#files.view-details li.header {
   }
   #files .icon .name {
     text-indent: 41px;
+  }
+  .m-left-menu{
+      float: none;
+      width: 100%;
+      font-size: 2em;
+      padding: 1em 0;
+  }
+  .m-left-menu li{
+      float: left;
+      width: 50%;
+  }
+  .m-left-menu li a{
+      margin: 0 10%;
   }
 }

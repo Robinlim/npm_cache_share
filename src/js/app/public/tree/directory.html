@@ -73,10 +73,18 @@
     </script>
   </head>
   <body class="directory">
-    <input id="search" type="text" placeholder="Search" autocomplete="off" />
-    <div id="wrapper">
-      <h1><a href="<%= backpath%>"><%= backname%></a></h1>
-      <%= files %>
+  <div class="m-container">
+        <div class="m-left-menu">
+            <ul>
+                <li><a href="/versionType" class="cur">versionType</a></li>
+                <li><a href="/strategy">strategy</a></li>
+            </ul>
+        </div>
+        <input id="search" type="text" placeholder="Search" autocomplete="off" />
+        <div id="wrapper" class="main-content">
+          <h1><a href="<%= backpath%>"><%= backname%></a></h1>
+          <%= files %>
+        </div>
     </div>
   </body>
 </html>
