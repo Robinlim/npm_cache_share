@@ -69,6 +69,9 @@ body {
 .m-table tr:hover{
     background: #ECE9E9;
 }
+.m-table thead tr:hover{
+    background: #fff;
+}
 .m-table th,.m-table td{
     height: 34px;
     min-width: 0;
