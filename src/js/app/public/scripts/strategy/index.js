@@ -121,6 +121,7 @@ var strategy = {
             postInstall: !!curRowData.postInstall,
             postInstallVal: curRowData.postInstall || ''
         });
+        myForm.elements.moduleName.disabled = true;
     },
     delStg: function(target) {
         var self = this;
@@ -145,6 +146,7 @@ var strategy = {
             return;
         }
         myForm.elements.moduleName.value = formData.moduleName;
+        myForm.elements.moduleName.disabled = false;
         myForm.elements.alwaysUpdate.checked = formData.alwaysUpdate;
         myForm.elements.ignoreCache.checked = formData.ignoreCache;
         myForm.elements.postInstall.checked = formData.postInstall;
