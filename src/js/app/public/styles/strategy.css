@@ -1,13 +1,53 @@
 html,body,div,table,th,tr,td,ul,li,button{ margin:0; padding:0;}
-a{text-decoration: none;}
+a{ color: #555; text-decoration: none;}
 input{ outline: none;}
 html,body{ color: #48576a;}
+body {
+  padding: 80px;
+  font: 13px "Helvetica Neue", "Lucida Grande", "Arial";
+  background: #ECE9E9 -webkit-gradient(linear, 0% 0%, 0% 100%, from(#fff), to(#ECE9E9));
+  background: #ECE9E9 -moz-linear-gradient(top, #fff, #ECE9E9);
+  background-repeat: no-repeat;
+  color: #555;
+  -webkit-font-smoothing: antialiased;
+}
 .m-wrap{
-    margin: 0 auto;
-    padding: 80px 100px;
+    margin-left: 200px;
+}
+/*left menu*/
+.m-left-menu{
+    float: left;
+    width: 200px;
+    font-size: 18px;
+    font-weight: bold;
+}
+.m-left-menu ul{
+    width: 100%;
+    overflow: hidden;
+}
+.m-left-menu li{
+    line-height: 40px;
+}
+.m-left-menu li a{
+    color: #a6a7a6;
+}
+.m-left-menu li a:before{
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 12px;
+    border-left: 2px solid #a6a7a6;
+    margin-right: 5px;
+}
+.m-left-menu .cur{
+    color: #000;
+}
+.m-left-menu .cur:before{
+    border-left: 2px solid #000;
 }
 .m-title{
-    font-size: 20px;
+    font-size: 18px;
+    color: #555;
 }
 .m-box{
     margin: 15px 0;
@@ -20,33 +60,32 @@ html,body{ color: #48576a;}
     max-width: 100%;
     background-color: #fff;
     border: 1px solid #dfe6ec;
-    font-size: 14px;
+    font-size: 13px;
     color: #1f2d3d;
 }
 .m-table tr{
     background: #fff;
 }
 .m-table tr:hover{
-    background: #eef1f6;
+    background: #ECE9E9;
 }
 .m-table th,.m-table td{
-    height: 40px;
+    height: 34px;
     min-width: 0;
     box-sizing: border-box;
     text-overflow: ellipsis;
     vertical-align: middle;
     position: relative;
-    border-bottom: 1px solid #dfe6ec;
-    border-right: 1px solid #dfe6ec;
 }
 .m-table th{
     white-space: nowrap;
     overflow: hidden;
-    background-color: #eef1f6;
+    border-bottom: 1px solid #dfe6ec;
+    border-right: 1px solid #dfe6ec;
 }
 .m-table td{
-    transition: background-color .25s ease;
     border-bottom: 1px solid #dfe6ec;
+    border-right: 1px solid #dfe6ec;
 }
 .m-table tr:last-child td{
     border-bottom: 0;
@@ -73,18 +112,18 @@ html,body{ color: #48576a;}
     line-height: 1;
     white-space: nowrap;
     cursor: pointer;
-    background: #fff;
-    border: 1px solid #bfcbd9;
+    background: #000;
+    border: 0px solid #000;
     border-color: #c4c4c4;
-    color: #1f2d3d;
+    color: #fff;
     -webkit-appearance: none;
     text-align: center;
     box-sizing: border-box;
     outline: none;
     margin: 0;
     padding: 10px 15px;
-    font-size: 14px;
-    border-radius: 4px;
+    font-size: 13px;
+    border-radius: 3px;
 }
 .m-button-small{
     background: none;
@@ -96,13 +135,14 @@ html,body{ color: #48576a;}
     color: #20a0ff;
 }
 .m-button-primary{
+    margin-left: 10px;
     color: #fff;
-    background-color: #20a0ff;
-    border-color: #20a0ff;
+    background-color: #929ea7;
+    border-color: #929ea7;
 }
 .m-button:hover{
-    border-color:#20a0ff;
-    color: #20a0ff
+    border-color:#222;
+    color: #eee
 }
 .m-button-primary:hover{
     color: #fff;
