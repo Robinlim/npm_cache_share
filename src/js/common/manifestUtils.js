@@ -227,10 +227,33 @@ function regVersion(shrinkwrap){
     if(!shrinkwrap.lockfileVersion){
         return shrinkwrap;
     }
+    if(shrinkwrap.requires){
+        _.each(shrinkwrap.dependencies, function(v, k) {
+            if(v.requires){
+                traverseDps(v.requires, v);
+            }
+        });
+        return;
+    }
     utils.traverseDependencies(shrinkwrap.dependencies, function(v, k){
         if(!v.version || VERSIONSTART.test(v.version)){
             return;
         }
         v.version = NPMVERSIONREG.exec(v.version)[1];
+    });
+}
+
+/**
+ * 递归遍历依赖树
+ * @param  {JSON}   tree            依赖树
+ * @param  {Object} parent          父亲
+ * @return {void}
+ */
+function traverseDps(tree, parent) {
+    _.each(tree, function(v, k) {
+        parent[k] = {
+            version: v
+        };
+        v.requires && traverseDps(v.requires, callback, v);
     });
 }

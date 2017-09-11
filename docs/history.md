@@ -1,7 +1,13 @@
 # 历史版本
+1.0.41
+   - 支持npm5.3.0 npm-shrinkwrap.json格式，requires的描述
+
+1.0.40
+   - read-package-json版本2.0.11依赖json-parse-better-errors，会导致node低版本语法错误
+
 1.0.39 需要同时更新Client和Server
    - 兼容npm5中无版本号的问题
-   - 安装遇到getaddrinfo时结束安装
+   - 安装遇到getaddrinfo时结束安装
    - 模块策略管理，当前支持三种策略
         * 强制安装(ignoreCache): 会忽略本地缓存以及公共缓存，每次都会重新安装
         * 忽略本地缓存(alwaysUpdate): 会忽略本地缓存，每次都从公共缓存获取，比如SNAPSHOT版本默认会采用这种方式
