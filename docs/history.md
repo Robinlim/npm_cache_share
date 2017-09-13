@@ -1,4 +1,7 @@
 # 历史版本
+1.0.43
+   - 解决启用zookeeper时，zkCache加载有时会丢失的问题
+
 1.0.42
    - 回滚npm5.3.0关于npm-shrinkwrap.json对require的支持，理解有出入
 

@@ -366,7 +366,6 @@ ZkCache.prototype = {
         this._cache.setStorage(st);
     }
 };
-/*@Factory("zkCache")*/
 module.exports = ZkCache;
 /**
  * 获取用户信息

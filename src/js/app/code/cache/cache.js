@@ -285,5 +285,5 @@ Cache.prototype = {
         return this.storage;
     }
 };
-/*@Factory("cache")*/
+
 module.exports = Cache;

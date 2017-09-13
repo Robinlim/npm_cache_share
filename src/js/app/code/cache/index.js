@@ -10,5 +10,6 @@
 var Factory = require('../annotation/Factory');
 
 module.exports = (function(opts) {
-    return Factory.instance( opts.zookeeper ? 'zkCache' : 'cache', opts);
+    var cache = opts.zookeeper ? require('./zkCache') : require('./cache');
+    return new cache(opts);
 })(process.env);
