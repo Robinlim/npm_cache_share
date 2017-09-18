@@ -38,13 +38,15 @@ Cache.prototype = {
      * @return {[type]} [description]
      */
     same: function(){
-        this._cache = this._snapshotCache = {};
+        //因为zkCache优先渲染RELEASE，再渲染SNAPSHOT
+        this._snapshotCache = this._cache;
     },
     /**
      * 清空缓存
      * @return {[type]} [description]
      */
     clear: function(){
+        console.info('清除本地缓存');
         this._cache = {};
         this._snapshotCache = {};
         return new Promise(function(resolve, reject){
@@ -93,7 +95,7 @@ Cache.prototype = {
             return false;
         }
         var modules = cache[repository].modules,
-            moduleName = utils.splitModuleName(name);
+            moduleName = utils.isModuleVersion(name) ? utils.splitModuleName(name) : name;
         if(!modules[moduleName]){
             modules[moduleName] = [];
         }
@@ -114,15 +116,21 @@ Cache.prototype = {
         if(!cache[repository]){
             return false;
         }
-        var modules = cache[repository].modules,
-            moduleName = utils.splitModuleName(name),
-            index;
-        if(cache[repository].modules[moduleName]
-            && (index = modules[moduleName].indexOf(name)) > -1){
-            modules[moduleName].splice(index,1);
-            if(modules[moduleName].length === 0){
-                delete modules[moduleName];
+        var modules = cache[repository].modules;
+        if(utils.isModuleVersion(name)){
+            var moduleName =  utils.splitModuleName(name),
+                index;
+            if(modules[moduleName]
+                && (index = modules[moduleName].indexOf(name)) > -1){
+                modules[moduleName].splice(index,1);
+                if(modules[moduleName].length === 0){
+                    modules[moduleName] = null;
+                    delete modules[moduleName];
+                }
             }
+        }else{
+            modules[name] = null;
+            delete modules[name];
         }
     },
     /**

@@ -330,5 +330,16 @@ var utils = module.exports = {
      */
     isSnapshot: function(name) {
         return RegExp(constant.VERSION_TYPE.SNAPSHOT, 'i').test(name);
-    }
+    },
+    /**
+     * 判断是否是模块名称带版本
+     * @param  {[String]} name
+     * @return {[Boolean]}
+     */
+    isModuleVersion: function(){
+        var mv = /[^@]+@\d+\.\d+\.\d+/;
+        return function(name){
+            return mv.test(name);
+        };
+    }()
 };

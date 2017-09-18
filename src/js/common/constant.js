@@ -54,8 +54,8 @@ module.exports = {
     ],
     F2B: {
         CONFIG_FILE: 'package.json',
-        CONFIG_KEY: 'f2b',
-        SPLIT: '/'
+        SPLIT: '@@@',
+        CONFIG_KEY: 'f2b'
     },
     COMPRESS_TYPE: {
         TAR: 'tar',

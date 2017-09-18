@@ -38,9 +38,8 @@ module.exports = {
 
             var params = swiftUtils.getConfig(options, 'resourceSwift', whitelist),
                 snapshotParams = options['resourceSnapshotSwift'] && swiftUtils.getConfig(options, 'resourceSnapshotSwift', whitelist),
-                rs = f2bConfigUtils.getConfig(__cwd, options).format(),
+                rs = f2bConfigUtils.getConfig(__cwd, options).format(options.auto),
                 self = this;
-
             //如果指定container，则对象创建在该container下
             if(!options.auto && params.container){
                 _.each(rs, function(cf){

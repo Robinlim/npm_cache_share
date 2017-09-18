@@ -57,8 +57,6 @@ module.exports = {
         fsExtra.emptyDirSync(path.resolve(__cache, LIBNAME));
         // 确保工程目录node_modules存在并可写入
         utils.ensureDirWriteablSync(path.resolve(base, LIBNAME));
-        //清空工程目录里的node_modules
-        fsExtra.emptyDirSync(path.resolve(base, LIBNAME));
 
         // 所需全部依赖 过滤到不恰当的依赖
         this.dependencies = npmUtils.filter(dependencies);

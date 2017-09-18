@@ -1,3 +1,12 @@
+/**
+ * // Event types
+ * var TYPES = {
+ *     NODE_CREATED : 1,
+ *     NODE_DELETED : 2,
+ *     NODE_DATA_CHANGED : 3,
+ *     NODE_CHILDREN_CHANGED : 4
+ * };
+ */
 var _ = require('lodash'),
     zookeeper = require('node-zookeeper-client'),
     CreateMode = zookeeper.CreateMode,

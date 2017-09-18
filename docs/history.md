@@ -1,4 +1,9 @@
 # 历史版本
+1.0.44
+   - 修复单独安装模块时会误删工程node_modules
+   - qupload上传时自动获取时version为文件名，不再和project拼装
+   - 修复zk模式下，同步触发失效问题以及非版本模块的支持
+
 1.0.43
    - 解决启用zookeeper时，zkCache加载有时会丢失的问题
 

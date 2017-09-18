@@ -38,7 +38,7 @@ module.exports = {
 
             var params = swiftUtils.getConfig(options, 'resourceSwift', whitelist),
                 snapshotParams = options['resourceSnapshotSwift'] && swiftUtils.getConfig(options, 'resourceSnapshotSwift', whitelist),
-                rs = f2bConfigUtils.getConfig(__cwd, options).format();
+                rs = f2bConfigUtils.getConfig(__cwd, options).format(options.auto);
 
             asyncMap(rs, function(el, cb){
                 var p = _.extend({}, utils.isSnapshot(el.name) && snapshotParams || params, el, {

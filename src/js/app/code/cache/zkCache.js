@@ -97,7 +97,8 @@ ZkCache.prototype = {
         var self = this,
             cache = this._cache,
             storage = cache.getStorage(),
-            moduleName, remoteRepos, tmp, p;
+            isMV = utils.isModuleVersion,
+            moduleName, remoteRepos, p;
         return new Promise(function(resolve, reject){
             //获取所有容器
             storage.listRepository(isSnapshot, function(err, list){
@@ -118,17 +119,23 @@ ZkCache.prototype = {
                         //如果存在，则匹配各模块
                         if(remoteRepos[repository]){
                             console.info('同步swift上' + repository + '容器内容至zookeeper上');
+                            //swift存储只有用户、容器、对象三级，故pcks是对象级别，也就是具体版本模块
+                            //zookeeper是用户、容器、模块三级，模块节点数据为该模块所有版本信息
                             storage.listPackages(isSnapshot, repository, function(e, pcks){
                                 if(e){
                                     console.error(err);
                                     cb(err);
                                     return;
                                 }
-                                tmp = {};
-                                //遍历所有模块
+                                var tmp = {};
+                                //遍历所有模块，得到每个模块对应的版本列表，tmp为{moduleName: "moduleVersion@1, moduleVersion@2"}
                                 _.forEach(pcks, function(pl){
-                                    moduleName = utils.splitModuleName(pl.name);
-                                    tmp[moduleName] = tmp[moduleName] ? [tmp[moduleName], pl.name].join(',') : pl.name;
+                                    if(isMV(pl.name)){
+                                        moduleName = utils.splitModuleName(pl.name);
+                                        tmp[moduleName] = tmp[moduleName] ? [tmp[moduleName], pl.name].join(',') : pl.name;
+                                    }else{
+                                        tmp[pl.name] = 1;
+                                    }
                                 });
                                 //获取所有的对象
                                 p = generatePath.call(self, isSnapshot, repository);
@@ -136,25 +143,38 @@ ZkCache.prototype = {
                                     //删除多余版本
                                     asyncMap(children, function(name, cb){
                                         if(tmp[name]){
-                                            p = generatePath.call(self, isSnapshot, repository, name);
-                                            zkClient.setData(p, tmp[name]).then(function(){
+                                            if(isMV(name)){
+                                                p = generatePath.call(self, isSnapshot, repository, name);
+                                                zkClient.setData(p, tmp[name]).then(function(){
+                                                    tmp[name] = null;
+                                                    delete tmp[name];
+                                                    cb();
+                                                });
+                                            }else{
                                                 tmp[name] = null;
                                                 delete tmp[name];
                                                 cb();
-                                            });
+                                            }
                                         }else{
                                             console.debug('删除容器' + repository + '下模块:' + name);
                                             self.delModule(isSnapshot, repository, name);
                                             cb();
                                         }
                                     }, function(){
-                                        //新增模块
+                                        //新增tmp里剩余模块
                                         _.forEach(tmp, function(v, k){
-                                            console.debug('新增容器' + repository + '下模块版本' + v);
-                                            _.forEach(v.split(','), function(m){
-                                                m && self.addPackage(isSnapshot, repository, m);
-                                            });
+                                            if(isMV(k)){
+                                                console.debug('新增容器' + repository + '下模块版本' + v);
+                                                _.forEach(v.split(','), function(m){
+                                                    m && self.addPackage(isSnapshot, repository, m);
+                                                });
+                                            }else{
+                                                console.debug('新增容器' + repository + '下模块' + k);
+                                                self.addPackage(isSnapshot, repository, k);
+                                            }
                                         });
+                                        remoteRepos[repository] = null;
+                                        delete remoteRepos[repository];
                                         cb();
                                     });
                                 });
@@ -170,6 +190,25 @@ ZkCache.prototype = {
                             reject();
                             return;
                         }
+                        //新增tmp里剩余模块
+                        _.forEach(remoteRepos, function(v, k){
+                            console.info('同步swift上' + k + '容器内容至zookeeper上');
+                            self.addRepository(isSnapshot, k);
+
+                            storage.listPackages(isSnapshot, k, function(e, pcks){
+                                if(e){
+                                    console.error(err);
+                                    cb(err);
+                                    return;
+                                }
+                                var tmp = {};
+                                //遍历所有模块，得到每个模块对应的版本列表，tmp为{moduleName: "moduleVersion@1, moduleVersion@2"}
+                                _.forEach(pcks, function(pl){
+                                    console.debug('新增容器' + k + '下模块版本' + pl.name);
+                                    self.addPackage(isSnapshot, k, pl.name);
+                                });
+                            });
+                        });
                         resolve();
                     });
                 });
@@ -190,11 +229,8 @@ ZkCache.prototype = {
     clear: function(){
         var self = this;
         return new Promise(function(resolve, reject){
-            self.prune().then(function(){
-                console.info('清除本地缓存');
-                self._cache.clear();
-                resolve();
-            });
+            console.info('同步本地缓存');
+            self.prune();
         });
     },
     /**
@@ -205,10 +241,11 @@ ZkCache.prototype = {
      */
     addRepository: function(isSnapshot, name, stat){
         var cache = this._cache,
-            reps = cache.listRepository(isSnapshot),
-            path = generatePath.call(this, isSnapshot, name);
+            reps = cache.listRepository(isSnapshot);
+            
         //判断缓存中是否存在
         if(!reps[name]){
+            var path = generatePath.call(this, isSnapshot, name);
             zkClient.exist(path).then(function(isExist){
                 if(isExist){
                     cache.addRepository(isSnapshot, name, stat);
@@ -256,29 +293,35 @@ ZkCache.prototype = {
      * @param {String} name       包名称，形如“five@0.0.1”
      */
     addPackage: function(isSnapshot, repository, name){
-        var cache = this._cache,
-            moduleName = utils.splitModuleName(name),
+        var isMV = utils.isModuleVersion(name),
+            moduleName = isMV ? utils.splitModuleName(name) : name,
             path = generatePath.call(this, isSnapshot, repository, moduleName),
-            modules = cache.listModules(isSnapshot, repository);
-        if(!modules[moduleName]){
+            pcks = this.listPackages(isSnapshot, repository, moduleName);
+        if(!pcks){
+            //如果不存在，则代表zookeeper不存在该节点
+            var cache = this._cache;
             zkClient.exist(path).then(function(isExist){
                 if(isExist){
-                    zkClient.getData(path).then(function(data){
-                        if(!RegExp('(?=[^,])' + name + '(?=(,|$)),?').test(data)){
-                            zkClient.setData(path, data ? [data, name].join(',') : name);
-                        }else{
-                            cache.addPackage(isSnapshot, repository, name);
-                        }
-                    });
+                    //如果为模块版本，则处理版本数据，否则不需要操作节点数据
+                    if(isMV){
+                        zkClient.getData(path).then(function(data){
+                            if(!hasVersion(name, data)){
+                                zkClient.setData(path, data ? [data, name].join(',') : name);
+                            }else{
+                                cache.addPackage(isSnapshot, repository, name);
+                            }
+                        });
+                    }
                     return;
                 }
                 zkClient.mkdirp(path).then(function(){
-                    zkClient.setData(path, name);
+                    isMV && zkClient.setData(path, name);
                 });
             });
         }else{
-            if(!RegExp('(?=[^,])' + name + '(?=(,|$)),?').test(modules[moduleName])){
-                zkClient.setData(path, (modules[moduleName].concat(name)).join(','));
+            //如果存在，则zookeeper存在该节点，只针对模块版本信息需要对节点数据进行处理
+            if(isMV && !hasVersion(name, pcks.join(','))){
+                zkClient.setData(path, (pcks.concat(name)).join(','));
             }
         }
     },
@@ -290,19 +333,24 @@ ZkCache.prototype = {
      * @return {void}
      */
     delPackage: function(isSnapshot, repository, name) {
-        var moduleName = utils.splitModuleName(name),
+        var isMV = utils.isModuleVersion(name),
+            moduleName = isMV ? utils.splitModuleName(name) : name,
             path = generatePath.call(this, isSnapshot, repository, moduleName),
-            modules = this._cache.listModules(isSnapshot, repository);
-        if(!modules[moduleName]){
+            pcks = this.listPackages(isSnapshot, repository, moduleName);
+        if(!pcks){
             zkClient.exist(path).then(function(isExist){
-                if(isExist){
+                if(isExist && isMV){
                     zkClient.getData(path).then(function(data){
                         zkClient.setData(path, deleteVersion(data, name));
                     });
                 }
             });
         }else{
-            zkClient.setData(path, deleteVersion(modules[moduleName].join(','), name));
+            if(isMV){
+                zkClient.setData(path, deleteVersion(pcks.join(','), name));
+            }else{
+                zkClient.remove(path);
+            }
         }
     },
     /**
@@ -399,7 +447,7 @@ function generatePath(isSnapshot, repository, moduleName){
  * @return {void}
  */
 function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
-    var childrens, p, repository;
+    var childrens, repository;
     return new Promise(function(resolve, reject){
         //获取初始节点数
         zkClient.getChildren(path).then(function(data){
@@ -412,7 +460,7 @@ function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
 
             //监听当前节点下的子节点
             asyncMap(childrens, function(v, cb){
-                p = [path, v].join('/');
+                var p = [path, v].join('/');
                 //添加容器节点
                 if(nodeStep == NODE_STEP.USER){
                     console.debug('新增' + v + '容器');
@@ -426,7 +474,7 @@ function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
                     cb();
                 }
                 //监听数据
-                monitorData(isSnapshot, p, cache, repository || v, null, nodeStep == NODE_STEP.CONTAINER);
+                monitorData(isSnapshot, p, cache, repository || v, nodeStep == NODE_STEP.CONTAINER && v);
             }, function(){
                 resolve();
             });
@@ -435,7 +483,7 @@ function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
             zkClient.register(zkClient.Event.NODE_CHILDREN_CHANGED, path, function(data){
                 console.debug('触发' + path + '节点监听事件');
                 var addChanges = _.difference(data, childrens),
-                    rmChanges = _.difference(childrens, data);
+                    rmChanges = _.difference(childrens, data), p;
                 if(addChanges.length == 0 && rmChanges.length == 0){
                     console.debug(path + '没有变化');
                     return;
@@ -450,7 +498,7 @@ function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
                         callback && callback(isSnapshot, p, cache);
                     }
                     //监听数据
-                    monitorData(isSnapshot, p, cache, repository || v, null, nodeStep == NODE_STEP.CONTAINER);
+                    monitorData(isSnapshot, p, cache, repository || v, nodeStep == NODE_STEP.CONTAINER && v);
                 });
                 //删除节点处理
                 _.forEach(rmChanges, function(v){
@@ -480,15 +528,14 @@ function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
  * @param  {String}  path       节点路径
  * @param  {Cache}  cache       本地内存缓存
  * @param  {String}  repository 容器名
- * @param  {Function} callback  获取数据回调
- * @param  {Boolean} isModule   是否是模块
+ * @param  {Boolean} mv         模块名，如果是user，则为false
  * @return {void}
  */
-function monitorData(isSnapshot, path, cache, repository, callback, isModule) {
+function monitorData(isSnapshot, path, cache, repository, mv) {
     var oriData;
     //记录原始节点数据
     zkClient.getData(path).then(function(data){
-        if(isModule){
+        if(mv){
             //叶子节点的数据是以逗号分割的版本，叶子节点=模块
             console.debug('获取' + path + '节点信息:' + data);
             if(data){
@@ -498,16 +545,17 @@ function monitorData(isSnapshot, path, cache, repository, callback, isModule) {
                     console.debug('新增' + repository + '容器中对象:' + v);
                     cache.addPackage(isSnapshot, repository, v);
                 });
+            }else{
+                cache.addPackage(isSnapshot, repository, mv);
             }
         }else{
             cache.addRepository(isSnapshot, repository, dataDeal(data));
         }
         oriData = data;
-        callback && callback(isSnapshot, repository, data);
     }).then(function(){
         //监听节点数据变更
         zkClient.register(zkClient.Event.NODE_DATA_CHANGED, path, function(data) {
-            if(isModule){
+            if(mv){
                 data = data.split(',');
                 //看数据是否发生变更
                 //叶子节点的数据是以逗分割的版本，叶子节点=模块
@@ -535,6 +583,15 @@ function monitorData(isSnapshot, path, cache, repository, callback, isModule) {
             oriData = data;
         });
     });
+}
+/**
+ * 判断版本是否存在
+ * @param  {String} ver  需要判断的版本
+ * @param  {String} vers 所有版本
+ * @return {String}
+ */
+function hasVersion(ver, vers){
+    return RegExp('(?=[^,])' + ver + '(?=(,|$)),?').test(vers);
 }
 /**
  * 删除对应版本

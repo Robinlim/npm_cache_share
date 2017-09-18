@@ -35,7 +35,7 @@
 ** 如果设定了auto参数，会忽略指令的container参数以及resourceSwift中container的配置，会将package.json里的f2b下的key值作为container来下载对象，所有上传资源都会进行压缩 **
 
 # 实现
-读取工程根目录下package.json文件，并根据配置进行资源压缩上传，文件名为 **project + version**， 后端可通过此文件名来获取资源。
+读取工程根目录下package.json文件，并根据配置进行资源压缩上传，文件名为 **project + @@@ + version**， 后端可通过此文件名来获取资源。如果指定-a参数，则文件名为 **version**。
 
 ## for frontend
 

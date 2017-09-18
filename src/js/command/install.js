@@ -118,6 +118,8 @@ module.exports = {
                 }
             });
         } else { // 未指定模块名称则全部安装
+            //清空工程目录里的node_modules
+            fsExtra.emptyDirSync(path.resolve(__cwd, constant.LIBNAME));
             manifestUtils.readManifest(__cwd, this.opts.lockfile, callback);
         }
     },

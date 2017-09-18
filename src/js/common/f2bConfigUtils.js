@@ -37,12 +37,12 @@ function Config(cwd, config, options, root){
     }
 };
 
-Config.prototype.format = function(){
+Config.prototype.format = function(withoutProject){
     var cwd = this.cwd;
     return _.flatMap(this.configs, function(el){
         return {
             container: el.project,
-            name: el.project + Constant.SPLIT + el.version,
+            name: withoutProject ? el.version : el.project + Constant.SPLIT + el.version,
             path: path.join(cwd, el.path),
             compressType: el.type,
             destpath: el.path

@@ -31,6 +31,7 @@ module.exports = {
     /*@RequestMapping(["/manage/sync"])*/
     sync: function(req, res){
         storage.sync();
+        res.writeHead(200, {'Content-Type': 'application/json;charset=UTF-8'});
         res.end('已触发同步！');
     },
     /*@RequestMapping(["/versionType"])*/
@@ -62,7 +63,7 @@ module.exports = {
     },
     /*@RequestMapping("/versionType/{versionType}/{repository}")*/
     modules: function(req, res, versionType, repository){
-        var fileList = _.map(storage.listModules(isSnapshot(versionType), repository), function(v, k){
+        var fileList = _.map(storage.listModules(isSnapshot(versionType), repository), function(v){
             return {name: v, icon: 'folder'}
         });
         renderTool.renderDirectory({
