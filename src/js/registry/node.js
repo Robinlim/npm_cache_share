@@ -95,6 +95,9 @@ nodeRegistry.prototype.put = function(dir, info, callback) {
                 modules: fs.createReadStream(tmpFile)
             })
         }, function(err, response, body) {
+            //删除上传文件
+            fsExtra.removeSync(tmpFile);
+
             if (err) {
                 console.error('上传失败:', err);
                 callback(err);

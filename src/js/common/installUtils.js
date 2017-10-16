@@ -39,24 +39,26 @@ module.exports = {
      */
     parse: function(base, registry, dependencies, opts, callback) {
         console.info('初始化环境');
+        var curtimestampe = '' + Date.now();
         // 根路径
         this.base = base;
         // 缓存注册中心实例
         this.registry = registry;
         // 构建安装参数
         this.opts = opts;
+        // 临时目录
+        this.tmpPath = path.resolve(__cache, curtimestampe);
+        this.uploadTmpPath = path.resolve(__cache, curtimestampe, UPLOADDIR);
 
         // 确保本地缓存文件夹及node_modules存在并可写入
         utils.ensureDirWriteablSync(__cache);
         utils.ensureDirWriteablSync(path.resolve(__cache, MODULECHECKER));
-        // utils.ensureDirWriteablSync(path.resolve(__cache, LIBNAME));
-        utils.ensureDirWriteablSync(path.resolve(__cache, UPLOADDIR));
-        // 清空uploadDir
-        fsExtra.emptyDirSync(path.resolve(__cache, UPLOADDIR));
-        // 清空临时node_modules
-        fsExtra.emptyDirSync(path.resolve(__cache, LIBNAME));
         // 确保工程目录node_modules存在并可写入
         utils.ensureDirWriteablSync(path.resolve(base, LIBNAME));
+        // 确保临时安装目录存在
+        utils.ensureDirWriteablSync(this.tmpPath);
+        // 确保上传目录存在
+        utils.ensureDirWriteablSync(this.uploadTmpPath);
 
         // 所需全部依赖 过滤到不恰当的依赖
         this.dependencies = npmUtils.filter(dependencies);
@@ -121,10 +123,8 @@ module.exports = {
         //新安装的模块同步到远程服务
         this.syncRemote().await();
 
-        //删除缓存的node_modules目录,安装目录
-        console.debug('删除临时目录');
-        shellUtils.rm('-rf', path.resolve(__cache, UPLOADDIR));
-        shellUtils.rm('-rf', path.resolve(__cache, LIBNAME));
+        //清理现场
+        this.clean();        
 
         return {
             downloadNum: _.keys(this.serverCache).length,
@@ -133,6 +133,7 @@ module.exports = {
     },
     /**
      * 下载公共缓存模块
+     * @param  {Function} callback
      * @return {void}
      */
     /*@AsyncWrap*/
@@ -150,7 +151,6 @@ module.exports = {
         }
         var self = this, start = 0, count = constant.LOAD_MAX_RESOUCE;
         
-
         //控制分批下载资源，会受服务的网络连接数的限制
         (function loadCtrl(){
             loadResource(rs.slice(start, start = start + count), function(){
@@ -165,10 +165,11 @@ module.exports = {
         function loadResource(resource, callback){
             asyncMap(
                 resource,
-                _.bind(function(packageName, cb){
+                function(packageName, cb){
                     console.debug('下载模块', packageName);
-                    this.registry.get(packageName, this.serverCache[packageName].url, __cache, function(err){
+                    self.registry.get(packageName, self.serverCache[packageName].url, __cache, function(err){
                         if(err){
+                            self.clean();
                             console.error(packageName + ' ', err);
                             process.exit(1);
                         } else {
@@ -176,14 +177,13 @@ module.exports = {
                             cb();
                         }
                     });
-                }, self),
+                },
                 callback
             );
         }
     },
     /**
      * 安装缺失模块
-     * @param  {JSON} modules   模块
      * @return {void}
      */
     /*@Async*/
@@ -224,10 +224,11 @@ module.exports = {
             total: this.needInstall.length,
             cur: 0
         };
+        
         //安装模块，在临时目录上执行
         _.forEach(bundles, _.bind(function(el){
-            this._installBundle(el, __cache, counter);
-            this._syncLocal(el, __cache).await();
+            this._installBundle(el, this.tmpPath, counter);
+            this._syncLocal(el, this.tmpPath).await();
         }, this));
         //安装模块，在工程路径上执行
         _.forEach(forInstlBundles, _.bind(function(el){
@@ -304,7 +305,7 @@ module.exports = {
                 //如果是强制安装策略，或者强制更新策略，则不同步到服务器
                 //如果公共缓存不存在该模块，则移动至上传目录
                 if(!self.serverCache[tpmc] && !(installs[name] || alwaysUpdates[name])){
-                    target = path.resolve(__cache, UPLOADDIR, tpmc);
+                    target = path.resolve(self.uploadTmpPath, tpmc);
                     shellUtils.cp('-rf', path.resolve(v.realpath), target);
                 }
                 //如果本地缓存不存在，则移动至本地缓存目录
@@ -362,6 +363,7 @@ module.exports = {
                 console.debug('cp -rf', path.resolve(__cache, mn), tmp);
                 shellUtils.cp('-rf', path.resolve(__cache, mn), tmp);
             } else {
+                self.clean();
                 console.error('Cannot find packages:', mn);
                 process.exit(1);
             }
@@ -393,7 +395,7 @@ module.exports = {
             callback();
             return;
         }
-        var uploadDir = path.resolve(__cache, UPLOADDIR);
+        var uploadDir = this.uploadTmpPath;
         if (shellUtils.test('-d', uploadDir)  && shellUtils.ls(uploadDir).length > 0){
             console.info('上传模块到公共缓存');
             this.registry.put(uploadDir, false, callback);
@@ -401,6 +403,14 @@ module.exports = {
             console.info('没有需要上传的模块');
             callback();
         }
+    },
+    /**
+     * 删除临时目录
+     */
+    clean: function(){
+        console.debug('删除临时目录');
+        shellUtils.rm('-rf', this.uploadTmpPath);
+        shellUtils.rm('-rf', this.tmpPath);
     },
     /**
      * 判断并读取公共缓存持有的本地所需依赖
