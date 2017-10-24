@@ -91,7 +91,7 @@
                     "concat-map": {
                       "version": "0.0.1",
                       "from": "concat-map@0.0.1",
-                      "resolved": "http://r.cnpmjs.org/concat-map/download/concat-map-0.0.1.tgz"
+                      "resolved": "https://registry.npm.taobao.org/concat-map/download/concat-map-0.0.1.tgz"
                     }
                   }
                 }
@@ -333,7 +333,7 @@
             "media-typer": {
               "version": "0.3.0",
               "from": "media-typer@0.3.0",
-              "resolved": "http://r.cnpmjs.org/media-typer/download/media-typer-0.3.0.tgz"
+              "resolved": "https://registry.npm.taobao.org/media-typer/download/media-typer-0.3.0.tgz"
             },
             "mime-types": {
               "version": "2.1.15",
@@ -417,7 +417,7 @@
         "vary": {
           "version": "1.0.1",
           "from": "vary@>=1.0.1 <1.1.0",
-          "resolved": "http://r.cnpmjs.org/vary/download/vary-1.0.1.tgz"
+          "resolved": "https://registry.npm.taobao.org/vary/download/vary-1.0.1.tgz"
         }
       }
     },
@@ -434,7 +434,7 @@
         "cookie-signature": {
           "version": "1.0.6",
           "from": "cookie-signature@1.0.6",
-          "resolved": "http://r.cnpmjs.org/cookie-signature/download/cookie-signature-1.0.6.tgz"
+          "resolved": "https://registry.npm.taobao.org/cookie-signature/download/cookie-signature-1.0.6.tgz"
         }
       }
     },
@@ -512,7 +512,7 @@
         "cookie-signature": {
           "version": "1.0.6",
           "from": "cookie-signature@1.0.6",
-          "resolved": "http://r.cnpmjs.org/cookie-signature/download/cookie-signature-1.0.6.tgz"
+          "resolved": "https://registry.npm.taobao.org/cookie-signature/download/cookie-signature-1.0.6.tgz"
         },
         "depd": {
           "version": "1.1.0",
@@ -581,7 +581,7 @@
             "forwarded": {
               "version": "0.1.0",
               "from": "forwarded@>=0.1.0 <0.2.0",
-              "resolved": "http://r.cnpmjs.org/forwarded/download/forwarded-0.1.0.tgz"
+              "resolved": "https://registry.npm.taobao.org/forwarded/download/forwarded-0.1.0.tgz"
             },
             "ipaddr.js": {
               "version": "1.0.5",
@@ -693,7 +693,7 @@
             "media-typer": {
               "version": "0.3.0",
               "from": "media-typer@0.3.0",
-              "resolved": "http://r.cnpmjs.org/media-typer/download/media-typer-0.3.0.tgz"
+              "resolved": "https://registry.npm.taobao.org/media-typer/download/media-typer-0.3.0.tgz"
             },
             "mime-types": {
               "version": "2.1.15",
@@ -712,12 +712,12 @@
         "utils-merge": {
           "version": "1.0.0",
           "from": "utils-merge@1.0.0",
-          "resolved": "http://r.cnpmjs.org/utils-merge/download/utils-merge-1.0.0.tgz"
+          "resolved": "https://registry.npm.taobao.org/utils-merge/download/utils-merge-1.0.0.tgz"
         },
         "vary": {
           "version": "1.0.1",
           "from": "vary@>=1.0.1 <1.1.0",
-          "resolved": "http://r.cnpmjs.org/vary/download/vary-1.0.1.tgz"
+          "resolved": "https://registry.npm.taobao.org/vary/download/vary-1.0.1.tgz"
         }
       }
     },
@@ -801,7 +801,7 @@
                         "concat-map": {
                           "version": "0.0.1",
                           "from": "concat-map@0.0.1",
-                          "resolved": "http://r.cnpmjs.org/concat-map/download/concat-map-0.0.1.tgz"
+                          "resolved": "https://registry.npm.taobao.org/concat-map/download/concat-map-0.0.1.tgz"
                         }
                       }
                     }
@@ -843,7 +843,7 @@
         "mkdirp": {
           "version": "0.5.1",
           "from": "mkdirp@>=0.5.0 >=0.0.0 <1.0.0",
-          "resolved": "http://r.cnpmjs.org/mkdirp/download/mkdirp-0.5.1.tgz",
+          "resolved": "https://registry.npm.taobao.org/mkdirp/download/mkdirp-0.5.1.tgz",
           "dependencies": {
             "minimist": {
               "version": "0.0.8",
@@ -897,7 +897,7 @@
                         "concat-map": {
                           "version": "0.0.1",
                           "from": "concat-map@0.0.1",
-                          "resolved": "http://r.cnpmjs.org/concat-map/download/concat-map-0.0.1.tgz"
+                          "resolved": "https://registry.npm.taobao.org/concat-map/download/concat-map-0.0.1.tgz"
                         }
                       }
                     }
@@ -954,7 +954,7 @@
                 "concat-map": {
                   "version": "0.0.1",
                   "from": "concat-map@0.0.1",
-                  "resolved": "http://r.cnpmjs.org/concat-map/download/concat-map-0.0.1.tgz"
+                  "resolved": "https://registry.npm.taobao.org/concat-map/download/concat-map-0.0.1.tgz"
                 }
               }
             }
@@ -1046,7 +1046,7 @@
     "promise": {
       "version": "7.0.0",
       "from": "promise@7.0.0",
-      "resolved": "http://r.cnpmjs.org/promise/download/promise-7.0.0.tgz"
+      "resolved": "https://registry.npm.taobao.org/promise/download/promise-7.0.0.tgz"
     },
     "read-package-json": {
       "version": "2.0.5",
@@ -1098,7 +1098,7 @@
                     "concat-map": {
                       "version": "0.0.1",
                       "from": "concat-map@0.0.1",
-                      "resolved": "http://r.cnpmjs.org/concat-map/download/concat-map-0.0.1.tgz"
+                      "resolved": "https://registry.npm.taobao.org/concat-map/download/concat-map-0.0.1.tgz"
                     }
                   }
                 }
@@ -1191,7 +1191,7 @@
         "dezalgo": {
           "version": "1.0.3",
           "from": "dezalgo@>=1.0.0 <2.0.0",
-          "resolved": "http://registry.npmjs.org/dezalgo/-/dezalgo-1.0.3.tgz",
+          "resolved": "https://registry.npm.taobao.org/dezalgo/-/dezalgo-1.0.3.tgz",
           "dependencies": {
             "asap": {
               "version": "2.0.5",
@@ -1474,7 +1474,7 @@
         "performance-now": {
           "version": "0.2.0",
           "from": "performance-now@>=0.2.0 <0.3.0",
-          "resolved": "http://registry.npm.taobao.org/performance-now/download/performance-now-0.2.0.tgz"
+          "resolved": "https://registry.npm.taobao.org/performance-now/download/performance-now-0.2.0.tgz"
         },
         "qs": {
           "version": "6.4.0",
@@ -1597,7 +1597,7 @@
                     "concat-map": {
                       "version": "0.0.1",
                       "from": "concat-map@0.0.1",
-                      "resolved": "http://r.cnpmjs.org/concat-map/download/concat-map-0.0.1.tgz"
+                      "resolved": "https://registry.npm.taobao.org/concat-map/download/concat-map-0.0.1.tgz"
                     }
                   }
                 }
