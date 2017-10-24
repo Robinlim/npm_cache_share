@@ -230,11 +230,14 @@ module.exports = {
             this._installBundle(el, this.tmpPath, counter);
             this._syncLocal(el, this.tmpPath).await();
         }, this));
-        //安装模块，在工程路径上执行
-        _.forEach(forInstlBundles, _.bind(function(el){
-            this._installBundle(el, this.base, counter, true);
-            this._syncLocal(el, this.base).await();
-        }, this));
+        if(forInstlBundles.length > 0){
+            console.debug('即将分批安装的模块：',forInstlBundles);
+            //安装模块，在工程路径上执行
+            _.forEach(forInstlBundles, _.bind(function(el){
+                this._installBundle(el, this.base, counter, true);
+                this._syncLocal(el, this.base).await();
+            }, this));
+        }
     },
     /**
      * 批量安装一批npm依赖
@@ -255,7 +258,7 @@ module.exports = {
                 silent: !global.DEBUG
             }, notSave);
             counter.cur += part.length;
-            console.info('已安装：', counter.cur, '/', counter.total);
+            console.info(curPath, '已安装：', counter.cur, '/', counter.total);
         }
     },
     /**
@@ -276,6 +279,10 @@ module.exports = {
         _.forEach(files, function(file, i) {
             var filePath = path.resolve(curPath, LIBNAME, utils.splitModuleName(file));
             //存在私有域@开头的，只会存在一级
+            if(!fs.existsSync(filePath)){
+                console.error(filePath + ' not exists!!!');
+                process.exit(1);
+            }
             if (!shellUtils.test('-f', path.resolve(filePath, 'package.json'))) {
                 shellUtils.ls(filePath).forEach(function(file, j) {
                     filesArr.push(path.resolve(filePath, file));
@@ -284,7 +291,6 @@ module.exports = {
                 filesArr.push(filePath);
             }
         });
-
         asyncMap(filesArr, function(filePath, cb){
             rpt(filePath, function(err, data) {
                 if (err) {
@@ -363,7 +369,8 @@ module.exports = {
                 console.debug('cp -rf', path.resolve(__cache, mn), tmp);
                 shellUtils.cp('-rf', path.resolve(__cache, mn), tmp);
             } else {
-                self.clean();
+                // 错误模块保留现场
+                // self.clean();
                 console.error('Cannot find packages:', mn);
                 process.exit(1);
             }
