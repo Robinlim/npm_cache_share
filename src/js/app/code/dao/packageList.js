@@ -112,5 +112,4 @@ PackageList.prototype = {
     }
 }
 
-/*@Factory("packageList")*/
 module.exports = PackageList;

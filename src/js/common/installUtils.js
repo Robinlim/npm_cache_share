@@ -24,8 +24,7 @@ var utils = require('./utils'),
 var LIBNAME = constant.LIBNAME,
     UPLOADDIR = constant.UPLOADDIR,
     MODULECHECKER = constant.MODULECHECKER,
-    __cache = utils.getCachePath(),
-    __cwd = process.cwd();
+    __cache = utils.getCachePath();
 
 module.exports = {
     /**
@@ -57,6 +56,8 @@ module.exports = {
         utils.ensureDirWriteablSync(path.resolve(base, LIBNAME));
         // 确保临时安装目录存在
         utils.ensureDirWriteablSync(this.tmpPath);
+        // node0.12.7安装compressible模块时会查找node_modules目录，没有会往上层查找，故需提前创建，高版本node没有此问题
+        utils.ensureDirWriteablSync(path.resolve(this.tmpPath, LIBNAME));
         // 确保上传目录存在
         utils.ensureDirWriteablSync(this.uploadTmpPath);
 
@@ -226,12 +227,15 @@ module.exports = {
         };
         
         //安装模块，在临时目录上执行
+        console.debug('安装路径：',this.tmpPath);
         _.forEach(bundles, _.bind(function(el){
             this._installBundle(el, this.tmpPath, counter);
             this._syncLocal(el, this.tmpPath).await();
         }, this));
+
         if(forInstlBundles.length > 0){
             console.debug('即将分批安装的模块：',forInstlBundles);
+            console.debug('安装路径：',this.base);
             //安装模块，在工程路径上执行
             _.forEach(forInstlBundles, _.bind(function(el){
                 this._installBundle(el, this.base, counter, true);
@@ -251,14 +255,14 @@ module.exports = {
         var maxBundle = constant.NPM_MAX_BUNDLE;
         for(var i = 0; i < pcks.length; i += maxBundle){
             var start = i, end = i+maxBundle < pcks.length ? i+maxBundle : pcks.length,
-                part = pcks.slice(start, end);
+                part = pcks.slice(start, end);  
             console.debug('安装模块', part);
             npmUtils.npmInstallModules(part, this.opts, {
                 cwd: curPath,
                 silent: !global.DEBUG
             }, notSave);
             counter.cur += part.length;
-            console.info(curPath, '已安装：', counter.cur, '/', counter.total);
+            console.info('已安装：', counter.cur, '/', counter.total);
         }
     },
     /**
@@ -342,7 +346,7 @@ module.exports = {
             cache = utils.lsDirectory(__cache),
             postinstall = this.postinstall, 
             postRunsPath = {},
-            mn, tmp;
+            mn, tmp, mnPath;
         //确保文件路径存在
         fsExtra.ensureDirSync(pmp);
         //循环同步依赖模块
@@ -363,11 +367,12 @@ module.exports = {
                 postRunsPath[k] = tmp;
             }
             fsExtra.ensureDirSync(path.resolve(tmp, '..'));
-            if(shellUtils.test('-d', path.resolve(__cache, mn))){
+            mnPath = path.resolve(__cache, mn);
+            if(shellUtils.test('-d', mnPath)){
                 // 先删除原有的目录
                 shellUtils.rm('-rf', tmp);
-                console.debug('cp -rf', path.resolve(__cache, mn), tmp);
-                shellUtils.cp('-rf', path.resolve(__cache, mn), tmp);
+                console.debug('cp -rf', mnPath, tmp);
+                shellUtils.cp('-rf', mnPath, tmp);
             } else {
                 // 错误模块保留现场
                 // self.clean();

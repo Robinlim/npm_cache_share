@@ -1,4 +1,7 @@
 # 历史版本
+1.0.48
+   - 解决node0.12.7安装时出现ls: no such file or directory的问题
+
 1.0.47
    - fix npm-shrinkwrap.json里源统一成淘宝源
 

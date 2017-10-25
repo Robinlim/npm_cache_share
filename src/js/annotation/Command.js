@@ -27,8 +27,11 @@ var Command = module.exports = require('node-annotation').Annotation.extend({
      * @return
      */
     compile: function(model) {
-        var ops = model.po(),
-            cmd = programe
+        var ops = model.po();
+        if(!ops.name){
+            return;
+        }
+        var cmd = programe
                     .command(ops.name)
                     .usage(ops.usage)
                     .alias(ops.alias)

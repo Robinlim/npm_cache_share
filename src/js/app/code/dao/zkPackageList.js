@@ -177,5 +177,4 @@ ZkPackageList.prototype = {
     }
 }
 
-/*@Factory("zkPackageList")*/
 module.exports = ZkPackageList;

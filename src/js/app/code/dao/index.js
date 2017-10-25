@@ -10,5 +10,6 @@
 var Factory = require('../annotation/Factory');
 /*@Component("privatemodules")*/
 module.exports = (function(opts) {
-    return Factory.instance( opts.zookeeper ? 'zkPackageList' : 'packageList', opts);
+    var zkClass = opts.zookeeper ? require('./zkPackageList') : require('./packageList');
+    return new zkClass(opts);
 })(process.env);
