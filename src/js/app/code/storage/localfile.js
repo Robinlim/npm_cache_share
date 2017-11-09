@@ -15,7 +15,6 @@ var _ = require('lodash'),
 
 var cache = require('../cache');
 
-/*@Factory("localfile")*/
 function localfile(config){
     this.dir = config.length > 0 ? config[0] : utils.getServerCachePath();
     this.ignoreDir = ['.tempdir'];
@@ -169,7 +168,5 @@ localfile.prototype.put = function(repository, name, stream, cbk){
             cbk();
         });
 };
-
-
 
 module.exports = localfile;

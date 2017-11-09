@@ -6,7 +6,6 @@
 * @Last modified time: 2017-05-08 10:37
 */
 
-
 var Factory = require('../annotation/Factory'),
     cache = require('../cache'),
     _ = require('lodash');
@@ -15,7 +14,8 @@ var storage = null;
 
 function getStorage(storageType, opts, snapshotOpts){
     if(!storage){
-        storage = Factory.instance(storageType, opts, snapshotOpts);
+        storageClass = storageType == 'localfile' ? require('./localfile') : require('./swift');
+        storage = new storageClass(opts, snapshotOpts);
     }
     return storage;
 };
@@ -25,7 +25,9 @@ module.exports = {
     init: function(type, opts, snapshotOpts){
         opts == snapshotOpts && cache.same();
         // opts can be a STRING ! ‘undefined’
-        cache.setStorage(getStorage(type, opts === 'undefined' ? [] : (opts || "").split('|'), snapshotOpts === 'undefined' ? [] : (snapshotOpts || "").split('|')));
+        cache.setStorage(getStorage(type, 
+            opts === 'undefined' ? [] : (opts || "").split('|'), 
+            snapshotOpts === 'undefined' ? [] : (snapshotOpts || "").split('|')));
     },
     sync: function(){
         var sto = getStorage();

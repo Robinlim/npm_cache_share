@@ -50,6 +50,7 @@ app.get('/healthcheck.html', function(req, res) {
     var cont = fs.readFileSync(healthcheck).toString();
     res.end(cont);
 });
+
 //初始化缓存
 require('./code/cache').ready().then(function(){
     //初始化存储

@@ -11,7 +11,6 @@ var _ = require('lodash'),
     Swift = require('../../../lib/swiftClient'),
     Utils = require('../../../common/utils');
 
-/*@Factory("swift")*/
 function swift(config, snapshotConfig){
     var self = this;
     //SNAPSHOT版本
