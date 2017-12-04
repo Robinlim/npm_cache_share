@@ -40,6 +40,7 @@
 > 如果遇到域名解析失败，getaddrinfo这种的，可以在服务端配置storageConfig的host时直接使用IP
 > Mac系统的用户需要注意下，node版本最低要大于等于4，因为fibers对Xcode有要求。如果非要使用，可查阅[fibers issues](https://github.com/nodejs/node-gyp/issues/1160)里的方式解决
 > 由于历史迭代版本，yarn安装会产生莫名错误，可以考虑清空本地缓存，对于运行效率首次会受影响，后续正常
+> 在centos6系统下node8以上版本gyp编译的时候会失败，可以看看本地gcc的版本，默认是4.4.7,需要升级到4.7版本以上才行，升级gcc要万分小心
 
 <h1 id="command">指令</h1>
 
@@ -80,6 +81,7 @@ Options:
     -a,--auth           仅type=nexus，指定nexus账户（username:password）
     -n,--npm [npm]      可指定npm的安装路径来执行npm指令，用于指定特定版本的npm
     -p,--production,--noOptional,--save,--save-dev	同npm安装
+    --checkSnapshotDeps 安装时检查依赖中是否存在SNAPSHOT版本的模块
 
   of 'clean'
      -s,--forServer     指定当前运行环境是在公共缓存服务上，使用如 npm_cache_share clean --forServer
@@ -89,10 +91,10 @@ Options:
      -e,--repository    指定公共缓存服务仓库，由HOST:PORT/NAME构成
      -t,--token         仅type=node，指定公共服务上传所需要校验的token
      -p,--password      每个包上传时可以设置一个密码，覆盖该包时必须使用该密码
-     -b, --dependOnEnv  标明该包是否依赖环境（node-gyp）
      -s, --snapshot     作为快照版本上传，发布始终覆盖，安装始终更新，忽略本地缓存
      -u, --alwaysUpdate 覆盖服务器上同名版本（在单机服务的情况下安装会始终更新，忽略本地缓存），version内容不变
-     -o, --override     如果指定-s参数，则会将新的version更新文件信息，默认不更新    
+     -o, --override     如果指定-s参数，则会将新的version更新文件信息，默认不更新  
+     --checkSnapshotDeps  发布时检查依赖中是否存在SNAPSHOT版本的模块  
 
    of 'upload','download','qupload','qdownload'
      -h, --host         swift仓库的地址

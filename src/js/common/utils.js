@@ -193,17 +193,30 @@ var utils = module.exports = {
      * @param  {String} name         模块名称
      * @param  {String} version      模块版本
      * @param  {Object} dependencies 模块依赖
+     * @param  {String} modulePath   模块路径
      * @return {String}
      */
     getModuleName: function(name, version, dependencies, modulePath) {
+        if (this.isGypModule(dependencies, modulePath)) {
+            return this.getModuleNameForPlatform(name, version);
+        }
+        return [name, version].join('@').replace(RegExp('/', 'g'), SPLIT);
+    },
+    /**
+     * 判断是否需要node-gyp编译的模块
+     * @param  {Object} dependencies 模块依赖
+     * @param  {String} modulePath   模块路径
+     * @return {Boolean}
+     */
+    isGypModule: function(dependencies, modulePath){
         //for <= node v0.8 use node-waf to build native programe with wscript file
         //for > node v0.8 use node-gyp to build with binding.gyp
         //see also: https://www.npmjs.com/package/node-gyp
         if ((dependencies && dependencies['node-gyp']) ||
-            (modulePath && (shellUtils.test('-f', path.resolve(modulePath, 'binding.gyp')) || shellUtils.test('-f', path.resolve(modulePath, 'wscript'))))) {
-            return this.getModuleNameForPlatform(name, version);
+        (modulePath && (shellUtils.test('-f', path.resolve(modulePath, 'binding.gyp')) || shellUtils.test('-f', path.resolve(modulePath, 'wscript'))))) {
+            return true;
         }
-        return [name, version].join('@').replace(RegExp('/', 'g'), SPLIT);
+        return false;
     },
     /**
      * 从包含环境与版本的包名称中切分出模块名称

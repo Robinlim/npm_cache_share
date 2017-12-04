@@ -6,12 +6,13 @@
 * @Last modified time: 2016-12-07 16:54
 */
 
-var _ = require('lodash'),
+var fs = require('fs'),
+    _ = require('lodash'),
     path = require('path'),
-    fs = require('fs'),
     fsExtra = require('fs-extra'),
+    utils = require('../../../common/utils'),
     constant = require('../../../common/constant'),
-    utils = require('../../../common/utils');
+    CACHESTRATEGY = require('../../../common/constant').CACHESTRATEGY;
 
 var serverCachePath = utils.getServerCachePath(),
     packageListName = 'packageList.json',
@@ -45,7 +46,11 @@ PackageList.prototype = {
      */
     add: function(name, info, cbk){
         console.info('[synclist] add:', name, JSON.stringify(info));
-        this._map[name] = info;
+        var data = this._map[name] || {};
+        _.forEach(info, function(v, k){
+            data[k] = v;
+        });
+        this._map[name] =  data;
         this.save();
         cbk();
     },
@@ -56,8 +61,16 @@ PackageList.prototype = {
      */
     remove: function(name, cbk){
         console.info('[synclist] remove:', name);
-        this._map[name] = null;
-        delete this._map[name];
+        var data = this._map[name];
+        if(data.isPrivate){
+            _.forEach(CACHESTRATEGY, function(v, k){
+                data[v] = null;
+                delete data[v];
+            });
+        }else{
+            this._map[name] = null;
+            delete this._map[name];
+        }
         this.save();
         cbk();
     },

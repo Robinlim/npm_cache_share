@@ -107,6 +107,9 @@ module.exports = {
             //需要安装后执行的模块
             this.postinstall = data.postinstall || {};
             console.debug('需要安装后执行的模块：', this.postinstall);
+            //需要强制重构建的模块
+            this.rebuilds = data.rebuilds || {};
+            console.debug('需要强制重构建的模块：', this.rebuilds);
         } else {
             delete this.registry;
             this.needInstall = this.needFetch;
@@ -119,7 +122,7 @@ module.exports = {
         this.installNews().await();
 
         //打包模块至工程目录
-        this.package();
+        this.package().await();
 
         //新安装的模块同步到远程服务
         this.syncRemote().await();
@@ -196,7 +199,6 @@ module.exports = {
             console.info('从npm安装缺失模块');
         }
         var installs = this.installs,
-            alwaysUpdates = this.alwaysUpdates,
             bundles = [],
             forInstlBundles = [],
             map = {}, bundlesTmp;
@@ -205,7 +207,7 @@ module.exports = {
             var name = el.name,
                 bundleId = 0,
                 bundlesTmp = bundles;
-            if(installs[name] || alwaysUpdates[name]){
+            if(installs[name]){
                 bundlesTmp = forInstlBundles;
             }
             if(!map[name]) {
@@ -338,13 +340,16 @@ module.exports = {
      * @param  {Object} dependencies 模块依赖
      * @return {void}
      */
-    package: function() {
+    /*@AsyncWrap*/
+    package: function(callback) {
         console.info('开始打包模块');
         //project module path
         var self = this,
             pmp = path.resolve(this.base, LIBNAME),
             cache = utils.lsDirectory(__cache),
             postinstall = this.postinstall, 
+            rebuilds = this.rebuilds,
+            rebuildsPath = [],
             postRunsPath = {},
             mn, tmp, mnPath;
         //确保文件路径存在
@@ -363,8 +368,11 @@ module.exports = {
             } else {
                 tmp = path.resolve(pmp, k);
             }
-             if(postinstall[k]){
+            if(postinstall[k]){
                 postRunsPath[k] = tmp;
+            }
+            if(rebuilds[mn]){
+                rebuildsPath.push(tmp);
             }
             fsExtra.ensureDirSync(path.resolve(tmp, '..'));
             mnPath = path.resolve(__cache, mn);
@@ -380,20 +388,45 @@ module.exports = {
                 process.exit(1);
             }
         }, this.base);
-        console.info('开始执行定制脚本');
-        //执行npm run postinstall,或者其他自定义脚本
-        _.map(postRunsPath, function(v, k){
-            _.forEach(postinstall[k].split(','), function(ac){
-                npmUtils.npmRunScript(ac, {
-                    cwd: postRunsPath[k],
+        if(postRunsPath){
+            console.info('开始执行定制脚本');
+            //执行npm run postinstall,或者其他自定义脚本
+            _.map(postRunsPath, function(v, k){
+                _.forEach(postinstall[k].split(','), function(ac){
+                    npmUtils.npmRunScript(ac, {
+                        cwd: postRunsPath[k],
+                        async: false       
+                    }, function(err){
+                        if(err){
+                            throw err;
+                        }
+                    });                
+                });
+            });
+        }
+        
+        if(rebuildsPath.length > 0){
+            console.info('开始执行模块编译');
+            //执行npm install，针对SNAPSHOT版本需要gyp编译的模块
+            asyncMap(rebuildsPath, function(bpath, cb){
+                npmUtils.npmInstall({}, {
+                    cwd: bpath,
                     async: false       
                 }, function(err){
                     if(err){
                         throw err;
                     }
-                });                
+                    cb();
+                });
+            }, function(err){
+                if(err){
+                    callback(err);
+                }
+                callback();
             });
-        });
+        }else{
+            callback();
+        }
     },
     /**
      * 同步远程服务

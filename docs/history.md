@@ -1,4 +1,9 @@
 # 历史版本
+1.0.50
+   - gyp模块snapshot包模块支持
+   - 包发布自动检测是否要进行gyp编译
+   - 支持参数checkSnapshotDeps参数，安装时检查是否有依赖SNAPSHOT模块
+
 1.0.49
    - 日志时间纠正
 

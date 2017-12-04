@@ -30,7 +30,7 @@ module.exports = {
             if(fs.existsSync(npmShrinkwrapPath)){
                 parseNpmShrinkwrap(npmShrinkwrapPath, base, NPMSHRINKWRAP, cbk);
             } else if(fs.existsSync(yarnLockfilePath)){
-                parseYarnLockfile(yarnLockfilePath, cbk);
+                parseYarnLockfile(yarnLockfilePath, base, cbk);
             } else {
                 console.warn('缺少npm-shrinkwrap.json或者yarn.lock，并且未指定其lockfile，此次安装将直接使用' + (npmUtils.checkYarn ? 'yarn' : 'npm') + ' install');
                 cbk();
@@ -41,7 +41,7 @@ module.exports = {
                 cbk('Cannot find path '+manifestPath+',check your --lockfile option!');
             }
             if(name === YARNLOCKFILE){
-                parseYarnLockfile(manifestPath, cbk);
+                parseYarnLockfile(manifestPath, base, cbk);
             } else {
                 //  所有非 yarn.lock  均采用shrinkwrap方式解析
                 parseNpmShrinkwrap(manifestPath, base, name, cbk);
@@ -65,7 +65,7 @@ function parseNpmShrinkwrap(filepath, dir, name, cbk){
 }
 
 
-function parseYarnLockfile(filepath, cbk){
+function parseYarnLockfile(filepath, dir, cbk){
     console.info('将读取'+YARNLOCKFILE+'获取依赖');
     var dependenceArr = [],
         one = null;
@@ -213,7 +213,9 @@ function parseYarnLockfile(filepath, cbk){
         });
 
         console.debug('各个依赖按版本的出现次数：',nameMap);
-        //console.debug(JSON.stringify(dependencies));
+        checkUtils.yarnLockCheck(dir, {
+            dependencies: dependencies
+        });
         cbk(null, _.cloneDeep(dependencies));
     })
 }

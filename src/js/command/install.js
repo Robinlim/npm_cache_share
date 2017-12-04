@@ -21,6 +21,7 @@ var __cwd = process.cwd(),
 var utils = require('../common/utils'),
     installUtils = require('../common/installUtils'),
     npmUtils = require('../common/npmUtils'),
+    checkUtils = require('../common/checkUtils'),
     manifestUtils = require('../common/manifestUtils');
 
 /*@Flow*/
@@ -37,6 +38,7 @@ var utils = require('../common/utils'),
         ["-p, --production", "will not install modules listed in devDependencies"],
         ["-n, --npm [npm]", "specify the npm path to execute"],
         ["-l, --lockfile [lockfile]", "specify the filename of lockfile,default npm-shrinkwrap.json"],
+        ["--checkSnapshotDeps", "check if or not dependend on the snapshot module, default is ignore check"],
         ["--noOptional", "will prevent optional dependencies from being installed"],
         ["--save", "module will be added to the package.json as dependencies, default true"],
         ["--nosave", "do not save package to package.json"],
@@ -100,7 +102,8 @@ module.exports = {
                                 };
                                 self.module = {
                                     name: name,
-                                    version: latestVersion
+                                    version: latestVersion,
+                                    isPrivate: data.isPrivate
                                 };
                                 callback(null, dependencies);
                             }
@@ -111,7 +114,8 @@ module.exports = {
                         };
                         self.module = {
                             name: name,
-                            version: version
+                            version: version,
+                            isPrivate: data.isPrivate
                         };
                         callback(null, dependencies);
                     }
@@ -134,6 +138,8 @@ module.exports = {
         // 未取得依赖信息时强制采用npm安装
         if(!dependencies){
             this.forceNpm = true;
+        }else if(this.opts.checkSnapshotDeps){
+            checkUtils.snapshotDepsCheck(dependencies);
         }
         if (this.forceNpm) {
             npmUtils.npmInstall(this.opts, {}, callback);
@@ -144,9 +150,25 @@ module.exports = {
                     if(err0){
                         callback(err0);
                     } else {//if(val.installNum === 0) { //如果模块是从缓存加载的，则安装其子依赖
-                        console.info('安装'+self.module.name+'的子依赖');
-                        var childrenPath = path.resolve(__cwd, constant.LIBNAME, self.module.name);
-                        console.debug('模块路径：',childrenPath)
+                        var instModule = self.module,
+                            childrenPath = path.resolve(__cwd, constant.LIBNAME, instModule.name);
+                            
+                        //不加_requested的值会导致npm shrinkwrap失败，仅针对SNAPSHOT版本没有进行发布到npm源上需要增加的
+                        if(utils.isSnapshot(instModule.full)){
+                            console.info('处理模块' + instModule.name + '的package.json');
+                            var packageInfo = fsExtra.readJsonSync(path.resolve(childrenPath, PACKAGE));
+                            packageInfo['_requested'] = { rawSpec: instModule.url };
+                            packageInfo['_resolved'] = instModule.url;
+                            try {
+                                fsExtra.writeJsonSync(path.resolve(childrenPath, PACKAGE), packageInfo);
+                            } catch (e) {
+                                callback(e);
+                                return;
+                            }
+                        }
+                        console.info('安装' + instModule.name + '的子依赖');
+                        console.debug('模块路径：',childrenPath);
+
                         manifestUtils.readManifest(childrenPath, null, function(err1, children){
                             if(err1){
                                 callback(err1);

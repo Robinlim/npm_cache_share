@@ -8,15 +8,16 @@
 
 'use strict'
 var _ = require('lodash'),
-    rpt = require('read-package-tree'),
+    semver = require('semver'),
     fsExtra = require('fs-extra'),
-    semver = require('semver');
+    rpt = require('read-package-tree');
 
 var utils = require('./utils'),
-    shellUtils = require('./shellUtils'),
-    constant = require('./constant');
+    constant = require('./constant'),    
+    shellUtils = require('./shellUtils');
 
-var config = fsExtra.readJsonSync(utils.getConfigPath());
+var config = fsExtra.readJsonSync(utils.getConfigPath()),
+    instInModulePath = {};
 
 module.exports = {
     npmPath: 'npm',
@@ -76,6 +77,12 @@ module.exports = {
         });
     },
     npmInstall: function(npmopts, opts, cbk){
+        //避免在模块路径下重复安装，和工程安装一样
+        if(instInModulePath[opts.cwd]){
+            cbk(null);
+            return;
+        }
+        instInModulePath[opts.cwd] = 1;
         var optstr = utils.toString(npmopts, constant.NPMOPS),
             cmd = (this.checkYarn ? 'yarn' : this.npmPath) + ' install ' + optstr;
         console.debug(cmd, opts);

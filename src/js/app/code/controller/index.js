@@ -22,6 +22,7 @@ var modulesCachePath = utils.getServerCachePath(),
     fileExt = utils.getFileExt(),
     TEMPDIR = path.resolve(modulesCachePath, '.tempdir'),
     UPLOADDIR = constant.UPLOADDIR,
+    SPLIT = constant.SPLIT,
     token = process.env.token;
 
 fsExtra.ensureDirSync(TEMPDIR);
@@ -90,8 +91,8 @@ module.exports = {
                     password = fields.password[0];
                 if(packageList.auth(name, password)){
                     packageList.add(name, {
-                        alwaysSync: fields.alwaysSync && (fields.alwaysSync[0] === 'on'),
                         isPrivate: fields.isPrivate && (fields.isPrivate[0] === 'on'),
+                        isGyp: fields.isGyp && (fields.isGyp[0] === 'on'),
                         user: fields.user[0],
                         password: password
                     }, function(err){
@@ -178,7 +179,7 @@ module.exports = {
         var name = reqData.name,
             version = reqData.version,
             platform = reqData.platform,
-            all = storage.listPackages(utils.isSnapshot(version), repository, name) || [],
+            all = storage.listPackages(utils.isSnapshot(version), repository, name.replace(RegExp('/', 'g'), SPLIT)) || [],
             fileExt = utils.getFileExt(),
             packages = _.map(all, function(el){
                 return _.trimEnd(el, fileExt);
@@ -195,16 +196,15 @@ module.exports = {
             if(!version || version === 'latest'){
                 rtn.version = utils.getLastestVersion(packages);
             }
-            var fullname = name + '@' + rtn.version,
-                packageNameForPlatform = utils.joinPackageName(fullname, platform),
-                packageName = fullname;
+            var fullname = name.replace(RegExp('/', 'g'), SPLIT) + '@' + rtn.version,
+                packageNameForPlatform = utils.joinPackageName(fullname, platform);
             if(packages.indexOf(packageNameForPlatform) > -1){
                 rtn.full = packageNameForPlatform;
-            } else if (packages.indexOf(packageName) > -1){
-                rtn.full = packageName;
+            } else if (packages.indexOf(fullname) > -1){
+                rtn.full = fullname;
             }
         }
-        console.info('info', name, version, platform, 'rth:', rtn);
+        console.info('info', JSON.stringify(rtn));
         res.end({
             status: 0,
             message: 'succ',

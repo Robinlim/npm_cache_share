@@ -8,9 +8,11 @@
 
 var _ = require('lodash'),
     path = require('path'),
-    constant = require('../../../common/constant'),
+    utils = require('../../../common/utils'),
     zkClient = require('../../../common/zkClient'),
-    utils = require('../../../common/utils');
+    constant = require('../../../common/constant'),
+    SPLIT = constant.SPLIT,
+    CACHESTRATEGY = constant.CACHESTRATEGY;
 
 var ROOT = 'private';
 
@@ -96,21 +98,33 @@ ZkPackageList.prototype = {
      * @param {Function} cbk    回调函数
      */
     add: function(name, info, cbk){
+        name = name.replace(RegExp('/', 'g'), SPLIT);
         console.info('[synclist] add:', name, JSON.stringify(info));
         var p = [ROOT, name].join('/');
         zkClient.exist(p).then(function(isExist){
             if(isExist){
-                zkClient.setData(p, JSON.stringify(info)).then(function(){
-                    cbk();
+                zkClient.getData(p).then(function(data){
+                    if(data){
+                        data = JSON.parse(data);
+                        _.forEach(info, function(v, k){
+                            data[k] = v;
+                        });
+                        setData(data);
+                    }else{
+                        setData(info);
+                    }
                 });
                 return;
             }
             zkClient.mkdirp(p).then(function(){
-                zkClient.setData(p, JSON.stringify(info)).then(function(){
-                    cbk();
-                });
+                setData(info);
             });
         });
+        function setData(d){
+            zkClient.setData(p, JSON.stringify(d)).then(function(){
+                cbk();
+            });
+        }
     },
     /**
      * 删除一个包的信息
@@ -118,13 +132,33 @@ ZkPackageList.prototype = {
      * @param {Function} cbk 回调函数
      */
     remove: function(name, cbk){
+        name = name.replace(RegExp('/', 'g'), SPLIT);
         console.info('[synclist] remove:', name);
         var p = [ROOT, name].join('/');
         zkClient.exist(p).then(function(isExist){
             if(isExist){
-                zkClient.remove(p).then(function(){
-                    cbk();
+                zkClient.getData(p).then(function(data){
+                    if(data){
+                        data = JSON.parse(data);
+                        if(data.isPrivate){
+                            _.forEach(CACHESTRATEGY, function(v, k){
+                                data[v] = null;
+                                delete data[k];
+                            });
+                            zkClient.setData(p, JSON.stringify(data)).then(function(){
+                                cbk();
+                            });
+                        }else{
+                            zkClient.remove(p).then(function(){
+                                cbk();
+                            });
+                        }
+                    }else{
+                        cbk();
+                    }
                 });
+            }else{
+                cbk();
             }
         });
     },
@@ -137,11 +171,11 @@ ZkPackageList.prototype = {
         var hit = {},
             _map = this._map;
         _.forEach(list, function(el){
-            var name = utils.splitModuleName(el),
+            var name = utils.splitModuleName(el).replace(RegExp('/', 'g'), SPLIT),
                 moduleStrategy = _map[name];
             //只要含有SNAPSHOT标示就算，由于存在本地会导致多机情况下实效，最低要保证SNAPSHOT版本的更新
             if(moduleStrategy || utils.isSnapshot(el)){
-                moduleStrategy[constant.CACHESTRATEGY.ALWAYSUPDATE] = 1;
+                moduleStrategy[CACHESTRATEGY.ALWAYSUPDATE] = 1;
                 hit[el] = moduleStrategy;
             }
         });
@@ -159,6 +193,7 @@ ZkPackageList.prototype = {
      * @return {boolean}      [description]
      */
     checkPrivate: function(name){
+        name = name.replace(RegExp('/', 'g'), SPLIT);
         return this._map[name] && this._map[name].isPrivate;
     },
     /**
@@ -169,6 +204,7 @@ ZkPackageList.prototype = {
      */
     auth: function(name, password){
         var _map = this._map;
+        name = name.replace(RegExp('/', 'g'), SPLIT);
         if(_map[name] && _map[name].isPrivate && _map[name].password){
             return password === _map[name].password;
         } else {

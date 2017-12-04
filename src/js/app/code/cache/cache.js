@@ -207,31 +207,34 @@ Cache.prototype = {
             snapshotModules = this._snapshotCache[repository] ? this._snapshotCache[repository].modules : {},
             storage = this.storage,
             downloads = {},
-            alwaysUpdates = {},
+            alwaysUpdates = {}, //有alwaysUpdates为1时，downloads也会存在
             installs = {},
-            postinstalls = {};
+            postinstalls = {},
+            rebuilds = {},
+            strategy;
+
         //服务端缓存
         _.forEach(list, function(name){
-            var moduleName = utils.splitModuleName(name);
-            if(strategies[moduleName]){
+            var moduleName = utils.splitModuleName(name),
+                isSnapshot = utils.isSnapshot(name),
+            packages = isSnapshot ? snapshotModules[moduleName] : modules[moduleName];
+            if(!packages){
+                return;
+            }
+            if(strategy = strategies[moduleName]){
                 //如果有忽略缓存策略，则忽略其他策略，相当于真实安装
-                if(strategies[moduleName][CACHESTRATEGY.IGNORECACHE]){
+                if(strategy[CACHESTRATEGY.IGNORECACHE]){
                     installs[moduleName] = name;
                     return;
                 }
                 //如果有强制同步服务端策略，则本地缓存失效
-                if(strategies[moduleName][CACHESTRATEGY.ALWAYSUPDATE]){
+                if(strategy[CACHESTRATEGY.ALWAYSUPDATE]){
                     alwaysUpdates[moduleName] = 1;
                 }
                 //安装后执行策略
-                if(strategies[moduleName][CACHESTRATEGY.POSTINSTALL]){
-                    postinstalls[moduleName] = strategies[moduleName][CACHESTRATEGY.POSTINSTALL];
+                if(strategy[CACHESTRATEGY.POSTINSTALL]){
+                    postinstalls[moduleName] = strategy[CACHESTRATEGY.POSTINSTALL];
                 }
-            }
-            var isSnapshot = utils.isSnapshot(name),
-                packages = isSnapshot ? snapshotModules[moduleName] : modules[moduleName];
-            if(!packages){
-                return;
             }
             var fileExt = utils.getFileExt(),
                 packageNameForPlatform = utils.joinPackageName(name, platform),
@@ -241,49 +244,62 @@ Cache.prototype = {
             } else if (packages.indexOf(packageName + fileExt) > -1){
                 downloads[packageName] = {url: storage.get(repository, packageName + fileExt)};
             }
+            //gyp模块，需要执行编译，一般只有包发布SNAPSHOT版本的时需要考虑
+            if(isSnapshot && strategy && strategy.isGyp){
+                rebuilds[packageName] = 1;
+            }
         });
+        
         //客户端缓存
         _.forEach(userLocals, function(name){
             var moduleName = utils.splitModuleName(name),
                 isSnapshot = utils.isSnapshot(name);
-            //由于是以SNAPSHOT为依据，该标示只出现在版本号，所以会影响这个模块的所以版本，也包含正式版
+            //由于是以SNAPSHOT为依据，该标示只出现在版本号，则会影响SNAPSHOT对应的版本
             if(isSnapshot){
-                alwaysUpdates[moduleName] = 1;
+                alwaysUpdates[name] = 1;
             }
-            if(!strategies[moduleName]){
+            if(!(strategy = strategies[moduleName])){
+                isSnapshot && downloadDeal();
                 return;
             }
             //如果有忽略缓存策略，则忽略其他策略，相当于真实安装
-            if(strategies[moduleName][CACHESTRATEGY.IGNORECACHE]){
+            if(strategy[CACHESTRATEGY.IGNORECACHE]){
                 installs[moduleName] = name;
                 return;
             }
+            //gyp模块，需要执行编译，一般只有包发布SNAPSHOT版本的时需要考虑
+            if(isSnapshot && strategy && strategy.isGyp){
+                rebuilds[name] = 1;
+            }
             //如果有强制同步服务端策略，则本地缓存失效
-            if(strategies[moduleName][CACHESTRATEGY.ALWAYSUPDATE]){
+            if(strategy[CACHESTRATEGY.ALWAYSUPDATE] || isSnapshot){
+                downloadDeal();
+                !isSnapshot && (alwaysUpdates[moduleName] = 1);
+            }
+            if(strategy[CACHESTRATEGY.POSTINSTALL]){
+                postinstalls[moduleName] = strategy[CACHESTRATEGY.POSTINSTALL];
+            }
+            function downloadDeal(){
                 var packages = isSnapshot ? snapshotModules[moduleName] : modules[moduleName];
                 if(!packages){
                     installs[moduleName] = name;
                     return;
                 }
                 var fileExt = utils.getFileExt(),
-                    packageNameForPlatform = utils.joinPackageName(name, platform),
-                    packageName = name;
+                    packageNameForPlatform = utils.joinPackageName(name, platform);
                 if(packages.indexOf(packageNameForPlatform + fileExt) > -1){
                     downloads[packageNameForPlatform] = {url: storage.get(repository, packageNameForPlatform + fileExt)};
-                } else if (packages.indexOf(packageName + fileExt) > -1){
-                    downloads[packageName] = {url: storage.get(repository, packageName + fileExt)};
+                } else if (packages.indexOf(name + fileExt) > -1){
+                    downloads[name] = {url: storage.get(repository, name + fileExt)};
                 }
-                alwaysUpdates[moduleName] = 1;
-            }
-            if(strategies[moduleName][CACHESTRATEGY.POSTINSTALL]){
-                postinstalls[moduleName] = strategies[moduleName][CACHESTRATEGY.POSTINSTALL];
             }
         });
         return {
             downloads: downloads,
             alwaysUpdates: alwaysUpdates,
             installs: installs,
-            postinstall: postinstalls
+            postinstall: postinstalls,
+            rebuilds: rebuilds
         };
     },
     setStorage: function(st){

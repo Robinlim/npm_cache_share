@@ -30,11 +30,12 @@
 >-    -e, --repository [repository]  specify the repository, format as HOST:PORT/REPOSITORY-NAME
 >-    -t, --token [token]            use the token to access the npm_cache_share server
 >-    -p, --password [password]      use the password to access certain package
->-    -d, --dependOnEnv              whether the package is depend on environment meaning whether this package itself need node-gyp compile
 >-    -r, --registry [registry]      specify the npm registry
 >-    -s, --snapshot                 specify this is a snapshot version"],
 >-    -u, --alwaysUpdate             this module will publish overwrite the same version on the server, and will always update when install, if -s not specify, the version remain unchanged"],
->-    -o, --overwrite                if -s exist, it will overwrite the version into package.json"]
+>-    -o, --overwrite                if -s exist, it will overwrite the version into package.json"
+>-    --checkSnapshotDeps            check if or not dependend on the snapshot module, default is ignore check
+
 
 # 参数额外说明
 - repository参数包含两部分，一部分是服务域名和端口，另一部分是repository name，对于swift就是container，对于localfile就是文件名
