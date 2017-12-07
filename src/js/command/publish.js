@@ -37,6 +37,7 @@ var __cwd = process.cwd(),
         ["-t, --token [token]", "use the token to access the npm_cache_share server"],
         ["-p, --password [password]", "use the password to access certain package"],
         ["-r, --registry [registry]", "specify the npm registry"],
+        ["-v, --moduleVersion [moduleVersion]", "specify the module version"],
         ["-s, --snapshot", "specify this is a snapshot version"],
         ["-u, --alwaysUpdate", "this module will publish overwrite the same version on the server, and will always update when install, if -s not specify, the version remain unchanged"],
         ["-o, --overwrite", "if -s exist, it will overwrite the version into package.json"],
@@ -79,7 +80,7 @@ module.exports = {
         var moduleName = packageInfo.name;
         f2bConfigUtils.checkName(moduleName, options.nameReg);
 
-        var moduleVersion = packageInfo.version;
+        var moduleVersion = options.moduleVersion || packageInfo.version;
         if(utils.isSnapshot(moduleVersion)){
             options.snapshot = true;
         }else if(options.snapshot){

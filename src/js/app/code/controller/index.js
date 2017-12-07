@@ -7,15 +7,17 @@
 */
 
 'use strict'
-var _ = require('lodash'),
+var fs = require('fs'),
+    _ = require('lodash'),
     path = require('path'),
-    fs = require('fs'),
-    fsExtra = require('fs-extra'),
+    semver = require('semver'),
     stream = require('stream'),
+    fsExtra = require('fs-extra'),
     multiparty = require('multiparty'),
     utils = require('../../../common/utils'),
-    shellUtils = require('../../../common/shellUtils'),
+    npmUtils = require('../../../common/npmUtils'),
     constant = require('../../../common/constant'),
+    shellUtils = require('../../../common/shellUtils'),
     storage = require('../storage');
 
 var modulesCachePath = utils.getServerCachePath(),
@@ -209,6 +211,53 @@ module.exports = {
             status: 0,
             message: 'succ',
             data: rtn
+        });
+    },
+    /*@RequestMapping("/{repository}/versions/latest")*/
+    /*@ResponseBodyDeal*/
+    latestVersion: function(req, res, reqData, repository){
+        var name = reqData.name,
+            version;
+        // 判断包是否是私有包
+        if(this.packageList.checkPrivate(name)){
+            var all = storage.listPackages(false, repository, name.replace(RegExp('/', 'g'), SPLIT)) || [],
+                fileExt = utils.getFileExt(),
+                packages = _.map(all, function(el){
+                    return _.trimEnd(el, fileExt);
+                });
+            version = utils.getLastestVersion(packages);
+        }
+        npmUtils.getLastestVersion(name, function(err, v){
+            //如果不存在则报错
+            if(err){
+                if(version){
+                    res.end({
+                        status: 0,
+                        message: 'succ',
+                        data: version
+                    });
+                }else{
+                    res.end({
+                        status: 1,
+                        message: err
+                    });
+                }
+                return;
+            }
+            //比较ncs源和npm源之间的版本，取大者
+            if(!version){
+                res.end({
+                    status: 0,
+                    message: 'succ',
+                    data: v
+                });
+            }else{
+                res.end({
+                    status: 0,
+                    message: 'succ',
+                    data: semver.gt(v, version) ? v : version
+                });
+            }
         });
     },
     /*@ExceptionHandler*/

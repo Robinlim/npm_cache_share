@@ -314,13 +314,11 @@ var utils = module.exports = {
      */
     getLastestVersion: function(versions){
         var latest,
-            fullname,
             splitModuleVersion = this.splitModuleVersion;
         _.forEach(versions, function(el){
             var version = splitModuleVersion(el);
             if(!latest || semver.gt(version, latest)){
                 latest = version;
-                fullname = el;
             }
         });
         return latest;

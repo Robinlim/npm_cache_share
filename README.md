@@ -94,6 +94,7 @@ Options:
      -s, --snapshot     作为快照版本上传，发布始终覆盖，安装始终更新，忽略本地缓存
      -u, --alwaysUpdate 覆盖服务器上同名版本（在单机服务的情况下安装会始终更新，忽略本地缓存），version内容不变
      -o, --override     如果指定-s参数，则会将新的version更新文件信息，默认不更新  
+     -v, --moduleVersion  指定发布版本号
      --checkSnapshotDeps  发布时检查依赖中是否存在SNAPSHOT版本的模块  
 
    of 'upload','download','qupload','qdownload'

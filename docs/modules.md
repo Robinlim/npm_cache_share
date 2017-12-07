@@ -31,7 +31,8 @@
 >-    -t, --token [token]            use the token to access the npm_cache_share server
 >-    -p, --password [password]      use the password to access certain package
 >-    -r, --registry [registry]      specify the npm registry
->-    -s, --snapshot                 specify this is a snapshot version"],
+>-    -s, --snapshot                 specify this is a snapshot version
+>-    -v, --moduleVersion [moduleVersion]   specify the module version
 >-    -u, --alwaysUpdate             this module will publish overwrite the same version on the server, and will always update when install, if -s not specify, the version remain unchanged"],
 >-    -o, --overwrite                if -s exist, it will overwrite the version into package.json"
 >-    --checkSnapshotDeps            check if or not dependend on the snapshot module, default is ignore check

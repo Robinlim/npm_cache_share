@@ -36,7 +36,7 @@ module.exports = {
         this.npmPath = npmPath || 'npm';
     },
     getLastestVersion: function(moduleName, cbk) {
-        shellUtils.exec(this.npmPath + ' view ' + moduleName + ' versions --json', function(code, stdout, stderr){
+        shellUtils.exec(this.npmPath + ' view ' + moduleName + ' versions --json', { silent: true }, function(code, stdout, stderr){
             if(code !== 0){
                 cbk(stderr);
             }else{
