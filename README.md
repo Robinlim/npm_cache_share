@@ -81,6 +81,7 @@ Options:
     -a,--auth           仅type=nexus，指定nexus账户（username:password）
     -n,--npm [npm]      可指定npm的安装路径来执行npm指令，用于指定特定版本的npm
     -p,--production,--noOptional,--save,--save-dev	同npm安装
+    -f,--forcenpm       安装模块时强制使用npm,即使本地安装了yarn
     --checkSnapshotDeps 安装时检查依赖中是否存在SNAPSHOT版本的模块
 
   of 'clean'
