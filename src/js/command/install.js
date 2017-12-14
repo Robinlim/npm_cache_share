@@ -37,6 +37,7 @@ var utils = require('../common/utils'),
         ["-a, --auth [auth]", "use auth to access the Nexus Server, like username:password format"],
         ["-p, --production", "will not install modules listed in devDependencies"],
         ["-n, --npm [npm]", "specify the npm path to execute"],
+        ["-f, --forcenpm", "will use npm to install modules, event when yarn exists"],
         ["-l, --lockfile [lockfile]", "specify the filename of lockfile,default npm-shrinkwrap.json"],
         ["--checkSnapshotDeps", "check if or not dependend on the snapshot module, default is ignore check"],
         ["--noOptional", "will prevent optional dependencies from being installed"],
@@ -53,6 +54,9 @@ module.exports = {
         this.forceNpm = false;
         this.registry = Factory.instance(options.type, options);
         this.opts = options;
+        if(options.forcenpm){
+            npmUtils.checkYarn = false;
+        }
         //安装超时处理
         if(options.installTimeout){
             console.debug('安装超时时间：',options.installTimeout,'s');
