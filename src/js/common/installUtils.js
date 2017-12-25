@@ -54,6 +54,7 @@ module.exports = {
         utils.ensureDirWriteablSync(path.resolve(__cache, MODULECHECKER));
         // 确保工程目录node_modules存在并可写入
         utils.ensureDirWriteablSync(path.resolve(base, LIBNAME));
+        utils.ensureDirWriteablSync(path.resolve(base, LIBNAME, '.bin'));
         // 确保临时安装目录存在
         utils.ensureDirWriteablSync(this.tmpPath);
         // node0.12.7安装compressible模块时会查找node_modules目录，没有会往上层查找，故需提前创建，高版本node没有此问题
@@ -351,7 +352,7 @@ module.exports = {
             rebuilds = this.rebuilds,
             rebuildsPath = [],
             postRunsPath = {},
-            mn, tmp, mnPath;
+            mn, tmp, mnPath, packageInfo;
         //确保文件路径存在
         fsExtra.ensureDirSync(pmp);
         //循环同步依赖模块
@@ -381,6 +382,24 @@ module.exports = {
                 shellUtils.rm('-rf', tmp);
                 console.debug('cp -rf', mnPath, tmp);
                 shellUtils.cp('-rf', mnPath, tmp);
+                // 查看是否有bin
+                packageInfo = fsExtra.readJsonSync(path.resolve(tmp, 'package.json'));
+                if(packageInfo.bin){
+                    var srcSouce, targetPath;
+                    if(typeof packageInfo.bin == 'string'){
+                        srcSouce = path.resolve(pmp, '.bin', mn);
+                        targetPath = path.resolve(tmp, packageInfo.bin);
+                        console.info('建立软链:' + srcSouce + ',' + targetPath);
+                        fsExtra.ensureSymlinkSync(targetPath, srcSouce);
+                    }else{
+                        _.map(packageInfo.bin, function(v, k){
+                            srcSouce = path.resolve(pmp, '.bin', k);
+                            targetPath = path.resolve(tmp, v);
+                            console.info('建立软链:' + srcSouce + ',' + targetPath);
+                            fsExtra.ensureSymlinkSync(targetPath, srcSouce);
+                        });
+                    }
+                }
             } else {
                 // 错误模块保留现场
                 // self.clean();
