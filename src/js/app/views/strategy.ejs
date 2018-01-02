@@ -24,13 +24,14 @@
                     <col name="column_3" width="180" />
                     <col name="column_4" width="180" />
                     <col name="column_5" width="180" />
+                    <col name="column_6" width="180" />
                 </colgroup>
                 <thead>
                     <tr>
                         <th colspan="1" rowspan="2">
                             <div class="cell">模块名</div>
                         </th>
-                        <th colspan="3" rowspan="1">
+                        <th colspan="4" rowspan="1">
                             <div class="cell">策略名</div>
                         </th>
                         <th colspan="1" rowspan="2" class="column_5" style="border-right: 0;">
@@ -46,6 +47,9 @@
                         </th>
                         <th colspan="1" rowspan="1" class="column_4">
                             <div class="cell">安装后执行</div>
+                        </th>
+                        <th colspan="1" rowspan="1" class="column_5">
+                            <div class="cell">黑名单</div>
                         </th>
                     </tr>
                 </thead>
@@ -70,6 +74,9 @@
                     </div>
                     <div class="m-dialog-item">
                         <label><input type="checkbox" name="ignoreCache" class="m-el-checkbox">强制安装</label>
+                    </div>
+                    <div class="m-dialog-item">
+                        <label><input type="checkbox" name="blackList" class="m-el-checkbox">黑名单</label>
                     </div>
                     <div class="m-dialog-item">
                         <label><input type="checkbox" name="postInstall" class="m-el-checkbox js-change-post">安装后执行</label>

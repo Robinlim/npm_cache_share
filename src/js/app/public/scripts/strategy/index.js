@@ -23,6 +23,7 @@ var strategy = {
                 alwaysUpdate: false,
                 postInstall: false,
                 ignoreCache: false,
+                blackList: false,
                 postInstallVal: ''
             });
             if(createDialog.style.display === 'none'){
@@ -74,14 +75,15 @@ var strategy = {
     renderListData: function(data) {
         var html = [];
         for(var key in data) {
-            if(data[key]['alwaysUpdate'] || data[key]['ignoreCache'] || data[key]['postInstall']) {
+            if(data[key]['alwaysUpdate'] || data[key]['ignoreCache'] || data[key]['postInstall'] || data[key]['blackList']) {
                 html.push(
                     '<tr class="m-table-row">' +
                         '<td class="column_1"><div class="cell">' + key + '</div></td>' +
                         '<td class="column_2"><div class="cell">' + (data[key]['alwaysUpdate'] || '') + '</div></td>' +
                         '<td class="column_3"><div class="cell">' + (data[key]['ignoreCache'] || '') + '</div></td>' +
                         '<td class="column_4"><div class="cell">' + (data[key]['postInstall'] || '') + '</div></td>' +
-                        '<td class="column_5">' +
+                        '<td class="column_5"><div class="cell">' + (data[key]['blackList'] || '') + '</div></td>' +
+                        '<td class="column_6">' +
                             '<a class="m-button-small js-stg-update" data-id="' +  key + '" href="javascript:;">修改</a>' +
                             '<a class="m-button-small js-stg-del" data-id="' +  key + '" href="javascript:;">删除</a>' +
                         '</td>' +
@@ -118,6 +120,7 @@ var strategy = {
             moduleName: id,
             alwaysUpdate: curRowData.alwaysUpdate == 1,
             ignoreCache: curRowData.ignoreCache == 1,
+            blackList: curRowData.blackList == 1,
             postInstall: !!curRowData.postInstall,
             postInstallVal: curRowData.postInstall || ''
         });
@@ -149,6 +152,7 @@ var strategy = {
         myForm.elements.moduleName.disabled = false;
         myForm.elements.alwaysUpdate.checked = formData.alwaysUpdate;
         myForm.elements.ignoreCache.checked = formData.ignoreCache;
+        myForm.elements.blackList.checked = formData.blackList;
         myForm.elements.postInstall.checked = formData.postInstall;
         myForm.elements.postInstallVal.value = formData.postInstall ? formData.postInstallVal : '';
         myForm.elements.postInstallVal.disabled = !formData.postInstall;
@@ -161,7 +165,7 @@ var strategy = {
             return null;
         }
 
-        if(!el.alwaysUpdate.checked && !el.ignoreCache.checked && !el.postInstall.checked) {
+        if(!el.alwaysUpdate.checked && !el.ignoreCache.checked && !el.postInstall.checked && !el.blackList.checked) {
             alert('请选择策略');
             return null;
         }
@@ -176,6 +180,7 @@ var strategy = {
             strategy: {
                 alwaysUpdate: el.alwaysUpdate.checked ? 1 : 0,
                 ignoreCache: el.ignoreCache.checked ? 1 : 0,
+                blackList: el.blackList.checked ? 1 : 0,
                 postInstall: el.postInstall.checked ? el.postInstallVal.value : 0
             }
         };
@@ -192,7 +197,11 @@ var strategy = {
 
         xhr.onload = function() {
             if(this.status == 200){
-                successCallBack && successCallBack(this.response);
+                if(this.response.status == 200){
+                    successCallBack && successCallBack(this.response);
+                }else{
+                    errorCallBack && errorCallBack(this.response.message);    
+                }
             } else {
                 errorCallBack && errorCallBack(this.response);
             }

@@ -211,17 +211,23 @@ Cache.prototype = {
             installs = {},
             postinstalls = {},
             rebuilds = {},
+            blacks = [],
             strategy;
 
         //服务端缓存
         _.forEach(list, function(name){
             var moduleName = utils.splitModuleName(name),
                 isSnapshot = utils.isSnapshot(name),
-            packages = isSnapshot ? snapshotModules[moduleName] : modules[moduleName];
+                packages = isSnapshot ? snapshotModules[moduleName] : modules[moduleName];
+            if(strategy = strategies[name] || strategies[moduleName]){
+                if(strategy[CACHESTRATEGY.BLACKLIST]){
+                    blacks.push(name);
+                }
+            }
             if(!packages){
                 return;
             }
-            if(strategy = strategies[moduleName]){
+            if(strategy){
                 //如果有忽略缓存策略，则忽略其他策略，相当于真实安装
                 if(strategy[CACHESTRATEGY.IGNORECACHE]){
                     installs[moduleName] = name;
@@ -258,8 +264,13 @@ Cache.prototype = {
             if(isSnapshot){
                 alwaysUpdates[name] = 1;
             }
-            if(!(strategy = strategies[moduleName])){
+            if(!(strategy = strategies[name] || strategies[moduleName])){
                 isSnapshot && downloadDeal();
+                return;
+            }
+            //如果存在黑名单，则忽略其他策略
+            if(strategy[CACHESTRATEGY.BLACKLIST]){
+                blacks.push(name);
                 return;
             }
             //如果有忽略缓存策略，则忽略其他策略，相当于真实安装
@@ -299,7 +310,8 @@ Cache.prototype = {
             alwaysUpdates: alwaysUpdates,
             installs: installs,
             postinstall: postinstalls,
-            rebuilds: rebuilds
+            rebuilds: rebuilds,
+            blacks: blacks
         };
     },
     setStorage: function(st){

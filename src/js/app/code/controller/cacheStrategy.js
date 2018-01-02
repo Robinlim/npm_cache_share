@@ -35,9 +35,17 @@ module.exports = {
     add: function(req, res, reqData){
         var name = reqData.moduleName,
             strategy = reqData.strategy;
+        if(!name){
+            res.end({
+                status: 400,
+                message: '模块名称不能为空'
+            });
+            return;
+        }
         if(!strategy[CACHESTRATEGY.ALWAYSUPDATE]
             && !strategy[CACHESTRATEGY.IGNORECACHE]
-            && !strategy[CACHESTRATEGY.POSTINSTALL]){
+            && !strategy[CACHESTRATEGY.POSTINSTALL]
+            && !strategy[CACHESTRATEGY.BLACKLIST]){
             res.end({
                 status: 400,
                 message: '模块策略不能为空'
@@ -63,6 +71,13 @@ module.exports = {
     remove: function(req, res, reqData){
         var name = reqData.moduleName,
             moduleStragety = this.packageList.list();
+        if(!name){
+            res.end({
+                status: 400,
+                message: '模块名称不能为空'
+            });
+            return;
+        }
         if(!moduleStragety){
             res.end({
                 status: 500,

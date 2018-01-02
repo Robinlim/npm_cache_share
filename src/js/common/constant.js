@@ -71,6 +71,8 @@ module.exports = {
         //强制安装，忽略本地缓存和中央缓存
         IGNORECACHE: 'ignoreCache',
         //模块包安装后运行指定脚本
-        POSTINSTALL: 'postInstall'
+        POSTINSTALL: 'postInstall',
+        //模块黑名单
+        BLACKLIST:'blackList'
     }
 }

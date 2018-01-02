@@ -111,6 +111,12 @@ module.exports = {
             //需要强制重构建的模块
             this.rebuilds = data.rebuilds || {};
             console.debug('需要强制重构建的模块：', this.rebuilds);
+            //黑名单模块
+            if((this.blacks = data.blacks || []).length > 0){
+                this.clean();
+                console.error('存在黑名单模块：', this.blacks);
+                process.exit(1);
+            }
         } else {
             delete this.registry;
             this.needInstall = this.needFetch;
