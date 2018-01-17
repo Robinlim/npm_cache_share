@@ -153,7 +153,8 @@ module.exports = {
                 installUtils.parse(__cwd, this.registry, dependencies, this.opts, function(err0, val){
                     if(err0){
                         callback(err0);
-                    } else {//if(val.installNum === 0) { //如果模块是从缓存加载的，则安装其子依赖
+                    } else {
+                        //如果模块是从缓存加载的，则安装其子依赖
                         var instModule = self.module,
                             childrenPath = path.resolve(__cwd, constant.LIBNAME, instModule.name);
                             
@@ -180,6 +181,8 @@ module.exports = {
                                 if(children){
                                     installUtils.parse(childrenPath, self.registry, children, self.opts, callback);
                                 } else {
+                                    //提前创建node_modules文件，避免npm install向上级目录查找
+                                    utils.ensureDirWriteablSync(path.resolve(childrenPath, constant.LIBNAME));
                                     // 子模块默认指定--prodcution
                                     var opts = _.extend({
                                         production: true

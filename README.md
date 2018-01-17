@@ -41,7 +41,7 @@
 - Mac系统的用户需要注意下，node版本最低要大于等于4，因为fibers对Xcode有要求。如果非要使用，可查阅[fibers issues](https://github.com/nodejs/node-gyp/issues/1160)里的方式解决
 - 由于历史迭代版本，yarn安装会产生莫名错误，可以考虑清空本地缓存，对于运行效率首次会受影响，后续正常
 - 在centos6系统下node8以上版本gyp编译的时候会失败，可以看看本地gcc的版本，默认是4.4.7,需要升级到4.7版本以上才行，升级gcc要万分小心
-- node版本 > 6之后请安装ncs 1.0.55之后的版本
+- node版本 > 6之后请安装ncs 1.0.55之后（不含1.0.55）的版本
 
 <h1 id="command">指令</h1>
 

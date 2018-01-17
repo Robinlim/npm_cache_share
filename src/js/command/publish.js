@@ -94,7 +94,7 @@ module.exports = {
         }
 
         var packageName = utils.getModuleName(moduleName, moduleVersion);
-        console.info('即将上传的包名称：', packageName);
+        console.info('即将上传的包名称：', packageName.replace(constant.SPLIT, '/'));
 
 
         // info value in form-data must be a string or buffer

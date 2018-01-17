@@ -18,7 +18,7 @@ var _ = require('lodash'),
 
 var NPMSHRINKWRAP = 'npm-shrinkwrap.json',
     YARNLOCKFILE = 'yarn.lock',
-    NPMVERSIONREG = /([0-9]+\.[0-9]+\.[\s\S]+)\.tgz/,
+    NPMVERSIONREG = /([0-9]+\.[0-9]+\.[\s\S]+?)(\.tgz|$)/,
     VERSIONSTART = /^[0-9]+/;
 
 module.exports = {
