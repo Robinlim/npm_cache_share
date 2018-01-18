@@ -53,22 +53,25 @@ module.exports = {
             }
         });
     },
-    npmDedupe: function() {
+    npmDedupe: function(npmopts) {
         console.info('模块重组');
         //将层次结构重新组织
-        shellUtils.exec(this.npmPath + ' dedupe', {
+        var optstr = utils.toString(npmopts, constant.NPMOPS);
+        shellUtils.exec(this.npmPath + ' dedupe ' + optstr, {
             async: false
         });
     },
-    npmPrune: function() {
+    npmPrune: function(npmopts) {
         console.info('清除多余模块');
         //删除多余的模块
-        shellUtils.exec(this.npmPath + ' prune', {
+        var optstr = utils.toString(npmopts, constant.NPMOPS);
+        shellUtils.exec(this.npmPath + ' prune ' + optstr, {
             async: false
         });
     },
-    npmShrinkwrap: function(cbk){
-        shellUtils.exec(this.npmPath + ' shrinkwrap', function(code, stdout, stderr){
+    npmShrinkwrap: function(npmopts, cbk){
+        var optstr = utils.toString(npmopts, constant.NPMOPS);
+        shellUtils.exec(this.npmPath + ' shrinkwrap ' + optstr, function(code, stdout, stderr){
             if (code!== 0) {
                 cbk('自动更新执行npm shrinkwrap失败：'+stderr+'如不需要版本锁定可忽略该错误。');
             } else {

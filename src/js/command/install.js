@@ -39,6 +39,8 @@ var utils = require('../common/utils'),
         ["-n, --npm [npm]", "specify the npm path to execute"],
         ["-f, --forcenpm", "will use npm to install modules, event when yarn exists"],
         ["-l, --lockfile [lockfile]", "specify the filename of lockfile,default npm-shrinkwrap.json"],
+        ["--ignoreBlackList", "ignore black list"],
+        ["--disturl [disturl]", "node mirror for node-gyp build"],
         ["--checkSnapshotDeps", "check if or not dependend on the snapshot module, default is ignore check"],
         ["--noOptional", "will prevent optional dependencies from being installed"],
         ["--save", "module will be added to the package.json as dependencies, default true"],
@@ -202,12 +204,13 @@ module.exports = {
     },
     /*@Step("install")*/
     postinstall: function(rs, callback){
+        var opts = this.opts;
         // 安装特定模块并指定了--save/--save-dev时写入package.json
         if(this.module){
-            if(this.opts['save']){
+            if(opts['save']){
                 console.info('我们默认会自动save，所以你无需追加--save字段，如果想取消自动的--save，请使用--nosave');
             }
-            if(!this.opts['nosave'] || this.opts['saveDev']){
+            if(!opts['nosave'] || opts['saveDev']){
                 var packageInfo;
                 //获取package.json
                 if(fs.existsSync(npmPackagePath)){
@@ -217,11 +220,11 @@ module.exports = {
                     callback('package.json not exist!!!');
                     return;
                 }
-                var dependenceKey = this.opts['saveDev'] ? 'devDependencies' : 'dependencies';
+                var dependenceKey = opts['saveDev'] ? 'devDependencies' : 'dependencies';
                 if(!packageInfo[dependenceKey]){
                     packageInfo[dependenceKey] = {};
                 }
-                packageInfo[dependenceKey][this.module.name] = this.module.isPrivate?
+                packageInfo[dependenceKey][this.module.name.replace(constant.SPLIT, '/')] = this.module.isPrivate?
                     this.module.url : this.module.version;
                 try {
                     fsExtra.writeJsonSync(npmPackagePath, packageInfo);
@@ -229,15 +232,16 @@ module.exports = {
                     callback(e);
                     return;
                 }
-                npmUtils.npmPrune();
+                // 安装snapshot版本清除时会失败
+                // npmUtils.npmPrune(opts);
                 // 安装特定模块后重新npm-shrinkwrap
-                npmUtils.npmShrinkwrap(callback);
+                npmUtils.npmShrinkwrap(opts, callback);
             } else {
                 console.warn('安装该模块未开启save，将不会更新package.json和npm-shrinkwrap.json!!!');
                 callback(null);
             }
         } else if(this.forceNpm){ // 直接使用npm安装后重新npm-shrinkwrap
-            npmUtils.npmShrinkwrap(callback);
+            npmUtils.npmShrinkwrap(opts, callback);
         } else {
             callback(null);
         }

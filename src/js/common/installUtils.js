@@ -112,7 +112,7 @@ module.exports = {
             this.rebuilds = data.rebuilds || {};
             console.debug('需要强制重构建的模块：', this.rebuilds);
             //黑名单模块
-            if((this.blacks = data.blacks || []).length > 0){
+            if((this.blacks = data.blacks || []).length > 0 && !this.opts.ignoreBlackList){
                 this.clean();
                 console.error('存在黑名单模块：', this.blacks);
                 process.exit(1);
