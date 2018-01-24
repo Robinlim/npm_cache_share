@@ -13,8 +13,8 @@ var path = require('path'),
     request = require('request'),
     _ = require('lodash'),
     rpt = require('read-package-tree'),
-    slide = require("slide"),
-    asyncMap = slide.asyncMap;
+    async = require("async"),
+    asyncMap = async.everySeries;
 
 var utils = require('./utils'),
     npmUtils = require('./npmUtils'),
@@ -88,66 +88,72 @@ module.exports = {
      * @param  {Function} callback     回调
      * @return {void}
      */
-    /*@Async*/
     parseModule: function() {
         console.info('开始解析');
-
-        //判断公共缓存是否存在
-        if (this.registry && this.registry.check) {
-            // 公共缓存拥有的模块
-            var data = this.checkServer().await();
-            this.serverCache = data.downloads || {};
-            console.debug('将从中央缓存拉取的包：', this.serverCache);
-            //需要强制与公共缓存更新的包
-            this.alwaysUpdates = data.alwaysUpdates || {};
-            console.debug('需要强制与公共缓存更新的包：', this.alwaysUpdates);
-            //需要安装的包
-            this.installs = data.installs || {};
-            this.needInstall = this.compareServer(this.needFetch, this.installs);
-            console.debug('需要初次安装的包：', this.needInstall);
-            //需要安装后执行的模块
-            this.postinstall = data.postinstall || {};
-            console.debug('需要安装后执行的模块：', this.postinstall);
-            //需要强制重构建的模块
-            this.rebuilds = data.rebuilds || {};
-            console.debug('需要强制重构建的模块：', this.rebuilds);
-            //黑名单模块
-            if((this.blacks = data.blacks || []).length > 0 && !this.opts.ignoreBlackList){
-                this.clean();
-                console.error('存在黑名单模块：', this.blacks);
-                process.exit(1);
+        var self = this;
+        return new Promise(function(resolve, reject){
+            //判断公共缓存是否存在
+            if (self.registry && self.registry.check) {
+                //公共缓存拥有的模块
+                self.checkServer().then(function(data){
+                    self.serverCache = data.downloads || {};
+                    console.debug('将从中央缓存拉取的包：', self.serverCache);
+                    //需要强制与公共缓存更新的包
+                    self.alwaysUpdates = data.alwaysUpdates || {};
+                    console.debug('需要强制与公共缓存更新的包：', self.alwaysUpdates);
+                    //需要安装的包
+                    self.installs = data.installs || {};
+                    self.needInstall = self.compareServer(self.needFetch, self.installs);
+                    console.debug('需要初次安装的包：', self.needInstall);
+                    //需要安装后执行的模块
+                    self.postinstall = data.postinstall || {};
+                    console.debug('需要安装后执行的模块：', self.postinstall);
+                    //需要强制重构建的模块
+                    self.rebuilds = data.rebuilds || {};
+                    console.debug('需要强制重构建的模块：', self.rebuilds);
+                    //黑名单模块
+                    if((self.blacks = data.blacks || []).length > 0 && !self.opts.ignoreBlackList){
+                        self.clean();
+                        console.error('存在黑名单模块：', self.blacks);
+                        process.exit(1);
+                    }
+                    instDeal();
+                });
+            } else {
+                delete self.registry;
+                self.needInstall = self.needFetch;
+                instDeal();
             }
-        } else {
-            delete this.registry;
-            this.needInstall = this.needFetch;
-        }
-
-        //下载公共模块
-        this.download().await();
-
-        //安装缺失模块并同步到本地
-        this.installNews().await();
-
-        //打包模块至工程目录
-        this.package().await();
-
-        //新安装的模块同步到远程服务
-        this.syncRemote().await();
-
-        //清理现场
-        this.clean();        
-
-        return {
-            downloadNum: _.keys(this.serverCache).length,
-            installNum: this.needInstall.length
-        };
+            function instDeal(){
+                async.series([
+                    //下载公共模块
+                    _.bind(self.download, self),
+                    //安装缺失模块并同步到本地
+                    _.bind(self.installNews, self),
+                    //打包模块至工程目录
+                    _.bind(self.package, self),
+                    //新安装的模块同步到远程服务
+                    _.bind(self.syncRemote, self)
+                ], function(err, results){
+                    //清理现场
+                    self.clean(); 
+                    if(err){
+                        reject(err);
+                    }else{
+                        resolve({
+                            downloadNum: _.keys(self.serverCache).length,
+                            installNum: self.needInstall.length
+                        });
+                    }
+                });
+            }
+        });
     },
     /**
      * 下载公共缓存模块
      * @param  {Function} callback
      * @return {void}
      */
-    /*@AsyncWrap*/
     download: function(callback){
         //转换成数组
         var rs = _.map(this.serverCache, function(v,k){
@@ -157,9 +163,8 @@ module.exports = {
             console.info('没有需要下载的模块');
             callback();
             return;
-        } else {
-            console.info('从公共缓存下载模块');
-        }
+        } 
+        console.info('从公共缓存下载模块');
         var self = this, start = 0, count = constant.LOAD_MAX_RESOUCE;
         
         //控制分批下载资源，会受服务的网络连接数的限制
@@ -197,10 +202,10 @@ module.exports = {
      * 安装缺失模块
      * @return {void}
      */
-    /*@Async*/
-    installNews: function() {
+    installNews: function(callback) {
         if (this.needInstall.length === 0) {
             console.info('没有需要安装的缺失模块');
+            callback();
             return;
         } else {
             console.info('从npm安装缺失模块');
@@ -231,26 +236,36 @@ module.exports = {
 
         console.debug('即将分批安装的模块：',bundles);
         var counter = {
-            total: this.needInstall.length,
-            cur: 0
-        };
+                total: this.needInstall.length,
+                cur: 0
+            },
+            self = this;
         
-        //安装模块，在临时目录上执行
-        console.debug('安装路径：',this.tmpPath);
-        _.forEach(bundles, _.bind(function(el){
-            this._installBundle(el, this.tmpPath, counter);
-            this._syncLocal(el, this.tmpPath).await();
-        }, this));
-
-        if(forInstlBundles.length > 0){
-            console.debug('即将分批安装的模块：',forInstlBundles);
-            console.debug('安装路径：',this.base);
-            //安装模块，在工程路径上执行
-            _.forEach(forInstlBundles, _.bind(function(el){
-                this._installBundle(el, this.base, counter, true);
-                this._syncLocal(el, this.base).await();
-            }, this));
-        }
+        async.auto({
+            tmpInst: function(cb){
+                //安装模块，在临时目录上执行
+                console.debug('安装路径：',self.tmpPath);
+                asyncMap(bundles, function(el, callback){
+                    self._installBundle(el, self.tmpPath, counter);
+                    self._syncLocal(el, self.tmpPath, callback);
+                }, cb);
+            },
+            projInst: ['tmpInst', function(results, cb){
+                if(forInstlBundles.length > 0){
+                    console.debug('即将分批安装的模块：',forInstlBundles);
+                    console.debug('安装路径：',self.base);
+                    //安装模块，在工程路径上执行
+                    _.forEach(forInstlBundles, function(el, callback){
+                        self._installBundle(el, self.base, counter, true);
+                        self._syncLocal(el, self.base, callback);
+                    }, cb);
+                }else{
+                    cb();
+                }
+            }]
+        }, function(err){
+            callback(err);
+        });
     },
     /**
      * 批量安装一批npm依赖
@@ -281,7 +296,6 @@ module.exports = {
      * @param  {Function} callback  完成后的回调
      * @return {void}            [description]
      */
-    /*@AsyncWrap*/
     _syncLocal: function(files, curPath, callback) {
         var self = this,
             installs = this.installs,
@@ -347,7 +361,6 @@ module.exports = {
      * @param  {Object} dependencies 模块依赖
      * @return {void}
      */
-    /*@AsyncWrap*/
     package: function(callback) {
         console.info('开始打包模块');
         //project module path
@@ -459,7 +472,6 @@ module.exports = {
      * @param  {Function} callback   回调
      * @return {void}
      */
-    /*@AsyncWrap*/
     syncRemote: function(callback) {
         if (!this.registry) {
             callback();
@@ -484,11 +496,9 @@ module.exports = {
     },
     /**
      * 判断并读取公共缓存持有的本地所需依赖
-     * @param  {Function} callback     回调
-     * @return {void}                [description]
+     * @return {Promise}               
      */
-    /*@AsyncWrap*/
-    checkServer: function(callback){
+    checkServer: function(){
         var self = this,
             list = _.map(this.needFetch, 'full'),
             checkSyncList = [],
@@ -499,13 +509,15 @@ module.exports = {
                 checkSyncList.push(el.full);
             }
         });
-        self.registry.check(list, checkSyncList, function(avaliable, data) {
-            if(!avaliable){
-                delete self.registry;
-                callback(null, {});
-            } else {
-                callback(null, data);
-            }
+        return new Promise(function(resolve){
+            self.registry.check(list, checkSyncList, function(avaliable, data) {
+                if(!avaliable){
+                    delete self.registry;
+                    resolve({});
+                } else {
+                    resolve(data);
+                }
+            });
         });
     },
     /**

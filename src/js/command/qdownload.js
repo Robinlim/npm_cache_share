@@ -9,7 +9,7 @@
 
 
 var _ = require('lodash'),
-    asyncMap = require("slide").asyncMap,
+    asyncMap = require("async").everySeries,
     f2bConfigUtils = require('../common/f2bConfigUtils'),
     swiftUtils = require('../common/swiftUtils'),
     utils = require('../common/utils');
