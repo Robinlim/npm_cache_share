@@ -14,7 +14,7 @@ var path = require('path'),
     _ = require('lodash'),
     rpt = require('read-package-tree'),
     async = require("async"),
-    asyncMap = async.everySeries;
+    asyncMap = async.every;
 
 var utils = require('./utils'),
     npmUtils = require('./npmUtils'),
@@ -114,8 +114,7 @@ module.exports = {
                     //黑名单模块
                     if((self.blacks = data.blacks || []).length > 0 && !self.opts.ignoreBlackList){
                         self.clean();
-                        console.error('存在黑名单模块：', self.blacks);
-                        process.exit(1);
+                        throw new Error('存在黑名单模块：' + self.blacks);
                     }
                     instDeal();
                 });
@@ -186,11 +185,11 @@ module.exports = {
                     self.registry.get(packageName, self.serverCache[packageName].url, __cache, function(err){
                         if(err){
                             self.clean();
-                            console.error(packageName + ' ', err);
-                            process.exit(1);
+                            cb(packageName + ' ' + err);
                         } else {
+                            console.debug('下载完成', packageName);
                             fs.writeFileSync(path.resolve(__cache, MODULECHECKER, packageName), '');
-                            cb();
+                            cb(null, true);
                         }
                     });
                 },
@@ -245,7 +244,7 @@ module.exports = {
             tmpInst: function(cb){
                 //安装模块，在临时目录上执行
                 console.debug('安装路径：',self.tmpPath);
-                asyncMap(bundles, function(el, callback){
+                async.everySeries(bundles, function(el, callback){
                     self._installBundle(el, self.tmpPath, counter);
                     self._syncLocal(el, self.tmpPath, callback);
                 }, cb);
@@ -255,7 +254,7 @@ module.exports = {
                     console.debug('即将分批安装的模块：',forInstlBundles);
                     console.debug('安装路径：',self.base);
                     //安装模块，在工程路径上执行
-                    _.forEach(forInstlBundles, function(el, callback){
+                    async.everySeries(forInstlBundles, function(el, callback){
                         self._installBundle(el, self.base, counter, true);
                         self._syncLocal(el, self.base, callback);
                     }, cb);
@@ -307,8 +306,7 @@ module.exports = {
             var filePath = path.resolve(curPath, LIBNAME, utils.splitModuleName(file));
             //存在私有域@开头的，只会存在一级
             if(!fs.existsSync(filePath)){
-                console.error(filePath + ' not exists!!!');
-                process.exit(1);
+                throw new Error(filePath + ' not exists!!!');
             }
             if (!shellUtils.test('-f', path.resolve(filePath, 'package.json'))) {
                 shellUtils.ls(filePath).forEach(function(file, j) {
@@ -324,12 +322,13 @@ module.exports = {
                     cb(err);
                 } else {
                     pcks.push(data);
-                    cb();
+                    cb(null, true);
                 }
             });
         }, function(err){
             if(err){
                 callback(err);
+                return;
             }
             utils.traverseTree(pcks, function(v, i, len) {
                 var name = v.package.name,
@@ -364,8 +363,7 @@ module.exports = {
     package: function(callback) {
         console.info('开始打包模块');
         //project module path
-        var self = this,
-            pmp = path.resolve(this.base, LIBNAME),
+        var pmp = path.resolve(this.base, LIBNAME),
             cache = utils.lsDirectory(__cache),
             postinstall = this.postinstall, 
             rebuilds = this.rebuilds,
@@ -422,8 +420,7 @@ module.exports = {
             } else {
                 // 错误模块保留现场
                 // self.clean();
-                console.error('Cannot find packages:', mn);
-                process.exit(1);
+                throw new Error('Cannot find packages ' + mn + ':' + mnPath);
             }
         }, this.base);
         if(postRunsPath){
@@ -451,16 +448,10 @@ module.exports = {
                     cwd: bpath,
                     async: false       
                 }, function(err){
-                    if(err){
-                        throw err;
-                    }
-                    cb();
+                    cb(err, true);
                 });
             }, function(err){
-                if(err){
-                    callback(err);
-                }
-                callback();
+                callback(err);
             });
         }else{
             callback();
