@@ -17,6 +17,7 @@ var _ = require('lodash'),
     utils = require('./utils');
 
 var NPMSHRINKWRAP = 'npm-shrinkwrap.json',
+    PACKAGELOCK = 'package-lock.json',
     YARNLOCKFILE = 'yarn.lock',
     NPMVERSIONREG = /([0-9]+\.[0-9]+\.[\s\S]+?)(\.tgz|$)/,
     VERSIONSTART = /^[0-9]+/;
@@ -24,12 +25,15 @@ var NPMSHRINKWRAP = 'npm-shrinkwrap.json',
 module.exports = {
     readManifest: function(base, name, cbk){
         var npmShrinkwrapPath = path.resolve(base, NPMSHRINKWRAP),
+            packageLockPath = path.resolve(base, PACKAGELOCK),
             yarnLockfilePath = path.resolve(base, YARNLOCKFILE);
         // 未指定依赖时尝试用npm-shrinkwrap.json或yarn.lock
         if(!name){
             if(fs.existsSync(npmShrinkwrapPath)){
                 parseNpmShrinkwrap(npmShrinkwrapPath, base, NPMSHRINKWRAP, cbk);
-            } else if(fs.existsSync(yarnLockfilePath)){
+            }else if(fs.existsSync(packageLockPath)){ 
+                parseNpmShrinkwrap(packageLockPath, base, PACKAGELOCK, cbk);
+            }else if(fs.existsSync(yarnLockfilePath)){
                 parseYarnLockfile(yarnLockfilePath, base, cbk);
             } else {
                 console.warn('缺少npm-shrinkwrap.json或者yarn.lock，并且未指定其lockfile，此次安装将直接使用' + (npmUtils.checkYarn ? 'yarn' : 'npm') + ' install');
@@ -67,157 +71,145 @@ function parseNpmShrinkwrap(filepath, dir, name, cbk){
 
 function parseYarnLockfile(filepath, dir, cbk){
     console.info('将读取'+YARNLOCKFILE+'获取依赖');
-    var dependenceArr = [],
-        one = null;
-    var NAMEREG = /\"*(@*[^\@]*)\@/,
+    var toplevelModules = {},    //第一层依赖,版本都固化的，每个模块都有max属性，表示该模块里最大引用数的版本
+        toplevelModulesVersion = {},
+        solidModuleVersMap = {}, //固化版本信息，每个里面都有count属性，代表该模块版本的引用数
+        rangModuleVersMap = {},  //非固化版本信息：对应的固化版本
+        moduleInfo = null;
+        
+    var NAMEREG = /\"?(@?[^\@]+)\@/,
         VERSIONREG = /\s*version "([^"]*)"/,
         DEPENDREG = /\s*dependencies:/,
         KVREG = /\s*"?([^\s"]*)"?\s*"([^"]*)"/;
+
     var rl = readline.createInterface({
             input: fs.createReadStream(filepath)
-        });
-    rl.on('line', function(line){
-        if(!one){
+    }).on('line', function(line){
+        // 模块开始
+        if(!moduleInfo){
             // 非注释非缩进且包含：的行 为依赖名称行
             if(line[0] !== '#' && line[0] !== ' ' && line[line.length-1] === ':'){
-                var match = line.match(NAMEREG),
-                    name = match[1],
-                    ranges = _.map(line.slice(0, -1).split(','), function(s){
+                var name = line.match(NAMEREG)[1]; 
+                moduleInfo = {
+                    name: name,
+                    ranges: _.map(line.slice(0, -1).split(','), function(s){
                         // 去除首尾的空格和双引号
                         return _.trim(_.trim(s), '"');
-                    });
-                one = {
-                    name: name,
-                    ranges: ranges
-                }
-            } else {
-                return;
+                    }),
+                    count: 0
+                };
             }
-        } else {
-            // 存在一个依赖块的时候
-            if(!one.version){
+        // 模块结束, 一个依赖块可能没有子依赖直接结束
+        } else if(_.trim(line).length == 0){
+            // 空行代表一个依赖块的结束 
+            toplevelModules[moduleInfo.name] = solidModuleVersMap[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
+            moduleInfo = null;
+        // 模块信息，只取关注的信息
+        }else {
+            // 优先判断是否已经存在依赖信息
+            if(moduleInfo.dependencies){
+                // 处理依赖模块信息
+                var match = line.match(KVREG);
+                if(match){
+                    moduleInfo.dependencies[match[1] + '@' + match[2]] = {
+                        name: match[1],
+                        version: match[2]
+                    };
+                }
+            }else{
+                // 先取模块版本信息
                 var match = line.match(VERSIONREG);
                 if(match){
-                    one.version = match[1];
+                    moduleInfo.version = match[1];
+                    // 获得所有非固化版本 => 固化版本
+                    _.forEach(moduleInfo.ranges, function(range){
+                        rangModuleVersMap[range] = match[1];
+                    });
                 } else {
-                    cbk(new Error('unexpected token in :' + line));
-                }
-                tempname = '';
-                return;
-            } else {
-                // 一个依赖块可能没有子依赖直接结束
-                if(line === ''){
-                    // 空行代表一个依赖块的结束
-                    dependenceArr.push(_.extend({},one));
-                    one = null;
-                    return;
-                }
-                // 存在子依赖块时
-                if(!one.dependencies){
-                    var match = line.match(DEPENDREG);
+                    // 再取模块依赖标识，代码模块依赖开始
+                    match = line.match(DEPENDREG);
                     if(match){
-                        one.dependencies = {};
+                        moduleInfo.dependencies = {};
                         return;
                     }
-                } else {
-                    // 子依赖块也是以空行结束，并且是整个依赖块的结束
-                    if(line !== ''){
-                        // 不处理各类不同的dependencies，统一作为dependencies
-                        var match = line.match(KVREG);
-                        if(match){
-                            one.dependencies[match[1]] = {
-                                "name": match[1],
-                                "from": match[1] + '@' + match[2]
-                            };
-                        }
-                    } else {
-                        // 空行代表一个依赖块的结束
-                        dependenceArr.push(_.extend({},one));
-                        one = null;
-                    }
                 }
             }
         }
-    });
-    rl.on('close', function(){
-        //文件结束后one应该未空，未为空的场景下需要添加到dependenceArr
-        if(one){
-            dependenceArr.push(_.extend({},one));
-            one = null;
+    }).on('close', function(){
+        // 文件结束后moduleInfo应该未空，未为空的场景下需要添加到dependenceArr
+        if(moduleInfo){
+            toplevelModules[moduleInfo.name] = solidModuleVersMap[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
+            moduleInfo = null;
         }
-        var nameMap = {}, // 按模块名称构造的map
-            rangeMap = {}, // 按模块名称包含版本范围构造的map
-            dependList = {}, // 打平成list的依赖，key值是“name@version”
-            dependencies = {}; // 最终生成的树状结构的依赖
-        // 第一次遍历，取出按照{moduleName:{single:"version",multi:[versions]}}构造的nameMap
-        // 以及按照形如{"[moduleName]@>1.0.0 <2.1.0":"[moduleName]@2.0.0"}构造的rangeMap
-        _.forEach(dependenceArr, function(el){
-            if(!nameMap[el.name]){
-                nameMap[el.name] = {
-                    single: el.version
-                };
-            } else {
-                var target = nameMap[el.name];
-                if(!target.multi){
-                    var multi = {};
-                    multi[target.single] = 0;
-                    multi[el.version] = 0;
-                    target.multi = multi;
-                } else {
-                    target.multi[el.version] = 0;
-                }
-            }
-            dependList[el.name + '@' + el.version] = {
-                version: el.version
-            }
-            _.forEach(el.ranges, function(range){
-                rangeMap[range] = el.version;
-            });
+
+        // 构建整体依赖树，最终生成toplevelModules，此时dependencies固化后没有处理子依赖
+        _.forEach(solidModuleVersMap, function(mi){
+            buildDependencies(mi);
         });
-        // 第二次遍历，将dependenceArr里面的dependencies的每项的from按照rangeMap映射成特定version
-        // 同时将nameMap中出现次数最多的version提为single（这个版本将在安装时出现在顶层）
-        _.forEach(dependenceArr, function(el){
-            if(el.dependencies){
-                _.forEach(el.dependencies, function(v, k){
-                    v['version'] = rangeMap[v.from];
-                    var target = nameMap[v.name];
-                    if(target.multi){
-                        target.multi[v.version]++;
-                        if(target.multi[v.version] > target.multi[target.single]){
-                            target.single = v.version;
-                        }
-                    }
-                });
-            }
-        });
-        // 第三次遍历，将dependenceArr中有用的部分生成用线性表dependList存储的树，同时用dependecies生成对应结构
-        // 多版本时出现次数最多的依赖将被放置在顶层，其余依赖仍保持原位
-        _.forEach(dependenceArr, function(el){
-            var name = el.name,
-                version = el.version;
-            if(!nameMap[name].multi || version === nameMap[name].single){
-                var full = name + '@' + version;
-                dependencies[name] = dependList[full];
-                if(el.dependencies){
-                    var children = {};
-                    _.forEach(el.dependencies, function(em){
-                        if(nameMap[em.name].multi && nameMap[em.name].single !== em.version){
-                            children[em.name] = dependList[em.name + '@' + em.version];
-                        }
-                    });
-                    if(_.keys(children).length > 0){
-                        dependencies[name]['dependencies'] = children;
-                    }
-                }
-            }
+        
+        // 处理toplevelModules dependencies的子依赖
+        _.forEach(toplevelModules, function(v, k){
+            buildTopLevelDependencies(v);
         });
 
-        console.debug('各个依赖按版本的出现次数：',nameMap);
+        console.info(JSON.stringify(toplevelModules));
+
         checkUtils.yarnLockCheck(dir, {
-            dependencies: dependencies
+            dependencies: toplevelModules
         });
-        cbk(null, _.cloneDeep(dependencies));
-    })
+        cbk(null, _.cloneDeep(toplevelModules));
+    });
+
+    // 设置模块依赖入口和模块各版本控制，version为具体版本，非区间版本
+    function setTopLevelModules(moduleName, version){
+        var mversion = [moduleName, version].join('@'),
+            mi = solidModuleVersMap[mversion],
+            tmi = toplevelModulesVersion[moduleName] = toplevelModulesVersion[moduleName] || { max: 0 };
+        mi.count++;
+        if(mi.count > tmi.max){
+            toplevelModules[moduleName] = {
+                version: mi.version,
+                dependencies: mi.dependencies,
+                from: mi.from
+            };
+            tmi.max = mi.count;
+            tmi.version = version;
+        }
+    }
+
+    // 完善固化版本的依赖，并生成toplevelModules
+    function buildDependencies(mi){
+        var dependencies = mi.dependencies;
+        _.forEach(dependencies, function(v, k){
+            dependencies[v.name] = {
+                name: v.name,
+                from: k,
+                version: rangModuleVersMap[k]
+            };
+            dependencies[k] = null;
+            delete dependencies[k];
+            setTopLevelModules(v.name, rangModuleVersMap[k]);
+        });
+    }
+
+    // 处理toplevelModules dependencies的子依赖
+    function buildTopLevelDependencies(mi){
+        var dependencies = {}, tmp;
+        _.forEach(mi.dependencies || {}, function(v, k){
+            if(!toplevelModulesVersion[v.name] || toplevelModulesVersion[v.name].version != v.version){
+                tmp = solidModuleVersMap[[v.name, v.version].join('@')];
+                v = dependencies[v.name] = {
+                    version: tmp.version,
+                    from: tmp.from,
+                    dependencies: tmp.dependencies
+                };
+                if(v.dependencies){
+                    buildTopLevelDependencies(v);
+                }
+            }
+        });
+        mi.dependencies = dependencies;
+    }
 }
 
 /**

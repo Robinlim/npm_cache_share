@@ -1,4 +1,8 @@
 # 历史版本
+1.1.1
+   - 修复解析yarn.lock时只生成两个层级问题
+   - 解决qdownload多个依赖下载问题
+
 1.1.0
    - 升级node-annotation，废弃async,以及对fibers的依赖
 

@@ -9,7 +9,7 @@
 
 
 var _ = require('lodash'),
-    asyncMap = require("async").everySeries,
+    asyncMap = require("async").every,
     f2bConfigUtils = require('../common/f2bConfigUtils'),
     swiftUtils = require('../common/swiftUtils'),
     utils = require('../common/utils');
@@ -39,7 +39,6 @@ module.exports = {
             var params = swiftUtils.getConfig(options, 'resourceSwift', whitelist),
                 snapshotParams = options['resourceSnapshotSwift'] && swiftUtils.getConfig(options, 'resourceSnapshotSwift', whitelist),
                 rs = f2bConfigUtils.getConfig(__cwd, options).format(options.auto);
-
             asyncMap(rs, function(el, cb){
                 var p = _.extend({}, utils.isSnapshot(el.name) && snapshotParams || params, el, {
                     name: el.name + '.' + el.compressType
