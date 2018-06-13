@@ -1,4 +1,8 @@
 # 历史版本
+
+1.1.2
+   - 解决async.everySeries导致安装缺失
+
 1.1.1
    - 修复解析yarn.lock时只生成两个层级问题
    - 解决qdownload多个依赖下载问题

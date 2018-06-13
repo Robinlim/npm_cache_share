@@ -147,17 +147,17 @@ ZkCache.prototype = {
                                                 zkClient.setData(p, tmp[name]).then(function(){
                                                     tmp[name] = null;
                                                     delete tmp[name];
-                                                    cb();
+                                                    cb(null, true);
                                                 });
                                             }else{
                                                 tmp[name] = null;
                                                 delete tmp[name];
-                                                cb();
+                                                cb(null, true);
                                             }
                                         }else{
                                             console.debug('删除容器' + repository + '下模块:' + name);
                                             self.delModule(isSnapshot, repository, name);
-                                            cb();
+                                            cb(null, true);
                                         }
                                     }, function(){
                                         //新增tmp里剩余模块
@@ -174,7 +174,7 @@ ZkCache.prototype = {
                                         });
                                         remoteRepos[repository] = null;
                                         delete remoteRepos[repository];
-                                        cb();
+                                        cb(null, true);
                                     });
                                 });
                             });
@@ -182,7 +182,7 @@ ZkCache.prototype = {
                             //删除不存在的容器
                             console.debug('删除多余容器:' + repository);
                             self.delRepository(isSnapshot, repository);
-                            cb();
+                            cb(null, true);
                         }
                     }, function(err){
                         if(err){
@@ -279,7 +279,13 @@ ZkCache.prototype = {
             asyncMap(children, function(c, cb){
                 p = generatePath.call(self, isSnapshot, name, c);
                 console.debug('删除子节点：' + p);
-                zkClient.remove(p).then(cb);
+                zkClient.remove(p).then(function(err){
+                    if(err){
+                        cb(err);
+                    }else{
+                        cb(null, true);
+                    }
+                });
             }, function(){
                 zkClient.remove(path);
             });
@@ -467,10 +473,10 @@ function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
                 }
                 if(callback){
                     callback(isSnapshot, p, cache).then(function(){
-                            cb();
+                            cb(null, true);
                     });
                 }else{
-                    cb();
+                    cb(null, true);
                 }
                 //监听数据
                 monitorData(isSnapshot, p, cache, repository || v, nodeStep == NODE_STEP.CONTAINER && v);

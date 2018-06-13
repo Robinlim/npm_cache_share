@@ -352,7 +352,7 @@ module.exports = {
                     shellUtils.rm('-rf', path.resolve(v.parent.realpath, LIBNAME));
                 }
             });
-            callback();
+            callback(null, true);
         });
     },
     /**
