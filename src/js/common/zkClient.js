@@ -22,10 +22,14 @@ module.exports = {
     /**
      * 创建zookeeper clinet
      * @param  {String} zkConfig zookeeper的链接，如host:port
+     * @param  {String} zkRoot zookeeper上根路径节点名称
      * @return {void}
      */
-    init: function(zkConfig) {
+    init: function(zkConfig, zkRoot) {
         zk = zookeeper.createClient(zkConfig);
+        if(zkRoot){
+            ZKROOT = '/' + zkRoot;
+        }
     },
     /**
      * 连接zookeeper

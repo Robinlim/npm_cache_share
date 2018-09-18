@@ -131,7 +131,7 @@ module.exports = {
                     shellUtils.rm('-f', file);
                     //压缩每个模块
                     var modules = shellUtils.ls(path.resolve(target, UPLOADDIR)),
-                        count = 0;
+                        count = 0, errorObj = false;
                     modules.forEach(function(file) {
                         var riverCompress = new stream.PassThrough();
 
@@ -140,6 +140,7 @@ module.exports = {
                         storage.put(repository, file + fileExt, riverCompress, function(err){
                             if (err) {
                                 console.error(file + fileExt + ' upload to swift is wrong: ', err.stack);
+                                errorObj = err.message || err.stack;
                             }else{
                                 console.debug(file + fileExt + ' upload to swift done');
                             }
@@ -149,16 +150,23 @@ module.exports = {
                                 process.nextTick(function() {
                                     shellUtils.rm('-rf', target);
                                     console.info('upload done!!');
+                                    if(errorObj){
+                                        res.end({
+                                            status: 500,
+                                            message: errorObj
+                                        });
+                                    }else{
+                                        res.end({
+                                            status: 0,
+                                            message: 'success'
+                                        });
+                                    }
                                 });
                             }
                         });
                     });
                 }));
             }
-            res.end({
-                status: 0,
-                message: 'success'
-            });
         });
     },
     /*@RequestMapping("/list/{versionType}")*/

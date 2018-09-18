@@ -206,6 +206,7 @@ Cache.prototype = {
         var modules = this._cache[repository].modules,
             snapshotModules = this._snapshotCache[repository] ? this._snapshotCache[repository].modules : {},
             storage = this.storage,
+            fileExt = utils.getFileExt(),
             downloads = {},
             alwaysUpdates = {}, //有alwaysUpdates为1时，downloads也会存在
             installs = {},
@@ -218,7 +219,7 @@ Cache.prototype = {
         _.forEach(list, function(name){
             var moduleName = utils.splitModuleName(name),
                 isSnapshot = utils.isSnapshot(name),
-                packages = isSnapshot ? snapshotModules[moduleName] : modules[moduleName];
+                packages = isSnapshot ? snapshotModules[moduleName] || snapshotModules[name + fileExt] : modules[moduleName] || modules[name + fileExt];
             if(strategy = strategies[name] || strategies[moduleName]){
                 if(strategy[CACHESTRATEGY.BLACKLIST]){
                     blacks.push(name);
@@ -242,8 +243,7 @@ Cache.prototype = {
                     postinstalls[moduleName] = strategy[CACHESTRATEGY.POSTINSTALL];
                 }
             }
-            var fileExt = utils.getFileExt(),
-                packageNameForPlatform = utils.joinPackageName(name, platform),
+            var packageNameForPlatform = utils.joinPackageName(name, platform),
                 packageName = name;
             if(packages.indexOf(packageNameForPlatform + fileExt) > -1){
                 downloads[packageNameForPlatform] = {url: storage.get(repository, packageNameForPlatform + fileExt)};
@@ -296,8 +296,7 @@ Cache.prototype = {
                     installs[moduleName] = name;
                     return;
                 }
-                var fileExt = utils.getFileExt(),
-                    packageNameForPlatform = utils.joinPackageName(name, platform);
+                var packageNameForPlatform = utils.joinPackageName(name, platform);
                 if(packages.indexOf(packageNameForPlatform + fileExt) > -1){
                     downloads[packageNameForPlatform] = {url: storage.get(repository, packageNameForPlatform + fileExt)};
                 } else if (packages.indexOf(name + fileExt) > -1){

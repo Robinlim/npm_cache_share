@@ -143,7 +143,7 @@ module.exports = {
             var registry = Factory.instance(options.type, options);
             registry.check([packageName], [], function(avaliable, data){
                 if(avaliable){
-                    if(data && data[packageName]){
+                    if(data && data.downloads && data.downloads[packageName]){
                         if(utils.isSnapshot(packageName) || options.alwaysUpdate){
                             console.info('中央缓存已存在', packageName, ',本次上传将覆盖之前的包！');
                         }else{

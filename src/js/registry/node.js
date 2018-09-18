@@ -70,8 +70,8 @@ nodeRegistry.prototype.get = function(moduleName, moduleUrl, dir, cb) {
  * @return {void}            [description]
  */
 nodeRegistry.prototype.put = function(dir, info, callback) {
-    if (!this.serverReady() || !fs.existsSync(dir) || !this.token) {
-        callback();
+    if (!this.serverReady() || !fs.existsSync(dir)) {
+        callback('上传模块失败!!');
         return;
     }
     console.info('开始压缩需要上传模块');

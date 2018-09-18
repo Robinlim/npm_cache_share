@@ -1,5 +1,11 @@
 # 历史版本
 
+1.1.3
+   - 安装单个私有模块时，package.json不记录url，只记录version，对于没有同步到内部npm源的，用npm安装会失败
+   - zk支持根节点配置
+   - swift连接授权token失效重连获取token机制，增加swiftTokenTimeout设置
+   - 兼容git+ssh://git@....#xxx格式，取#后面为版本信息
+
 1.1.2
    - 解决async.everySeries导致安装缺失
 

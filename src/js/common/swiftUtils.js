@@ -21,6 +21,33 @@ var constant = require('./constant');
 
 module.exports = {
     /**
+     * 获取Swift实例
+     */
+    getSwiftInstance: function(params){
+        var self = this;
+        return new Promise(function(resolve, reject){
+            if(!self.swift){
+                var host = params.host.split(':');
+                self.swift = new Swift({
+                    host: host[0],
+                    user: params.user,
+                    pass: params.pass,
+                    port: host[1] || 80,
+                    swiftTokenTimeout: params.swiftTokenTimeout
+                }, function(err){
+                    if(err) {
+                        console.error('实例化Swift失败：', err.stack || err);
+                        reject(err);
+                    }else{
+                        resolve(self.swift);
+                    }
+                });
+            }else{
+                resolve(self.swift);
+            }
+        });
+    },
+    /**
      * 保证容器存在
      * @param  {object}   params   {
      *                                  host: swift的地址
@@ -32,36 +59,32 @@ module.exports = {
      * @return {void}
      */
     ensureContainerExist: function(params, callback){
-        var swift = new Swift({
-            host: params.host,
-            user: params.user,
-            pass: params.pass
-        }, function(err, res){
-            if(err) {
-                console.error('实例化Swift失败：', err.stack || err);
-                callback(err);
-            } else {
-                swift.retrieveContainerMetadata(params.container, function(err, res){
-                    if(err){
-                        if(err.statusCode == 404) {
-                            swift.createContainer(params.container, function(err, res){
-                                if(err) {
-                                    console.error('创建容器失败：', err.stack || err);
-                                    callback(err);
-                                    return;
-                                }
-                                callback(null, res);
-                            });
-                        }else{
-                            console.error('获取容器信息失败：', err.stack || err);
-                            callback(err);
-                        }
-                        return;
-                    }else if(res && res.statusCode < 400){
-                        callback(null, res);
+        this.getSwiftInstance(params).then(function(swift){
+            swift.retrieveContainerMetadata(params.container, function(err, res){
+                if(err){
+                    console.error('获取容器信息失败：', err.stack || err);
+                    callback(err);
+                    return;
+                }
+                if(res){
+                    if(res.statusCode == 404) {
+                        swift.createContainer(params.container, function(err, res){
+                            if(err) {
+                                console.error('创建容器失败：', err.stack || err);
+                                callback(err);
+                                return;
+                            }
+                            callback(null, res);
+                        });
+                    }else if(res.statusCode == 200 || res.statusCode == 204){
+                        callback(null, res);    
                     }
-                });
-            }
+                }else{
+                    callback(new Error('swift error, statusCode is ' + res.statusCode));
+                }
+            });
+        }).catch(function(err){
+            callback(err);
         });
     },
     /**
@@ -76,29 +99,25 @@ module.exports = {
      * @return {void}
      */
     containerExist: function(params, callback){
-        var swift = new Swift({
-            host: params.host,
-            user: params.user,
-            pass: params.pass
-        }, function(err, res){
-            if(err) {
-                console.error('实例化Swift失败：', err.stack || err);
-                callback(err);
-            } else {
-                swift.retrieveContainerMetadata(params.container, function(err, res){
-                    if(err){
-                        if(err.statusCode == 404) {
-                            callback(null, false);
-                        }else{
-                            console.error('获取容器信息失败：', err.stack || err);
-                            callback(err);
-                        }
-                        return;
-                    }else if(res && res.statusCode < 400){
-                        callback(null, true);
+        this.getSwiftInstance(params).then(function(swift){
+            swift.retrieveContainerMetadata(params.container, function(err, res){
+                if(err){
+                    console.error('获取容器信息失败：', err.stack || err);
+                    callback(err);
+                    return;
+                }
+                if(res){
+                    if(res.statusCode == 404) {
+                        callback(null, false);
+                    }else if(res.statusCode == 200 || res.statusCode == 204){
+                        callback(null, true);    
                     }
-                });
-            }
+                }else{
+                    callback(new Error('swift error, statusCode is ' + res.statusCode));
+                }
+            });
+        }).catch(function(err){
+            callback(err);
         });
     },
     /**
@@ -113,29 +132,25 @@ module.exports = {
      * @return {void}
      */
     deleteContainer: function(params, callback){
-        var swift = new Swift({
-            host: params.host,
-            user: params.user,
-            pass: params.pass
-        }, function(err, res){
-            if(err) {
-                console.error('实例化Swift失败：', err.stack || err);
-                callback(err);
-            } else {
-                swift.deleteContainer(params.container, function(err, res){
-                    if(err){
-                        if(err.statusCode == 404) {
-                            callback(null, false);
-                        }else{
-                            console.error('删除容器信息失败：', err.stack || err);
-                            callback(err);
-                        }
-                        return;
-                    }else if(res && res.statusCode < 400){
-                        callback(null, true);
+        this.getSwiftInstance(params).then(function(swift){
+            swift.deleteContainer(params.container, function(err, res){
+                if(err){
+                    console.error('删除容器信息失败：', err.stack || err);
+                    callback(err);
+                    return;
+                }
+                if(res){
+                    if(res.statusCode == 404) {
+                        callback(null, false);
+                    }else if(res.statusCode == 200 || res.statusCode == 204){
+                        callback(null, true);    
                     }
-                });
-            }
+                }else{
+                    callback(new Error('swift error, statusCode is ' + res.statusCode));
+                }
+            });
+        }).catch(function(err){
+            callback(err);
         });
     },
     /**
@@ -148,29 +163,25 @@ module.exports = {
         var name = params.compressType ? [params.name, params.compressType].join('.') : params.name ;
         console.info('即将查询容器' + params.container + '中' + name + '对象！！');
 
-        var swift = new Swift({
-            host: params.host,
-            user: params.user,
-            pass: params.pass
-        }, function(err, res){
-            if(err) {
-                console.error('实例化Swift失败：', err.stack || err);
-                callback(err);
-            } else {
-                swift.retrieveObjectMetadata(params.container, name, function(err, res){
-                    if(err){
-                        if(err.statusCode == 404) {
-                            callback(new Error('容器或对象不存在！！'));
-                        }else{
-                            console.error('获取对象信息失败：', err.stack || err);
-                            callback(err);
-                        }
-                        return;
-                    }else if(res && res.statusCode < 400){
-                        callback(null, res);
+        this.getSwiftInstance(params).then(function(swift){
+            swift.retrieveObjectMetadata(params.container, name, function(err, res){
+                if(err){
+                    console.error('获取对象信息失败：', err.stack || err);
+                    callback(err);
+                    return;
+                }
+                if(res){
+                    if(res.statusCode == 404) {
+                        callback(new Error('容器或对象不存在！！'));
+                    }else if(res.statusCode == 200 || res.statusCode == 204){
+                        callback(null, true);    
                     }
-                });
-            }
+                }else{
+                    callback(new Error('swift error, statusCode is ' + res.statusCode));
+                }
+            });
+        }).catch(function(err){
+            callback(err);
         });
     },
     /**
@@ -183,29 +194,25 @@ module.exports = {
         var name = params.compressType ? [params.name, params.compressType].join('.') : params.name;
         console.info('即将删除容器' + params.container + '中' + name + '对象！！');
 
-        var swift = new Swift({
-            host: params.host,
-            user: params.user,
-            pass: params.pass
-        }, function(err, res){
-            if(err) {
-                console.error('实例化Swift失败：', err.stack || err);
-                callback(err);
-            } else {
-                swift.deleteObject(params.container, name, function(err, res){
-                    if(err){
-                        if(err.statusCode == 404) {
-                            callback(new Error('容器或对象不存在！！'));
-                        }else{
-                            console.error('删除对象信息失败：', err.stack || err);
-                            callback(err);
-                        }
-                        return;
-                    }else if(res && res.statusCode < 400){
-                        callback(null, res);
+        this.getSwiftInstance(params).then(function(swift){
+            swift.deleteObject(params.container, name, function(err, res){
+                if(err){
+                    console.error('删除对象信息失败：', err.stack || err);
+                    callback(err);
+                    return;
+                }
+                if(res){
+                    if(res.statusCode == 404) {
+                        callback(new Error('容器或对象不存在！！'));
+                    }else if(res.statusCode == 200 || res.statusCode == 204){
+                        callback(null, true);    
                     }
-                });
-            }
+                }else{
+                    callback(new Error('swift error, statusCode is ' + res.statusCode));
+                }
+            });
+        }).catch(function(err){
+            callback(err);
         });
     },
     /**
@@ -227,49 +234,45 @@ module.exports = {
         var name = params.compressType ? [params.name, params.compressType].join('.') : params.name;
         console.info('即将打包文件路径：' + params.path + '，作为' + name + '上传至swift容器' + params.container + '!!!');
 
-        var swift = new Swift({
-            host: params.host,
-            user: params.user,
-            pass: params.pass
-        }, function(err, res){
-            if(err) {
-                console.error('连接swift出错，请确认配置信息是否正确！上传失败：', err.stack || err);
-                callback(err);
-            } else {
-                //如果是SNAPSHOT版本，或者强制更新，则不需要判断版本是否存在，直接覆盖，否则需要判断
-                if(Utils.isSnapshot(name) || forceUpdate === true){
-                    upload();
-                    return;
-                }
-                swift.retrieveObjectMetadata(params.container, name, function(err, res){
-                    if(err){
-                        if(err.statusCode == 404) {
-                            upload();
-                        }else{
-                            console.error('获取对象信息失败：', err.stack || err);
-                            callback(err);
-                        }
-                        return;
-                    }else if(res){
-                        if(res && res.statusCode == 404){
-                            upload();
-                        }else{
-                            throw new Error('该模块版本已经存在，请更新版本号！！！或者强制更新！！！');
-                        }
-                    }
-                });
+        this.getSwiftInstance(params).then(function(swift){
+            //如果是SNAPSHOT版本，或者强制更新，则不需要判断版本是否存在，直接覆盖，否则需要判断
+            if(Utils.isSnapshot(name) || forceUpdate === true){
+                upload(swift);
+                return;
             }
+            swift.retrieveObjectMetadata(params.container, name, function(err, res){
+                if(err){
+                    console.error('获取对象信息失败：', err.stack || err);
+                    callback(err);
+                    return;
+                }else if(res && res.statusCode == 404){
+                    upload(swift);
+                }else{
+                    throw new Error('该模块版本已经存在，请更新版本号！！！或者强制更新！！！');
+                }
+            });
+        }).catch(function(err){
+            callback(err);
         });
 
-        function upload() {
+        function upload(swift) {
             var river = new stream.PassThrough();
 
             //压缩
             Utils.compress(params.path, params.destpath, params.compressType).pipe(river);
+            
             //swift上传
-            swift.createObjectWithStream(params.container, name, river, function(){
-                console.info('上传成功！');
-                callback.apply(callback, arguments);
+            swift.createObjectWithStream(params.container, name, river, function(err, res){
+                if(err){
+                    callback(err);
+                    return;
+                }
+                swift.retrieveObjectMetadata(params.container, name, function(err, res){
+                    if(!err && res && res.statusCode == 200){
+                        console.info('上传成功！');
+                        callback();
+                    }
+                });
             });
         }
     },
@@ -319,40 +322,6 @@ module.exports = {
                 console.info('解压完成！');
             }));
         });
-
-        // 通过swift客户端下载资源
-        // var swift = new Swift({
-        //         host: params.host,
-        //         user: params.user,
-        //         pass: params.pass
-        //     }, function(err, res){
-        //         if(err) {
-        //             throw new Error('连接swift出错，请确认配置信息是否正确！下载失败：', err.stack || err);
-        //         } else {
-        //             download();
-        //         }
-        //     });
-        // function download(){
-        //     var river = new stream.PassThrough();
-        //
-        //     swift.getObjectWithStream(params.container, name)
-        //     .on('error', function(err){
-        //         throw new Error(name + ' download is wrong ', err.stack);
-        //     })
-        //     .on('response', function(response){
-        //         if(response.statusCode !== 200){
-        //             callback(new Error('Get source from swift return statusCode:'+response.statusCode));
-        //         }
-        //     })
-        //     .on('end', function(err){
-        //         console.debug(name + ' download done!');
-        //         console.info('下载结束！');
-        //     }).pipe(river);
-        //
-        //     river.pipe(Utils.extract(name, p, function(){
-        //         console.info('解压完成！');
-        //     }));
-        // }
     },
     /**
      * 检验参数合法性

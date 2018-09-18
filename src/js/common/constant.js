@@ -48,6 +48,7 @@ module.exports = {
         'swift',
         'resourceSwift',
         'resourceSnapshotSwift',
+        'swiftTokenTimeout',
         'compressType',
         'nameReg',
         'zookeeper'

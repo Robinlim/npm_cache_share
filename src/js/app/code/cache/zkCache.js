@@ -29,7 +29,7 @@ function ZkCache(opts){
     //内部缓存
     this._cache = new Cache();
     //zookeeper客户端
-    zkClient.init(opts.zookeeper);
+    zkClient.init(opts.zookeeper, opts.zkRoot);
     //用户
     this._user = getUser(opts.storageConfig);
     if(!this._user){

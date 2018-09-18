@@ -16,10 +16,10 @@ var compression = require('compression');
 var utils = require('../common/utils');
 // 初始化express
 var app = express();
-
+var env = process.env;
 // 同步client的debug方法
 require('../common/console');
-global.DEBUG = process.env.DEBUG == 'true';
+global.DEBUG = env.DEBUG == 'true';
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -54,7 +54,7 @@ app.get('/healthcheck.html', function(req, res) {
 //初始化缓存
 require('./code/cache').ready().then(function(){
     //初始化存储
-    require('./code/storage').init(process.env.storage, process.env.storageConfig, process.env.storageSnapshotConfig);    
+    require('./code/storage').init(env.storage, env.storageConfig, env.storageSnapshotConfig || env.storageConfig, env.swiftTokenTimeout);    
 });
 //加载缓存策略
 require('./code/dao').load();

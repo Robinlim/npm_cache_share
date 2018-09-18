@@ -50,6 +50,7 @@ var utils = require('../common/utils'),
 })*/
 module.exports = {
     run: function(module, options) {
+        console.info('当前版本为: 1.1.3');
         console.info('******************开始安装******************');
         this.startTime = new Date().getTime();
         this.moduleName = module;
@@ -224,8 +225,10 @@ module.exports = {
                 if(!packageInfo[dependenceKey]){
                     packageInfo[dependenceKey] = {};
                 }
-                packageInfo[dependenceKey][this.module.name.replace(constant.SPLIT, '/')] = this.module.isPrivate?
-                    this.module.url : this.module.version;
+                //在本地安装私有模块SNAPSHOT版本时，会记录其开发环境的链接，而测试环境也就会复用这个开发环境的链接版本
+                // packageInfo[dependenceKey][this.module.name.replace(constant.SPLIT, '/')] = this.module.isPrivate?
+                    // this.module.url : this.module.version;
+                packageInfo[dependenceKey][this.module.name.replace(constant.SPLIT, '/')] = this.module.version;
                 try {
                     fsExtra.writeJsonSync(npmPackagePath, packageInfo);
                 } catch (e) {

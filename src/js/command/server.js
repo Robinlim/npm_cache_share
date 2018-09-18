@@ -41,7 +41,9 @@ module.exports = {
                 storage: opts.storage || 'localfile',
                 storageConfig: opts.storageConfig,
                 storageSnapshotConfig: opts.storageSnapshotConfig || opts.storageConfig,
+                swiftTokenTimeout: opts.swiftTokenTimeout,
                 zookeeper: opts.zookeeper,
+                zkRoot: opts.zkRoot,
                 DEBUG: !!global.DEBUG
             }, process.env);
         // 没有pm2或者指定了useFork就使用fork子进程方式

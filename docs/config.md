@@ -27,7 +27,9 @@
     "storage": "swift",
     "storageConfig": "指定模块（组件）RELEASE版本的swift源，格式为 host|user|pass",
     "storageSnapshotConfig": "指定模块（组件）SNAPSHOT版本的swift源，格式为 host|user|pass",
-    "zookeeper": "启用zookeeper服务，格式为 host:port"
+    "zookeeper": "启用zookeeper服务，格式为 host:port",
+    "zkRoot": "zookeeper上根节点路径的名称",
+    "swiftTokenTimeout": "swift的实效性，比如24小时，以毫秒记录",
 }
 
 ```

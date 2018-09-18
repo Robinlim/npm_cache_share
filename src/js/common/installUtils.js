@@ -185,7 +185,7 @@ module.exports = {
                     self.registry.get(packageName, self.serverCache[packageName].url, __cache, function(err){
                         if(err){
                             self.clean();
-                            cb(packageName + ' ' + err);
+                            throw new Error(packageName + ' ' + err);
                         } else {
                             console.debug('下载完成', packageName);
                             fs.writeFileSync(path.resolve(__cache, MODULECHECKER, packageName), '');

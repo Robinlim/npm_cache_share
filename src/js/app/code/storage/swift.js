@@ -11,7 +11,7 @@ var _ = require('lodash'),
     Swift = require('../../../lib/swiftClient'),
     Utils = require('../../../common/utils');
 
-function swift(config, snapshotConfig){
+function swift(config, snapshotConfig, swiftTokenTimeout){
     var self = this;
     //SNAPSHOT版本
     this.snapshot = init(snapshotConfig, true);
@@ -19,19 +19,23 @@ function swift(config, snapshotConfig){
     this.release = init(config, false);
 
     function init(opts, isSnapshot) {
-        var rs = {
-            avaliable: false,
-            config: {
-                host: opts[0],//'l-swift1.ops.dev.cn0.qunar.com',
-                user: opts[1],//'test:tester',
-                pass: opts[2] //'testing'
-            }
-        };
+        //swiftTokenTimeout，swift可以设置客户端连接上去后token的时效性
+        var host = opts[0].split(':'),
+            rs = {
+                avaliable: false,
+                config: {
+                    host: host[0],
+                    user: opts[1],
+                    pass: opts[2],
+                    port: host[1] || 80,
+                    swiftTokenTimeout: swiftTokenTimeout
+                }
+            };
         rs.user = rs.config.user.split(':')[0];
         rs.storage = new Swift(rs.config, function(err, res){
             if(err) {
                 handleInitError(err);
-            } else if(rs.storage.account && rs.storage.token){
+            } else if(rs.storage.token){
                 rs.avaliable = true;
                 self.init(isSnapshot);
             } else {
@@ -156,11 +160,15 @@ swift.prototype.put = function(repository, name, stream, cbk){
         } else {
             //由于存在上传swift后仍然有不存在的情况，但缓存里已经记录，导致最终获取失败，故增加校验
             storage.retrieveObjectMetadata(repository, name, function(err, res){
-                if(!err && res && res.statusCode == 200){
+                if(err){
+                    cbk(err);
+                }else if(res && res.statusCode == 200){
                     cache.addPackage(Utils.isSnapshot(name), repository, name);
+                    cbk();
+                }else{
+                    cbk(new Error('upload ' + name + ' fail: retrieve object not found!!!' + (res && res.statusCode)));
                 }
             });
-            cbk();
         }
     });
 };
