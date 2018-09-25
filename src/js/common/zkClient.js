@@ -26,8 +26,12 @@ module.exports = {
      * @return {void}
      */
     init: function(zkConfig, zkRoot) {
-        zk = zookeeper.createClient(zkConfig);
-        if(zkRoot){
+        zk = zookeeper.createClient(zkConfig, {
+            sessionTimeout : 30000,
+            spinDelay : 1000,
+            retries : 3
+        });
+        if(zkRoot && zkRoot != 'undefined'){
             ZKROOT = '/' + zkRoot;
         }
     },

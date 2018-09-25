@@ -291,7 +291,7 @@ Cache.prototype = {
                 postinstalls[moduleName] = strategy[CACHESTRATEGY.POSTINSTALL];
             }
             function downloadDeal(){
-                var packages = isSnapshot ? snapshotModules[moduleName] : modules[moduleName];
+                var packages = isSnapshot ? snapshotModules[moduleName] || snapshotModules[name + fileExt] : modules[moduleName] || modules[name + fileExt];
                 if(!packages){
                     installs[moduleName] = name;
                     return;

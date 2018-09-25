@@ -1,5 +1,10 @@
 # 历史版本
 
+1.1.4
+   - swift token 认证频繁修复
+   - 修复当zookeeper节点非常多时导致UnhandledPromiseRejectionWarning错误
+   - 修复snapshot版本执行安装问题
+
 1.1.3
    - 安装单个私有模块时，package.json不记录url，只记录version，对于没有同步到内部npm源的，用npm安装会失败
    - zk支持根节点配置

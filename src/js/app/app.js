@@ -55,8 +55,8 @@ app.get('/healthcheck.html', function(req, res) {
 require('./code/cache').ready().then(function(){
     //初始化存储
     require('./code/storage').init(env.storage, env.storageConfig, env.storageSnapshotConfig || env.storageConfig, env.swiftTokenTimeout);    
+    //加载缓存策略
+    require('./code/dao').load();
 });
-//加载缓存策略
-require('./code/dao').load();
 
 module.exports = app;

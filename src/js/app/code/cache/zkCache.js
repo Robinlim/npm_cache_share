@@ -12,7 +12,7 @@ var _ = require('lodash'),
     Cache = require('./cache'),
     zkClient = require('../../../common/zkClient'),
     utils = require('../../../common/utils'),
-    asyncMap = require("async").everySeries,
+    asyncMap = require('async').everySeries,
     NODE_STEP = {
         ROOT: 0,
         USER: 1,
@@ -463,26 +463,46 @@ function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
             childrens =  data;
             console.debug('获取' + path + '节点下所有子节点:' + data);
 
-            //监听当前节点下的子节点
-            asyncMap(childrens, function(v, cb){
-                var p = [path, v].join('/');
-                //添加容器节点
-                if(nodeStep == NODE_STEP.USER){
-                    console.debug('新增' + v + '容器');
-                    cache.addRepository(isSnapshot, v);
-                }
-                if(callback){
-                    callback(isSnapshot, p, cache).then(function(){
-                            cb(null, true);
-                    });
-                }else{
-                    cb(null, true);
-                }
-                //监听数据
-                monitorData(isSnapshot, p, cache, repository || v, nodeStep == NODE_STEP.CONTAINER && v);
-            }, function(){
-                resolve();
-            });
+            var len = childrens.length,
+                batches = 500,
+                times = Math.ceil(len/batches),
+                curTime = 0;
+            recursiveCtr();
+
+            function recursiveCtr(){
+                var start = curTime * batches, end = start + batches;
+                recursive(childrens.slice(start, end), function(){
+                    if(++curTime < times){
+                        setTimeout(recursiveCtr, 1000);
+                    }else{
+                        resolve();
+                    }
+                });
+            }
+
+            //不做分组时会因为promise过多而导致UnhandledPromiseRejectionWarning错误
+            function recursive(nodes, tcb){
+                //监听当前节点下的子节点
+                asyncMap(nodes, function(v, cb){
+                    var p = [path, v].join('/');
+                    //添加容器节点
+                    if(nodeStep == NODE_STEP.USER){
+                        console.debug('新增' + v + '容器');
+                        cache.addRepository(isSnapshot, v);
+                    }
+                    if(callback){
+                        callback(isSnapshot, p, cache).then(function(){
+                                cb(null, true);
+                        });
+                    }else{
+                        cb(null, true);
+                    }
+                    //监听数据
+                    monitorData(isSnapshot, p, cache, repository || v, nodeStep == NODE_STEP.CONTAINER && v);
+                }, function(){
+                    tcb();
+                });
+            }
         }).then(function(){
             //注册用户节点事件
             zkClient.register(zkClient.Event.NODE_CHILDREN_CHANGED, path, function(data){

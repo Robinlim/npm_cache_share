@@ -28,44 +28,23 @@ ZkPackageList.prototype = {
     load: function(){
         var oriData = [],
             _map = this._map;
-        //初始化私有模块数据
-        zkClient.getChildren(ROOT).then(function(data){
-            if(!data || data.length == 0){
+        zkClient.exist(ROOT).then(function(isExist){
+            if(isExist){
+                init();
                 return;
             }
-            oriData = data;
-            _.forEach(data, function(v){
-                //监听节点数据变更
-                zkClient.register(zkClient.Event.NODE_DATA_CHANGED, [ROOT, v].join('/'), function(data){
-                    if(data){
-                        console.debug('设置模块' + v + '的信息');
-                        _map[v] = JSON.parse(data);
-                    }
-                });
-                zkClient.getData([ROOT, v].join('/')).then(function(data){
-                    if(data){
-                        _map[v] = JSON.parse(data);
-                    }
-                });
+            zkClient.mkdirp(ROOT).then(function(){
+                init();
             });
         });
-        //监控
-        zkClient.register(zkClient.Event.NODE_CHILDREN_CHANGED, ROOT, function(data){
-            console.debug('触发' + ROOT + '节点监听事件');
-            var addChanges = _.difference(data, oriData),
-                rmChanges = _.difference(oriData, data);
-            //置换成新的缓存
-            oriData = data;
-            //新增模块处理
-            _.forEach(addChanges, function(v){
-                if(v){
-                    //由于新增节点的同时可能获取数据，故需要马上获取数据
-                    zkClient.getData([ROOT, v].join('/')).then(function(data){
-                        if(data){
-                            console.debug('初始化' + [ROOT, v].join('/') + '节点数据');
-                            _map[v] = JSON.parse(data);
-                        }
-                    });
+        function init(){
+            //初始化私有模块数据
+            zkClient.getChildren(ROOT).then(function(data){
+                if(!data || data.length == 0){
+                    return;
+                }
+                oriData = data;
+                _.forEach(data, function(v){
                     //监听节点数据变更
                     zkClient.register(zkClient.Event.NODE_DATA_CHANGED, [ROOT, v].join('/'), function(data){
                         if(data){
@@ -73,17 +52,49 @@ ZkPackageList.prototype = {
                             _map[v] = JSON.parse(data);
                         }
                     });
-                }
+                    zkClient.getData([ROOT, v].join('/')).then(function(data){
+                        if(data){
+                            _map[v] = JSON.parse(data);
+                        }
+                    });
+                });
             });
-            //删除模块处理
-            _.forEach(rmChanges, function(v){
-                //注销监听
-                zkClient.unregister(zkClient.Event.NODE_DATA_CHANGED, [ROOT, v].join('/'));
-                //删除节点对应的内存映射
-                _map[v] = null;
-                delete _map[v];
+            //监控
+            zkClient.register(zkClient.Event.NODE_CHILDREN_CHANGED, ROOT, function(data){
+                console.debug('触发' + ROOT + '节点监听事件');
+                var addChanges = _.difference(data, oriData),
+                    rmChanges = _.difference(oriData, data);
+                //置换成新的缓存
+                oriData = data;
+                //新增模块处理
+                _.forEach(addChanges, function(v){
+                    if(v){
+                        //由于新增节点的同时可能获取数据，故需要马上获取数据
+                        zkClient.getData([ROOT, v].join('/')).then(function(data){
+                            if(data){
+                                console.debug('初始化' + [ROOT, v].join('/') + '节点数据');
+                                _map[v] = JSON.parse(data);
+                            }
+                        });
+                        //监听节点数据变更
+                        zkClient.register(zkClient.Event.NODE_DATA_CHANGED, [ROOT, v].join('/'), function(data){
+                            if(data){
+                                console.debug('设置模块' + v + '的信息');
+                                _map[v] = JSON.parse(data);
+                            }
+                        });
+                    }
+                });
+                //删除模块处理
+                _.forEach(rmChanges, function(v){
+                    //注销监听
+                    zkClient.unregister(zkClient.Event.NODE_DATA_CHANGED, [ROOT, v].join('/'));
+                    //删除节点对应的内存映射
+                    _map[v] = null;
+                    delete _map[v];
+                });
             });
-        });
+        }
     },
     /**
      * 列出指定策略的模块

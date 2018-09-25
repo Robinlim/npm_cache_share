@@ -25,10 +25,9 @@ var _ = require('lodash'),
  */
 function Swift(options, callback) {
     //swift 下发的token过期时间
-    if(!options.swiftTokenTimeout){
+    if(!options.swiftTokenTimeout || options.swiftTokenTimeout == 'undefined'){
         options.swiftTokenTimeout = 86400000 //  24 * 60 * 60 * 1000
     }
-
     //认证过程的回调
     this._promise = null;
 
@@ -42,7 +41,6 @@ function Swift(options, callback) {
 
     //提前一秒获取token
     this.tokenTimeout = options.swiftTokenTimeout;
-
     //初次认证
     this.auth().then(function(res){
         callback(null, res);
