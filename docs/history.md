@@ -1,5 +1,8 @@
 # 历史版本
 
+1.1.5
+   - node8以下版本安装会卡住（loadRequestedDeps时），修改npm-shrinkwrap.json文件
+
 1.1.4
    - swift token 认证频繁修复
    - 修复当zookeeper节点非常多时导致UnhandledPromiseRejectionWarning错误

@@ -1,6 +1,6 @@
 {
   "name": "npm_cache_share",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "npm cache by npm-shrinkwrap.json",
   "license": "MIT",
   "main": "index.js",
@@ -48,7 +48,6 @@
     "lodash": "^4.14.2",
     "multiparty": "^4.1.2",
     "node-annotation": "^1.0.0",
-    "node-annotation-extend": "^0.0.7",
     "node-zookeeper-client": "^0.2.2",
     "os-homedir": "^1.0.2",
     "read-package-json": "^2.0.4",
