@@ -8,8 +8,15 @@
 
 var ansi = require('ansi-styles');
 
+var DOUBLEQUOTE = /^\s*"|"\s*$/g;
 var joinArgs = function(args) {
-  return Array.prototype.slice.call(args).join(' ');
+  var arr = Array.prototype.slice.call(args), tmp;
+  arr.forEach(function(v, i){
+    try{
+      arr[i] = JSON.stringify(v).replace(DOUBLEQUOTE, "");
+    }catch(e){}
+  });
+  return arr.join(' ');
 };
 
 console.info = function() {
@@ -26,7 +33,7 @@ console.error = function() {
 
 console.debug = function() {
     if(global.DEBUG){
-        return console.log.apply(console, arguments);
+      return console.log(ansi.green.open, '>[npm-cache-share]', new Date().toLocaleString(), joinArgs(arguments), ansi.green.close);
     } else {
         return null;
     }

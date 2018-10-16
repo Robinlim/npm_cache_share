@@ -19,12 +19,6 @@ var _ = require('lodash'),
 var NPMSHRINKWRAP = 'npm-shrinkwrap.json',
     PACKAGELOCK = 'package-lock.json',
     YARNLOCKFILE = 'yarn.lock',
-    //兼容以下格式的版本提取
-    //http://npmrepo.corp.qunar.com/unicode-5.2.0/-/unicode-5.2.0-0.7.5.tgz
-    //http://npmrepo.corp.qunar.com/async/-/async-2.0.0-rc.5.tgz
-    //http://npmrepo.corp.qunar.com/double-ended-queue/-/double-ended-queue-2.1.0-0.tgz
-    //git+ssh://git@gitlab.corp.qunar.com:qrn/qrn-web.git#e365ff30053d0a790e172d379f4eb1338e752461
-    NPMVERSIONREG = /([0-9]+\.[0-9]+\.[^.]+(?:\.[^.]+)??)(\.tgz|$)|#([^#]+)/,
     VERSIONSTART = /^[0-9]+/;
 
 module.exports = {
@@ -230,10 +224,15 @@ function regVersion(shrinkwrap){
         if(!v.version || VERSIONSTART.test(v.version)){
             return;
         }
-        var ver = NPMVERSIONREG.exec(v.version);
+        var ver = utils.hasNpmVersion(v.version);
         if(!ver){
-            throw new Error(k + "@" + v.version + " is norecognition!!!"); 
+            //所有不识别的版本都进行输出，作为新模块进行安装，如
+            //git+ssh://git@gitlab.corp.qunar.com:qrn/qrn-web.git#e365ff30053d0a790e172d379f4eb1338e752461
+            //http://xxx.com/xxx.tar.gz
+            //file:../xx
+            console.info(k + "@" + v.version + " is not a supported format, but still be installed!!!");
+        }else{
+            v.version = ver[1] || ver[3];
         }
-        v.version = ver[1] || ver[3];
     });
 }

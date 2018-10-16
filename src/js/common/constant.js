@@ -51,11 +51,13 @@ module.exports = {
         'swiftTokenTimeout',
         'compressType',
         'nameReg',
-        'zookeeper'
+        'zookeeper',
+        'zkRoot',
+        'ceph'
     ],
     F2B: {
         CONFIG_FILE: 'package.json',
-        SPLIT: '@@@',
+        SPLIT: '/',
         CONFIG_KEY: 'f2b'
     },
     COMPRESS_TYPE: {

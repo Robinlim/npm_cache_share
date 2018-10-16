@@ -11,12 +11,15 @@ var _ = require('lodash'),
     Swift = require('../../../lib/swiftClient'),
     Utils = require('../../../common/utils');
 
-function swift(config, snapshotConfig, swiftTokenTimeout){
+function swift(config, snapshotConfig, swiftTokenTimeout, envOps){
     var self = this;
     //SNAPSHOT版本
     this.snapshot = init(snapshotConfig, true);
     //正式版本
     this.release = init(config, false);
+    
+    //当使用ceph存储时，获取资源的url里不需要拼接账户信息，ceph兼容swift的协议
+    this.ceph = envOps ? envOps.ceph : 'false';
 
     function init(opts, isSnapshot) {
         //swiftTokenTimeout，swift可以设置客户端连接上去后token的时效性
@@ -142,8 +145,12 @@ swift.prototype.listPackageInfo = function(isSnapshot, repository, name, cbk){
 };
 
 swift.prototype.get = function(repository, name, res){
-    var opts = this.getConfig(name),
+    var opts = this.getConfig(name), url;
+    if(this.ceph == 'true'){
+        url = ['http:/', opts.config.host, repository, name].join('/');
+    }else{
         url = ['http:/', opts.config.host, opts.user, repository, name].join('/');
+    }
     if(res){
         res.setHeader('modulename', name);
         res.redirect(url);

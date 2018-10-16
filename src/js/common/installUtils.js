@@ -73,6 +73,8 @@ module.exports = {
         this.serverCache = {};
         // 需要本地安装的依赖 (在公共服务check后从needFetch中比较得出)
         this.needInstall = {};
+        // 非x.x.x版本的模块特殊处理
+        this.notVersionModules = {};
 
         this.parseModule().then(function(val){
             console.debug(val);
@@ -212,7 +214,9 @@ module.exports = {
         var installs = this.installs,
             bundles = [],
             forInstlBundles = [],
-            map = {}, bundlesTmp;
+            map = {}, bundlesTmp,
+            notVersionModules = this.notVersionModules;
+        debugger;
         //处理模块安装的批次，相同模块不同版本的安装批次不一样
         _.forEach(this.needInstall, function(el) {
             var name = el.name,
@@ -224,13 +228,19 @@ module.exports = {
             if(!map[name]) {
                 map[name] = 1;
             } else {
-                bundleId = map[name]
+                bundleId = map[name];
                 map[name]++;
             }
             if(!bundlesTmp[bundleId]) {
                 bundlesTmp[bundleId] = [];
             }
-            bundlesTmp[bundleId].unshift([name, el.version].join('@'));
+            if(!utils.hasNpmVersion(el.version)){
+                bundlesTmp[bundleId].unshift(el.version);
+                notVersionModules[el.version] = el.name;
+                notVersionModules[el.name] = el.version;
+            }else{
+                bundlesTmp[bundleId].unshift([name, el.version].join('@'));
+            }
         });
 
         console.debug('即将分批安装的模块：',bundles);
@@ -268,8 +278,8 @@ module.exports = {
     },
     /**
      * 批量安装一批npm依赖
-     * @param {Array} pcks      需要被安装的包，每一项为“name@version”形式
-     * @param {String} curPath  安装所在的路径
+     * @param {Array} pcks      需要被安装的包，每一项为"name@version"形式或者非识别的npm version形式，如git链接,file链接
+     * @param {String} curPath  安装所在的路径，由于有些模块执行安装的时候会处理工程代码，所以会指定到工程路径来安装
      * @param {Object} counter  一个用于进度的计数器
      * @param {Boolean} notSave 是否不同步到package.json
      * @return {Array}
@@ -300,10 +310,12 @@ module.exports = {
             installs = this.installs,
             alwaysUpdates = this.alwaysUpdates,
             pcks = [],
-            filesArr = [];
-
+            filesArr = [],
+            notVersionModules = this.notVersionModules;
+        
         _.forEach(files, function(file, i) {
-            var filePath = path.resolve(curPath, LIBNAME, utils.splitModuleName(file));
+            var moduleName = notVersionModules[file] || utils.splitModuleName(file),
+                filePath = path.resolve(curPath, LIBNAME, moduleName);
             //存在私有域@开头的，只会存在一级
             if(!fs.existsSync(filePath)){
                 throw new Error(filePath + ' not exists!!!');
@@ -334,6 +346,9 @@ module.exports = {
                 var name = v.package.name,
                     tpmc = utils.getModuleName(name, v.package.version, v.package.dependencies, v.realpath),
                     target;
+                if(notVersionModules[name]){
+                    notVersionModules[notVersionModules[name]] = v.package.version;
+                }
                 //如果是强制安装策略，或者强制更新策略，则不同步到服务器
                 //如果公共缓存不存在该模块，则移动至上传目录
                 if(!self.serverCache[tpmc] && !(installs[name] || alwaysUpdates[name])){
@@ -369,17 +384,24 @@ module.exports = {
             rebuilds = this.rebuilds,
             rebuildsPath = [],
             postRunsPath = {},
+            notVersionModules = this.notVersionModules,
+            rmNotVersionModules = [],
             mn, tmp, mnPath, packageInfo;
         //确保文件路径存在
         fsExtra.ensureDirSync(pmp);
         //循环同步依赖模块
         utils.traverseDependencies(this.dependencies, function(v, k, modulePath) {
-            if(!v.version){
+            var version = v.version, isNotVersionModule = false;
+            if(!version){
                 return;
             }
-            mn = utils.getModuleName(k, v.version);
+            if(notVersionModules[version]){
+                version = notVersionModules[version];
+                isNotVersionModule = true;
+            }
+            mn = utils.getModuleName(k, version);
             if (!cache[mn]) {
-                mn = utils.getModuleNameForPlatform(k, v.version);
+                mn = utils.getModuleNameForPlatform(k, version);
             }
             if (modulePath) {
                 tmp = path.resolve(pmp, modulePath, LIBNAME, k);
@@ -394,6 +416,9 @@ module.exports = {
             }
             fsExtra.ensureDirSync(path.resolve(tmp, '..'));
             mnPath = path.resolve(__cache, mn);
+            if(isNotVersionModule){
+                rmNotVersionModules.push(mnPath);
+            }
             if(shellUtils.test('-d', mnPath)){
                 // 先删除原有的目录
                 shellUtils.rm('-rf', tmp);
@@ -423,6 +448,15 @@ module.exports = {
                 throw new Error('Cannot find packages ' + mn + ':' + mnPath);
             }
         }, this.base);
+        
+        if(rmNotVersionModules.length > 0){
+            console.info('删除非识别模块缓存');
+            _.forEach(rmNotVersionModules, function(f){
+                shellUtils.rm('-rf', f);
+                console.debug('rm -rf', f);
+            });
+        }
+
         if(postRunsPath){
             console.info('开始执行定制脚本');
             //执行npm run postinstall,或者其他自定义脚本

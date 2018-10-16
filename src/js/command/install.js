@@ -50,7 +50,7 @@ var utils = require('../common/utils'),
 })*/
 module.exports = {
     run: function(module, options) {
-        console.info('当前版本为: 1.1.5');
+        console.info('当前版本为: 1.1.6');
         console.info('******************开始安装******************');
         this.startTime = new Date().getTime();
         this.moduleName = module;
@@ -159,12 +159,11 @@ module.exports = {
                     } else {
                         //如果模块是从缓存加载的，则安装其子依赖
                         var instModule = self.module,
-                            childrenPath = path.resolve(__cwd, constant.LIBNAME, instModule.name);
-                            
+                            childrenPath = path.resolve(__cwd, constant.LIBNAME, instModule.name),
+                            packageInfo = fsExtra.readJsonSync(path.resolve(childrenPath, PACKAGE));
                         //不加_requested的值会导致npm shrinkwrap失败，仅针对SNAPSHOT版本没有进行发布到npm源上需要增加的
                         if(utils.isSnapshot(instModule.full)){
                             console.info('处理模块' + instModule.name + '的package.json');
-                            var packageInfo = fsExtra.readJsonSync(path.resolve(childrenPath, PACKAGE));
                             packageInfo['_requested'] = { rawSpec: instModule.url };
                             packageInfo['_resolved'] = instModule.url;
                             try {
@@ -173,6 +172,11 @@ module.exports = {
                                 callback(e);
                                 return;
                             }
+                        }
+                        if(_.isEmpty(packageInfo.dependencies)){
+                            console.info('没有子依赖');
+                            callback();
+                            return;
                         }
                         console.info('安装' + instModule.name + '的子依赖');
                         console.debug('模块路径：',childrenPath);

@@ -12,22 +12,22 @@ var Factory = require('../annotation/Factory'),
 
 var storage = null;
 
-function getStorage(storageType, opts, snapshotOpts, swiftTokenTimeout){
+function getStorage(storageType, opts, snapshotOpts, swiftTokenTimeout, envOps){
     if(!storage){
         storageClass = storageType == 'localfile' ? require('./localfile') : require('./swift');
-        storage = new storageClass(opts, snapshotOpts, swiftTokenTimeout);
+        storage = new storageClass(opts, snapshotOpts, swiftTokenTimeout, envOps);
     }
     return storage;
 };
 
 
 module.exports = {
-    init: function(type, opts, snapshotOpts, swiftTokenTimeout){
+    init: function(type, opts, snapshotOpts, swiftTokenTimeout, envOps){
         opts == snapshotOpts && cache.same();
         // opts can be a STRING ! ‘undefined’
         cache.setStorage(getStorage(type, 
             opts === 'undefined' ? [] : (opts || "").split('|'), 
-            snapshotOpts === 'undefined' ? [] : (snapshotOpts || "").split('|'), swiftTokenTimeout));
+            snapshotOpts === 'undefined' ? [] : (snapshotOpts || "").split('|'), swiftTokenTimeout, envOps));
     },
     sync: function(){
         var sto = getStorage();

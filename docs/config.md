@@ -29,6 +29,7 @@
     "storageSnapshotConfig": "指定模块（组件）SNAPSHOT版本的swift源，格式为 host|user|pass",
     "zookeeper": "启用zookeeper服务，格式为 host:port",
     "zkRoot": "zookeeper上根节点路径的名称",
+    "ceph": "如果仓库是ceph，值需要为true，虽然兼容swift，但资源的链接有所不一样",
     "swiftTokenTimeout": "swift的实效性，比如24小时，以毫秒记录",
 }
 

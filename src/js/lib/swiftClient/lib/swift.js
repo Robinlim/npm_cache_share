@@ -80,10 +80,12 @@ Swift.prototype.auth = function(){
             request.call(ctx, {
                 headers: {
                     'X-Storage-User': ctx.options.user,
-                    'X-Storage-Pass': ctx.options.pass
+                    'X-Auth-User': ctx.options.user,
+                    'X-Storage-Pass': ctx.options.pass,
+                    'X-Auth-Key': ctx.options.pass
                 }
             }, function(err, res) {
-                if (!err && res.headers['x-storage-url'] && res.headers['x-auth-token']) {
+                if (!err && res.headers && res.headers['x-storage-url'] && res.headers['x-auth-token']) {
                     ctx.path = '/' + res.headers['x-storage-url'].split('/').slice(3).join('/');
                     ctx.token = res.headers['x-auth-token'];
                 }
@@ -434,7 +436,8 @@ function request(options, callback, pipe, isAuth) {
             }else{
                 callback && callback(null, {
                     statusCode: res.statusCode,
-                    body: buffers.toString()
+                    body: buffers.toString(),
+                    headers: res.headers
                 });
             }
         });

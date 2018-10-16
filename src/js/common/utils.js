@@ -19,7 +19,12 @@ var shellUtils = require('./shellUtils'),
     SPLIT = constant.SPLIT,
     arch = process.arch,
     platform = process.platform,
-    v8 = /[0-9]+\.[0-9]+/.exec(process.versions.v8)[0];
+    v8 = /[0-9]+\.[0-9]+/.exec(process.versions.v8)[0],
+    //除支持x.x.x的版本之外，兼容以下格式的版本提取
+    //http://npmrepo.corp.qunar.com/unicode-5.2.0/-/unicode-5.2.0-0.7.5.tgz
+    //http://npmrepo.corp.qunar.com/async/-/async-2.0.0-rc.5.tgz
+    //http://npmrepo.corp.qunar.com/double-ended-queue/-/double-ended-queue-2.1.0-0.tgz
+    NPMVERSIONREG = /([0-9]+\.[0-9]+\.[^.]+(?:\.[^.]+)??)(\.tgz|$)/;
 
 var utils = module.exports = {
     /**
@@ -141,7 +146,7 @@ var utils = module.exports = {
         return dMap;
     },
     /**
-     * 对比依赖和缓存，返回所需模块
+     * 对比依赖和缓存，返回所需模块，忽略非识别的npm version的模块
      * @param  {Array} dependencies 模块依赖
      * @param  {JSON}  cache        模块缓存
      * @param  {Function} callback  回调函数
@@ -150,8 +155,9 @@ var utils = module.exports = {
     compareCache: function(dependencies, cache, callback) {
         var news = [];
         _.forEach(dependencies, function(el){
-            if (el.version && !cache[utils.getModuleName(el.name, el.version)]
-            && !cache[utils.getModuleNameForPlatform(el.name, el.version)]) {
+            if (!utils.hasNpmVersion(el.version) 
+                || (el.version && !cache[utils.getModuleName(el.name, el.version)]
+                && !cache[utils.getModuleNameForPlatform(el.name, el.version)])) {
                 news.push(el);
                 callback && callback(el);
             }
@@ -341,6 +347,14 @@ var utils = module.exports = {
      */
     isSnapshot: function(name) {
         return RegExp(constant.VERSION_TYPE.SNAPSHOT, 'i').test(name);
+    },
+    /**
+     * 判断是否是可识别的npm version
+     * @param  {[String]} name 模块名称带版本
+     * @return {[Boolean]}
+     */
+    hasNpmVersion: function(name){
+        return NPMVERSIONREG.exec(name);
     },
     /**
      * 判断是否是模块名称带版本
