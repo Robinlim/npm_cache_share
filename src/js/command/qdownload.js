@@ -5,9 +5,6 @@
 * @Last modified by:   robin
 * @Last modified time: 2017-02-28 10:23
 */
-
-
-
 var _ = require('lodash'),
     asyncMap = require("async").every,
     f2bConfigUtils = require('../common/f2bConfigUtils'),
@@ -35,7 +32,7 @@ module.exports = {
             if(options.auto){
                 whitelist.container = 1;
             }
-
+        
             var params = swiftUtils.getConfig(options, 'resourceSwift', whitelist),
                 snapshotParams = options['resourceSnapshotSwift'] && swiftUtils.getConfig(options, 'resourceSnapshotSwift', whitelist),
                 rs = f2bConfigUtils.getConfig(__cwd, options).format(options.auto);

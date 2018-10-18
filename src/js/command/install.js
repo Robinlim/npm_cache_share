@@ -50,7 +50,7 @@ var utils = require('../common/utils'),
 })*/
 module.exports = {
     run: function(module, options) {
-        console.info('当前版本为: 1.1.6');
+        console.info('当前版本为: 1.1.7');
         console.info('******************开始安装******************');
         this.startTime = new Date().getTime();
         this.moduleName = module;

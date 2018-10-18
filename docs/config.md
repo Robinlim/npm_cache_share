@@ -13,6 +13,7 @@
     "resourceSnapshotSwift": "指定静态资源上传下载SNAPSHOT版本的swift源，格式为 host|user|pass",
     "compressType": "指定静态资源的压缩方式",
     "auto": "上传下载使用project或key来做容器名",
+    "ceph": "如果仓库是ceph，值需要为true，虽然兼容swift，但资源的链接有所不一样",
     "nameReg": "package.json中name的规则，只有在publish和qupload中有效"
 }
 

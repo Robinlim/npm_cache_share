@@ -311,7 +311,8 @@ module.exports = {
             params.host,
             params.user,
             params.container,
-            name
+            name,
+            params.ceph
         )).on('error', function(err) {
             console.log(err)
         }).on('response', function(response) {

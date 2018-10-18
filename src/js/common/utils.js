@@ -337,7 +337,10 @@ var utils = module.exports = {
      * @param  {[String]} obj       对象
      * @return {[String]}
      */
-    generateSwiftUrl: function(host, user, container, obj){
+    generateSwiftUrl: function(host, user, container, obj, ceph){
+        if(ceph == 'true' || ceph === true){
+            return "http://" + [host, container, obj].join('/');
+        }
         return "http://" + [host, user.split(':')[0], container, obj].join('/');
     },
     /**

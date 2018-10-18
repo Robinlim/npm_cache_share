@@ -30,7 +30,8 @@ module.exports = {
             }
             var params = _.extend({}, swiftUtils.getConfig(options, utils.isSnapshot(name) ? 'resourceSnapshotSwift' : 'resourceSwift'), {
                     name: name,
-                    path: path
+                    path: path,
+                    ceph: options.ceph
                 });
             swiftUtils.download(params, this.exit);
         }catch(err){

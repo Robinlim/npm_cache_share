@@ -19,7 +19,7 @@ function swift(config, snapshotConfig, swiftTokenTimeout, envOps){
     this.release = init(config, false);
     
     //当使用ceph存储时，获取资源的url里不需要拼接账户信息，ceph兼容swift的协议
-    this.ceph = envOps ? envOps.ceph : 'false';
+    this.ceph = envOps ? envOps.ceph === true || envOps.ceph == 'true' : false;
 
     function init(opts, isSnapshot) {
         //swiftTokenTimeout，swift可以设置客户端连接上去后token的时效性
@@ -146,7 +146,7 @@ swift.prototype.listPackageInfo = function(isSnapshot, repository, name, cbk){
 
 swift.prototype.get = function(repository, name, res){
     var opts = this.getConfig(name), url;
-    if(this.ceph == 'true'){
+    if(this.ceph){
         url = ['http:/', opts.config.host, repository, name].join('/');
     }else{
         url = ['http:/', opts.config.host, opts.user, repository, name].join('/');
