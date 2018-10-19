@@ -1,5 +1,8 @@
 # 历史版本
 
+1.1.8
+  - 兼容npm-shrinkwrap.json中存在不带version的模块描述
+
 1.1.7
    - 修复qdonwload和download，在仓库是ceph时获取资源失败的问题
 

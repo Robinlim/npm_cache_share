@@ -216,7 +216,7 @@ module.exports = {
             forInstlBundles = [],
             map = {}, bundlesTmp,
             notVersionModules = this.notVersionModules;
-        debugger;
+        
         //处理模块安装的批次，相同模块不同版本的安装批次不一样
         _.forEach(this.needInstall, function(el) {
             var name = el.name,
@@ -243,7 +243,6 @@ module.exports = {
             }
         });
 
-        console.debug('即将分批安装的模块：',bundles);
         var counter = {
                 total: this.needInstall.length,
                 cur: 0
@@ -252,12 +251,17 @@ module.exports = {
         
         async.auto({
             tmpInst: function(cb){
-                //安装模块，在临时目录上执行
-                console.debug('安装路径：',self.tmpPath);
-                async.everySeries(bundles, function(el, callback){
-                    self._installBundle(el, self.tmpPath, counter);
-                    self._syncLocal(el, self.tmpPath, callback);
-                }, cb);
+                if(bundles.length > 0){
+                    //安装模块，在临时目录上执行
+                    console.debug('即将分批安装的模块：',bundles);
+                    console.debug('安装路径：',self.tmpPath);
+                    async.everySeries(bundles, function(el, callback){
+                        self._installBundle(el, self.tmpPath, counter);
+                        self._syncLocal(el, self.tmpPath, callback);
+                    }, cb);
+                }else{
+                    cb();
+                }
             },
             projInst: ['tmpInst', function(results, cb){
                 if(forInstlBundles.length > 0){

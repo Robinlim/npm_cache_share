@@ -147,6 +147,7 @@ var utils = module.exports = {
     },
     /**
      * 对比依赖和缓存，返回所需模块，忽略非识别的npm version的模块
+     * 在npm5版本生成的固化版本里，有不带version描述的节点，如："istanbul-lib-hook": {"requires": {...}}，需要忽略此类对象
      * @param  {Array} dependencies 模块依赖
      * @param  {JSON}  cache        模块缓存
      * @param  {Function} callback  回调函数
@@ -155,9 +156,12 @@ var utils = module.exports = {
     compareCache: function(dependencies, cache, callback) {
         var news = [];
         _.forEach(dependencies, function(el){
-            if (!utils.hasNpmVersion(el.version) 
-                || (el.version && !cache[utils.getModuleName(el.name, el.version)]
-                && !cache[utils.getModuleNameForPlatform(el.name, el.version)])) {
+            if(!el.version){
+                return;
+            }
+            if (!utils.hasNpmVersion(el.version)
+                || (!cache[utils.getModuleName(el.name, el.version)]
+                    && !cache[utils.getModuleNameForPlatform(el.name, el.version)])) {
                 news.push(el);
                 callback && callback(el);
             }
