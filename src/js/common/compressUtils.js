@@ -104,13 +104,13 @@ function zipExtractStream(dir, callback) {
         throw err;
     }
     //处理结束
-    function onEnd() {
+    function onClose() {
         callback && callback();
     }
     var extractor = unzipper.Extract({
             path: dir
         })
         .on('error', onError)
-        .on('end', onEnd);
+        .on('close', onClose);
     return extractor;
 }

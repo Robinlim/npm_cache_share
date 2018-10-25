@@ -103,12 +103,12 @@ swift.prototype.createRepository = function(isSnapshot, repository, cbk){
 
 swift.prototype.listRepository = function(isSnapshot, cbk){
     // eg:［{"count": 5, "bytes": 36464, "name": "template"}］
-    this.getConfig(isSnapshot).storage.listContainers(handlerResponse(cbk));
+    this.getConfig(isSnapshot).storage.listContainers(cbk);
 };
 
 swift.prototype.listPackages = function(isSnapshot, repository, cbk){
     // eg: [{"hash": "9f6e6800cfae7749eb6c486619254b9c", "last_modified": "2016-08-11T07:20:38.174980", "bytes": 3, "name": "/abssc/11.txt", "content_type": "text/plain"},{..}]
-    this.getConfig(isSnapshot).storage.listObjects(repository, handlerResponse(cbk));
+    this.getConfig(isSnapshot).storage.listObjects(repository, cbk);
 };
 
 swift.prototype.listPackageInfo = function(isSnapshot, repository, name, cbk){
@@ -194,27 +194,6 @@ swift.prototype.getConfig = function(name) {
  */
 function handleInitError(err){
     console.error(err);
-}
-
-/**
- * 处理返回数据body部分
- * @param  {Function} cbk 处理完的回调
- * @return {void}     [description]
- */
-function handlerResponse(cbk){
-    return function(err, res){
-        if(err) {
-            cbk(err);
-            return;
-        }
-        try {
-            var data = JSON.parse(res.body);
-        } catch (e) {
-            cbk(e);
-            return;
-        }
-        cbk(null, data);
-    }
 }
 
 module.exports = swift;

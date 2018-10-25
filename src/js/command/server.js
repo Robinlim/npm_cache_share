@@ -37,13 +37,14 @@ module.exports = {
         var pm2 = shellUtils.which('pm2'),
             env = _.extend({        //进程传递参数
                 port: opts.port || '8888',
-                token: opts.token,   //请求校验
+                token: opts.token || '',   //请求校验
                 storage: opts.storage || 'localfile',
                 storageConfig: opts.storageConfig,
                 storageSnapshotConfig: opts.storageSnapshotConfig || opts.storageConfig,
                 swiftTokenTimeout: opts.swiftTokenTimeout,
                 zookeeper: opts.zookeeper,
                 zkRoot: opts.zkRoot,
+                ceph: opts.ceph,
                 DEBUG: !!global.DEBUG
             }, process.env);
         // 没有pm2或者指定了useFork就使用fork子进程方式

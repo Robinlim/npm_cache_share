@@ -137,7 +137,7 @@ Swift.prototype.listContainers = function(callback) {
     this.auth().then(function(){
         request.call(self, {
             path: self.path + '?format=json'
-        }, callback);
+        }, handlerResponse(callback));
     }).catch(function(err){
         callback(err);
     });
@@ -169,8 +169,7 @@ Swift.prototype.createContainer = function(container, callback) {
 Swift.prototype.deleteContainer = function(container, callback) {
     var self = this;
     this.auth().then(function(){
-        var objects = [],
-            deleted = 0,
+        var deleted,
             remove = function() {
               request.call(self, {
                   path: self.path + '/' + container,
@@ -179,16 +178,20 @@ Swift.prototype.deleteContainer = function(container, callback) {
             };
 
         self.listObjects(container, function(err, result) {
-        try {
-            objects = JSON.parse(result.body);
-        } catch(e) {}
+            if (!result.length) {
+                remove();
+                return;
+            }
+            if(result % 10000 != 0){
+                deleted = result.length;
+            }
 
-        if (!objects.length) remove();
-        // delete all objects in container first
-        for (var i = 0; i < objects.length; i++)
-            self.deleteObject(container, objects[i].name, function() {
-                ++deleted == objects.length && remove();
-            });
+            // delete all objects in container first
+            for (var i = 0; i < result.length; i++){
+                self.deleteObject(container, result[i].name, function() {
+                    deleted !== undefined && --deleted == 0 && remove();
+                });
+            }
         });
     }).catch(function(err){
         callback(err);
@@ -201,9 +204,27 @@ Swift.prototype.deleteContainer = function(container, callback) {
 Swift.prototype.listObjects = function(object, callback) {
     var self = this;
     this.auth().then(function(){
-        request.call(self, {
-            path: self.path + '/' + object + '?format=json'
-        }, callback);
+        recursiveList();
+        //由于获取对象列表的最大返回数量为10000
+        function recursiveList(params){
+            request.call(self, {
+                path: self.path + '/' + object + '?format=json' + (params && "&" + params || "")
+            }, handlerResponse(function(err, result){
+                if(err){
+                    callback(err);
+                    return;
+                }
+                if(!result || !result.length){
+                    callback(null, []);
+                    return;
+                }
+                callback(null, result);
+
+                if(result.length % 10000 == 0){
+                    recursiveList('limit=10000&marker=' + result[result.length -1].name);
+                }
+            }));
+        }
     }).catch(function(err){
         callback(err);
     });
@@ -433,6 +454,10 @@ function request(options, callback, pipe, isAuth) {
                 //token过期
                 console.error('swift request token is expired!!please upload again!!');
                 callback && callback(new Error('swift request token is expired!!please upload again!!'));
+            }else if(res.statusCode == 403){
+                //token过期
+                console.error('swift request: 403 Forbidden');
+                callback && callback(new Error('swift request: 403 Forbidden'));
             }else{
                 callback && callback(null, {
                     statusCode: res.statusCode,
@@ -537,3 +562,24 @@ function multipart(options) {
     return parser;
 }
 
+
+/**
+ * 处理返回数据body部分
+ * @param  {Function} cbk 处理完的回调
+ * @return {void}     [description]
+ */
+function handlerResponse(cbk){
+    return function(err, res){
+        if(err) {
+            cbk(err);
+            return;
+        }
+        try {
+            var data = JSON.parse(res.body);
+        } catch (e) {
+            cbk(e);
+            return;
+        }
+        cbk(null, data);
+    }
+}

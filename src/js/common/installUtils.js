@@ -175,7 +175,8 @@ module.exports = {
                     callback();
                     return;
                 }
-                loadCtrl();
+                //下载模块太多时会出错，估计是连接数过多，虽然分批，但服务端未释放完毕，设置一定延时
+                setTimeout(loadCtrl, 300);
             });
         })();
         //同时下载资源
@@ -187,6 +188,7 @@ module.exports = {
                     self.registry.get(packageName, self.serverCache[packageName].url, __cache, function(err){
                         if(err){
                             self.clean();
+                            console.debug(self.serverCache[packageName].url);
                             throw new Error(packageName + ' ' + err);
                         } else {
                             console.debug('下载完成', packageName);

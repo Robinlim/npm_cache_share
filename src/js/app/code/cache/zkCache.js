@@ -473,7 +473,7 @@ function monitorNode(isSnapshot, path, cache, callback, nodeStep) {
                 var start = curTime * batches, end = start + batches;
                 recursive(childrens.slice(start, end), function(){
                     if(++curTime < times){
-                        setTimeout(recursiveCtr, 1000);
+                        setTimeout(recursiveCtr, 2000);
                     }else{
                         resolve();
                     }
