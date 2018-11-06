@@ -5,7 +5,7 @@
 ```json
 {
     "type": "node",
-    "repository": "中央缓存服务地址，格式为 host:port/容器名称",
+    "repository": "中央缓存服务地址，格式为 host:port/release容器名称-snapshot容器名称",//如果没有写snapshot容器名称，则release和snapshot容器同名
     "token": "中央缓存服务的token，权限使用",
     "registry": "指定npm源，可以为内部源",
     "npmPlatBinds": { "darwin": [ "fsevents" ] },

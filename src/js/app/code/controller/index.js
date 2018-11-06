@@ -33,12 +33,11 @@ fsExtra.ensureDirSync(TEMPDIR);
 module.exports = {
     /*@Autowired("privatemodules")*/
     packageList: null,
-    /*@RequestMapping(["/{repository}/check","/check"])*/
+    /*@RequestMapping(["/{repository}/check"])*/
     /*@ResponseBodyDeal*/
     check: function(req, res, reqData, repository){
         var list = reqData.list || [],
-            checkSyncList = reqData.checkSyncList || [],
-            platform = reqData.platform;
+            checkSyncList = reqData.checkSyncList || [];
         if(!(Array.isArray(list) && Array.isArray(checkSyncList))){
             res.end({
                 status: -1,
@@ -46,19 +45,22 @@ module.exports = {
             });
             return;
         }
+        var repos = utils.getRepoNames(repository),
+            platform = reqData.platform;
         res.end({
             status: 0,
             message: 'success',
-            data: storage.diffPackages(repository || 'default', list, checkSyncList, platform, this.packageList.list())
+            data: storage.diffPackages(repos, list, checkSyncList, platform, this.packageList.list())
         });
     },
-    /*@RequestMapping(["/{repository}/fetch/{name}","/fetch/{name}"])*/
+    /*@RequestMapping(["/{repository}/fetch/{name}"])*/
     fetch: function(req, res, repository, name) {
         console.info('[fetch]', repository || 'default', name);
-        var filename = decodeURIComponent(name) + fileExt;
-        storage.get(repository || 'default', filename, res);
+        var getRepo = utils.getRepos(repository),
+            filename = decodeURIComponent(name) + fileExt;
+        storage.get(getRepo(filename), filename, res);
     },
-    /*@RequestMapping(["/{repository}/upload","/upload"])*/
+    /*@RequestMapping(["/{repository}/upload"])*/
     /*@ResponseBodyDeal*/
     upload: function(req, res, repository) {
         // check token for permission,if token exists
@@ -75,8 +77,8 @@ module.exports = {
             uploadDir: TEMPDIR
         });
 
-        var repositoryPath = resolveRepository(repository),
-            packageList = this.packageList;
+        var packageList = this.packageList,
+            getRepo = utils.getRepos(repository);
         form.parse(req, function(err, fields, files) {
             if(err){
                 console.error(err);
@@ -137,7 +139,7 @@ module.exports = {
 
                         utils.compress(path.resolve(target, UPLOADDIR, file), file, constant.COMPRESS_TYPE.TAR).pipe(riverCompress);
 
-                        storage.put(repository, file + fileExt, riverCompress, function(err){
+                        storage.put(getRepo(file), file + fileExt, riverCompress, function(err){
                             if (err) {
                                 console.error(file + fileExt + ' upload to swift is wrong: ', err.stack);
                                 errorObj = err.message || err.stack;
@@ -172,15 +174,17 @@ module.exports = {
     /*@RequestMapping("/list/{versionType}")*/
     /*@ResponseBodyDeal*/
     list: function(req, res, versionType, reqData){
-        var isSnapshotB = isSnapshot(versionType);
+        var isSnapshot = utils.isSnapshot(versionType);
         if(reqData.repository){
+            var repos = utils.getRepoNames(reqData.repository),
+                repository = isSnapshot ? repos.snapshot : repos.release;
             if(reqData.name){
-                res.end(storage.listPackages(isSnapshotB, reqData.repository,reqData.name));
+                res.end(storage.listPackages(isSnapshot, repository, reqData.name));
             } else {
-                res.end(storage.listModules(isSnapshotB, reqData.repository));
+                res.end(storage.listModules(isSnapshot, repository));
             }
         } else {
-            res.end(storage.listAll(isSnapshotB));
+            res.end(storage.listAll(isSnapshot));
         }
     },
     /*@RequestMapping("/{repository}/info")*/
@@ -189,7 +193,8 @@ module.exports = {
         var name = reqData.name,
             version = reqData.version,
             platform = reqData.platform,
-            all = storage.listPackages(utils.isSnapshot(version), repository, name.replace(RegExp('/', 'g'), SPLIT)) || [],
+            isSnapshot = utils.isSnapshot(version),
+            all = storage.listPackages(isSnapshot, utils.getRepos(repository)(isSnapshot), name.replace(RegExp('/', 'g'), SPLIT)) || [],
             fileExt = utils.getFileExt(),
             packages = _.map(all, function(el){
                 return _.trimEnd(el, fileExt);
@@ -228,7 +233,7 @@ module.exports = {
             version;
         // 判断包是否是私有包
         if(this.packageList.checkPrivate(name)){
-            var all = storage.listPackages(false, repository, name.replace(RegExp('/', 'g'), SPLIT)) || [],
+            var all = storage.listPackages(false, utils.getRepos(repository)(false), name.replace(RegExp('/', 'g'), SPLIT)) || [],
                 fileExt = utils.getFileExt(),
                 packages = _.map(all, function(el){
                     return _.trimEnd(el, fileExt);
@@ -274,14 +279,4 @@ module.exports = {
         console.error(err.stack || err);
         res.status(500).end(err.stack || err);
     }
-}
-
-function resolveRepository(name){
-    var repositoryPath = path.join(modulesCachePath, name || 'default');
-    fsExtra.ensureDirSync(repositoryPath);
-    return repositoryPath;
-}
-
-function isSnapshot(versionType) {
-    return versionType.toUpperCase() == constant.VERSION_TYPE.SNAPSHOT;
 }

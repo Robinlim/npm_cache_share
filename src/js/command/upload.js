@@ -39,9 +39,6 @@ module.exports = {
                 });
             swiftUtils.upload(params, this.exit, options.forceUpdate);
         }catch(err){
-            if(err){
-                console.error(err.stack || err);
-            }
             this.exit(err);
         }
     },
@@ -51,6 +48,7 @@ module.exports = {
      */
     exit: function(err){
         if(err){
+            console.error(err.statck || err);
             process.exit(1);
         } else {
             process.exit(0);

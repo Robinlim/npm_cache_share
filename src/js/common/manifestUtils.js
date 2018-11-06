@@ -80,7 +80,7 @@ function parseYarnLockfile(filepath, dir, cbk){
         VERSIONREG = /\s*version "([^"]*)"/,
         DEPENDREG = /\s*dependencies:/,
         KVREG = /\s*"?([^\s"]*)"?\s*"([^"]*)"/;
-
+    
     var rl = readline.createInterface({
             input: fs.createReadStream(filepath)
     }).on('line', function(line){

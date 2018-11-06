@@ -172,7 +172,7 @@ Cache.prototype = {
     /**
      * 返回模块列表
      * @param  {Boolean} isSnapshot 是否是snapshot
-     * @param  {string} repository 仓库名称
+     * @param  {String} repository 仓库名称
      * @return {Array}            数组每项为模块名（不含版本号以及环境）
      */
     listModules: function(isSnapshot, repository){
@@ -182,8 +182,8 @@ Cache.prototype = {
     /**
      * 返回模块下的包列表
      * @param  {Boolean} isSnapshot 是否是snapshot
-     * @param  {string} repository  仓库名称
-     * @param  {string} name        模块名
+     * @param  {String} repository  仓库名称
+     * @param  {String} name        模块名
      * @return {Array}              数组每项为包名称（含版本号以及环境）
      */
     listPackages: function(isSnapshot, repository, name){
@@ -192,19 +192,21 @@ Cache.prototype = {
     },
     /**
      * 比较需要的模块与缓存内容，返回缓存中存在的包名称
-     * @param  {string} repository 仓库名称
+     * @param  {String} repos      仓库名称
      * @param  {Array} list        所需的模块列表（包含版本号，不含环境）
      * @param  {Array} userLocals  用户本地缓存
-     * @param  {string} platform   环境信息
+     * @param  {String} platform   环境信息
      * @param  {Object} strategies 模块策略
      * @return {HashMap}           缓存存在的模块列表（包含版本号和环境）
      */
-    diffPackages: function(repository, list, userLocals, platform, strategies){
-        if(!this._cache[repository] && !this._snapshotCache[repository]){
+    diffPackages: function(repos, list, userLocals, platform, strategies){
+        if(!this._cache[repos.release] && !this._snapshotCache[repos.snapshot]){
             return {};
         }
-        var modules = this._cache[repository].modules,
-            snapshotModules = this._snapshotCache[repository] ? this._snapshotCache[repository].modules : {},
+        var repository = repos.release,
+            snapRepo = repos.snapshot,
+            modules = (this._cache[repository]||{}).modules,
+            snapshotModules = (this._snapshotCache[snapRepo]||{}).modules,
             storage = this.storage,
             fileExt = utils.getFileExt(),
             downloads = {},
@@ -219,6 +221,7 @@ Cache.prototype = {
         _.forEach(list, function(name){
             var moduleName = utils.splitModuleName(name),
                 isSnapshot = utils.isSnapshot(name),
+                repo = isSnapshot ? snapRepo : repository,
                 packages = isSnapshot ? snapshotModules[moduleName] || snapshotModules[name + fileExt] : modules[moduleName] || modules[name + fileExt];
             if(strategy = strategies[name] || strategies[moduleName]){
                 if(strategy[CACHESTRATEGY.BLACKLIST]){
@@ -246,9 +249,9 @@ Cache.prototype = {
             var packageNameForPlatform = utils.joinPackageName(name, platform),
                 packageName = name;
             if(packages.indexOf(packageNameForPlatform + fileExt) > -1){
-                downloads[packageNameForPlatform] = {url: storage.get(repository, packageNameForPlatform + fileExt)};
+                downloads[packageNameForPlatform] = {url: storage.get(repo, packageNameForPlatform + fileExt)};
             } else if (packages.indexOf(packageName + fileExt) > -1){
-                downloads[packageName] = {url: storage.get(repository, packageName + fileExt)};
+                downloads[packageName] = {url: storage.get(repo, packageName + fileExt)};
             }
             //gyp模块，需要执行编译，一般只有包发布SNAPSHOT版本的时需要考虑
             if(isSnapshot && strategy && strategy.isGyp){
@@ -259,7 +262,8 @@ Cache.prototype = {
         //客户端缓存
         _.forEach(userLocals, function(name){
             var moduleName = utils.splitModuleName(name),
-                isSnapshot = utils.isSnapshot(name);
+                isSnapshot = utils.isSnapshot(name),
+                repo = isSnapshot ? snapRepo : repository;
             //由于是以SNAPSHOT为依据，该标示只出现在版本号，则会影响SNAPSHOT对应的版本
             if(isSnapshot){
                 alwaysUpdates[name] = 1;
@@ -298,9 +302,9 @@ Cache.prototype = {
                 }
                 var packageNameForPlatform = utils.joinPackageName(name, platform);
                 if(packages.indexOf(packageNameForPlatform + fileExt) > -1){
-                    downloads[packageNameForPlatform] = {url: storage.get(repository, packageNameForPlatform + fileExt)};
+                    downloads[packageNameForPlatform] = {url: storage.get(repo, packageNameForPlatform + fileExt)};
                 } else if (packages.indexOf(name + fileExt) > -1){
-                    downloads[name] = {url: storage.get(repository, name + fileExt)};
+                    downloads[name] = {url: storage.get(repo, name + fileExt)};
                 }
             }
         });

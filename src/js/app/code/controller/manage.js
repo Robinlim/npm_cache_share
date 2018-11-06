@@ -20,7 +20,8 @@ module.exports = {
     },
     /*@RequestMapping(["/manage/createRepository/{versionType}/{repository}"])*/
     createRepository: function(versionType, repository, req, res){
-        storage.createRepository(isSnapshot(versionType), repository, function(err){
+        var isSnapshot = utils.isSnapshot(versionType);
+        storage.createRepository(isSnapshot, utils.getRepos(repository)(isSnapshot), function(err){
             if(err) {
                 res.statusCode(500).end(String(err.message || err.stack || err));
             } else {
@@ -50,7 +51,7 @@ module.exports = {
     },
     /*@RequestMapping(["/versionType/{versionType}"])*/
     repository: function(versionType, req, res){
-        var fileList = _.map(storage.listRepository(isSnapshot(versionType)), function(v, k){
+        var fileList = _.map(storage.listRepository(utils.isSnapshot(versionType)), function(v, k){
             return {name: v.name, stat: v.stat, icon: 'folder'}
         });
         renderTool.renderDirectory({
@@ -63,7 +64,8 @@ module.exports = {
     },
     /*@RequestMapping("/versionType/{versionType}/{repository}")*/
     modules: function(req, res, versionType, repository){
-        var fileList = _.map(storage.listModules(isSnapshot(versionType), repository), function(v){
+        var isSnapshot = utils.isSnapshot(versionType),
+            fileList = _.map(storage.listModules(isSnapshot, utils.getRepos(repository)(isSnapshot)), function(v){
             return {name: v, icon: 'folder'}
         });
         renderTool.renderDirectory({
@@ -76,7 +78,8 @@ module.exports = {
     },
     /*@RequestMapping("/versionType/{versionType}/{repository}/{name}")*/
     packages: function(req, res, versionType, repository, name){
-        var fileList = _.map(storage.listPackages(isSnapshot(versionType), repository, decodeURIComponent(name)), function(v, k){
+        var isSnapshot = utils.isSnapshot(versionType),
+            fileList = _.map(storage.listPackages(isSnapshot, utils.getRepos(repository)(isSnapshot), decodeURIComponent(name)), function(v, k){
             return {name: v, icon: 'box'}
         });
         renderTool.renderDirectory({
@@ -88,8 +91,12 @@ module.exports = {
     },
     /*@RequestMapping("/versionType/{versionType}/{repository}/{name}/{subname}")*/
     info: function(req, res, versionType, repository, subname){
-        var filename = decodeURIComponent(subname);
-        storage.listPackageInfo(isSnapshot(versionType), repository, filename, function(err, stat){
+        var filename = decodeURIComponent(subname),
+            isSnapshot = utils.isSnapshot(versionType);
+        
+        repository = utils.getRepos(repository)(isSnapshot);
+
+        storage.listPackageInfo(isSnapshot, repository, filename, function(err, stat){
             if(err){
                 res.status(err.statusCode || 404).end(String(err.message || err.stack || err));
             } else {
@@ -105,7 +112,7 @@ module.exports = {
     /*@RequestMapping("/download/{versionType}/{repository}/{name}")*/
     download: function(req, res, repository, name){
         var filename = decodeURIComponent(name);
-        storage.get(repository, filename, res);
+        storage.get(utils.getRepos(repository)(filename), filename, res);
     },
     /*@ExceptionHandler*/
     /*@ResponseBody*/
@@ -113,8 +120,4 @@ module.exports = {
         console.info(err.stack);
         res.status(500).end(err.message || err);
     }
-}
-
-function isSnapshot(versionType) {
-    return versionType.toUpperCase() == constant.VERSION_TYPE.SNAPSHOT;
 }

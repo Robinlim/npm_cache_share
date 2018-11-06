@@ -373,5 +373,27 @@ var utils = module.exports = {
         return function(name){
             return mv.test(name);
         };
-    }()
+    }(),
+    /**
+     * 获取release和snapshot库名称，请求的路径中repository的值为 releaseRepository-snapshotRepository
+     * @param {[String]} repo
+     */
+    getRepos: function(repo){
+        var repos = repo.split('-'),
+            release = repos[0],
+            snapshot = repos[1] || repos[0];
+        return function(name){
+            if(typeof name == 'boolean'){
+                return name ? snapshot : release;
+            }
+            return utils.isSnapshot(name) ? snapshot : release;
+        }
+    },
+    getRepoNames: function(repo){
+        var repos = repo.split('-');
+        return {
+            release: repos[0],
+            snapshot: repos[1] || repos[0]
+        };
+    }
 };

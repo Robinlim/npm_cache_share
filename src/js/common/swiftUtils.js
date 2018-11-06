@@ -264,6 +264,7 @@ module.exports = {
             //swift上传
             swift.createObjectWithStream(params.container, name, river, function(err, res){
                 if(err){
+                    console.info('上传失败！');
                     callback(err);
                     return;
                 }
@@ -271,6 +272,9 @@ module.exports = {
                     if(!err && res && res.statusCode == 200){
                         console.info('上传成功！');
                         callback();
+                    }else{
+                        console.info('上传失败！');
+                        callback(err);
                     }
                 });
             });

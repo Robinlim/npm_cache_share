@@ -371,48 +371,32 @@ ZkCache.prototype = {
     },
     /**
      * 返回缓存全部内容
-     * @param  {Boolean} isSnapshot 是否是snapshot
-     * @return {Object} 缓存对象
      */
-    listAll: function(isSnapshot) {
+    listAll: function() {
         return this._cache.listAll.apply(this._cache, arguments);
     },
     /**
      * 返回仓库列表
-     * @param  {Boolean} isSnapshot 是否是snapshot
-     * @return {Array} 数组每项包含name，stat
      */
-    listRepository: function(isSnapshot){
+    listRepository: function(){
         return this._cache.listRepository.apply(this._cache, arguments);
     },
     /**
      * 返回模块列表
-     * @param  {Boolean} isSnapshot 是否是snapshot
-     * @param  {string} repository  仓库名称
-     * @return {Array}              数组每项为模块名（不含版本号以及环境）
      */
-    listModules: function(isSnapshot, repository){
+    listModules: function(){
         return this._cache.listModules.apply(this._cache, arguments);
     },
     /**
      * 返回模块下的包列表
-     * @param  {Boolean} isSnapshot 是否是snapshot
-     * @param  {string} repository  仓库名称
-     * @param  {string} name        模块名
-     * @return {Array}              数组每项为包名称（含版本号以及环境）
      */
-    listPackages: function(isSnapshot, repository, name){
+    listPackages: function(){
         return this._cache.listPackages.apply(this._cache, arguments);
     },
     /**
      * 比较需要的模块与缓存内容，返回缓存中存在的包名称
-     * @param  {string} repository 仓库名称
-     * @param  {Array} list        所需的模块列表（包含版本号，不含环境）
-     * @param  {Array} userLocals  用户本地缓存 
-     * @param  {string} platform   环境信息
-     * @return {HashMap}           缓存存在的模块列表（包含版本号和环境）
      */
-    diffPackages: function(repository, list, userLocals, platform){
+    diffPackages: function(){
         return this._cache.diffPackages.apply(this._cache, arguments);
     },
     setStorage: function(st){
