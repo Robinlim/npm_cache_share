@@ -162,7 +162,7 @@ module.exports = {
                         exit(err);
                     });
                 } else {
-                    console.error('中央缓存服务不可用，无法上传！s');
+                    exit('中央缓存服务不可用，无法上传！');
                 }
             });
         });

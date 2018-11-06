@@ -35,7 +35,6 @@ module.exports = {
             if(options.auto){
                 whitelist.container = 1;
             }
-
             var params = swiftUtils.getConfig(options, 'resourceSwift', whitelist),
                 snapshotParams = options['resourceSnapshotSwift'] && swiftUtils.getConfig(options, 'resourceSnapshotSwift', whitelist),
                 rs = f2bConfigUtils.getConfig(__cwd, options).format(options.auto),

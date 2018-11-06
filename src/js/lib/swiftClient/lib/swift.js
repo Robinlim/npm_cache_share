@@ -458,10 +458,6 @@ function request(options, callback, pipe, isAuth) {
                 //token过期
                 console.error('swift request: 403 Forbidden');
                 callback && callback(new Error('swift request: 403 Forbidden'));
-            }else if(res.statusCode == 404){
-                //token过期
-                console.error('swift request resource is not found: 404');
-                callback && callback(new Error('swift request resource is not found: 404'));
             }else{
                 callback && callback(null, {
                     statusCode: res.statusCode,

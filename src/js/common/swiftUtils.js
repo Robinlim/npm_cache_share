@@ -274,7 +274,7 @@ module.exports = {
                         callback();
                     }else{
                         console.info('上传失败！');
-                        callback(err);
+                        callback(err || res.body);
                     }
                 });
             });
