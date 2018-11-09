@@ -151,8 +151,6 @@ function parseYarnLockfile(filepath, dir, cbk){
             buildTopLevelDependencies(v);
         });
 
-        console.info(JSON.stringify(toplevelModules));
-
         checkUtils.yarnLockCheck(dir, {
             dependencies: toplevelModules
         });
