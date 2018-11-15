@@ -14,11 +14,9 @@ var fs = require('fs'),
     utils = require('./utils');
 
 module.exports = {
-    npmShrinkwrapCheck: function(base, shrinkwrapJson){
-        var pkgPath = path.resolve(base, 'package.json');
-        if(fs.existsSync(pkgPath)){
-            var pkgJson = fsExtra.readJsonSync(pkgPath),
-                miss = diff(pkgJson.dependencies, shrinkwrapJson.dependencies);
+    npmShrinkwrapCheck: function(pkgJson, shrinkwrapJson){
+        if(pkgJson){
+            var miss = diff(pkgJson.dependencies, shrinkwrapJson.dependencies);
             if(miss.length > 0){
                 console.error('校验npm-shrinkwrap.json和package.json的依赖一致性失败');
                 throw new Error('npm-shrinkwrap.json中缺少package.json中的以下依赖：' + miss.join(','));
@@ -29,11 +27,9 @@ module.exports = {
             console.info('未找到package.json，跳过依赖一致性校验。');
         }
     },
-    yarnLockCheck: function(base, lockJson){
-        var pkgPath = path.resolve(base, 'package.json');
-        if(fs.existsSync(pkgPath)){
-            var pkgJson = fsExtra.readJsonSync(pkgPath),
-                miss = diff(pkgJson.dependencies, lockJson.dependencies);
+    yarnLockCheck: function(pkgJson, lockJson){
+        if(pkgJson){
+            var miss = diff(pkgJson.dependencies, lockJson.dependencies);
             if(miss.length > 0){
                 console.error('校验yarn.lock和package.json的依赖一致性失败');
                 throw new Error('yarn.lock中缺少package.json中的以下依赖：' + miss.join(','));

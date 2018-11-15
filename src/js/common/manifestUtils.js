@@ -19,21 +19,22 @@ var _ = require('lodash'),
 var NPMSHRINKWRAP = 'npm-shrinkwrap.json',
     PACKAGELOCK = 'package-lock.json',
     YARNLOCKFILE = 'yarn.lock',
-    VERSIONSTART = /^[0-9]+/;
+    VERSIONSTART = /^[0-9]+/;  
 
 module.exports = {
     readManifest: function(base, name, cbk){
         var npmShrinkwrapPath = path.resolve(base, NPMSHRINKWRAP),
             packageLockPath = path.resolve(base, PACKAGELOCK),
-            yarnLockfilePath = path.resolve(base, YARNLOCKFILE);
+            yarnLockfilePath = path.resolve(base, YARNLOCKFILE),
+            pkgJson = fsExtra.readJsonSync(path.resolve(base, 'package.json'));
         // 未指定依赖时尝试用npm-shrinkwrap.json或yarn.lock
         if(!name){
             if(fs.existsSync(npmShrinkwrapPath)){
-                parseNpmShrinkwrap(npmShrinkwrapPath, base, NPMSHRINKWRAP, cbk);
+                parseNpmShrinkwrap(npmShrinkwrapPath, pkgJson, NPMSHRINKWRAP, cbk);
             }else if(fs.existsSync(packageLockPath)){ 
-                parseNpmShrinkwrap(packageLockPath, base, PACKAGELOCK, cbk);
+                parseNpmShrinkwrap(packageLockPath, pkgJson, PACKAGELOCK, cbk);
             }else if(fs.existsSync(yarnLockfilePath)){
-                parseYarnLockfile(yarnLockfilePath, base, cbk);
+                parseYarnLockfile(yarnLockfilePath, pkgJson, cbk);
             } else {
                 console.warn('缺少npm-shrinkwrap.json或者yarn.lock，并且未指定其lockfile，此次安装将直接使用' + (npmUtils.checkYarn ? 'yarn' : 'npm') + ' install');
                 cbk();
@@ -44,21 +45,21 @@ module.exports = {
                 cbk('Cannot find path '+manifestPath+',check your --lockfile option!');
             }
             if(name === YARNLOCKFILE){
-                parseYarnLockfile(manifestPath, base, cbk);
+                parseYarnLockfile(manifestPath, pkgJson, cbk);
             } else {
                 //  所有非 yarn.lock  均采用shrinkwrap方式解析
-                parseNpmShrinkwrap(manifestPath, base, name, cbk);
+                parseNpmShrinkwrap(manifestPath, pkgJson, name, cbk);
             }
         }
     }
 }
 
-function parseNpmShrinkwrap(filepath, dir, name, cbk){
+function parseNpmShrinkwrap(filepath, pkgJson, name, cbk){
     console.info('将读取'+name+'获取依赖');
     var shrinkwrap;
     try {
         shrinkwrap = fsExtra.readJsonSync(filepath);
-        checkUtils.npmShrinkwrapCheck(dir, shrinkwrap);
+        checkUtils.npmShrinkwrapCheck(pkgJson, shrinkwrap);
         regVersion(shrinkwrap);
     } catch (e) {
         cbk(e);
@@ -68,13 +69,13 @@ function parseNpmShrinkwrap(filepath, dir, name, cbk){
 }
 
 
-function parseYarnLockfile(filepath, dir, cbk){
+function parseYarnLockfile(filepath, pkgJson, cbk){
     console.info('将读取'+YARNLOCKFILE+'获取依赖');
-    var toplevelModules = {},    //第一层依赖,版本都固化的，每个模块都有max属性，表示该模块里最大引用数的版本
-        toplevelModulesVersion = {},
+    var toplevelModules = {},    //第一层依赖,版本都固化的
+        conflictModules = {},    //第一层有重复的模块，每个模块里都有多个版本，且有max属性，表示该模块里最大引用数的版本
         solidModuleVersMap = {}, //固化版本信息，每个里面都有count属性，代表该模块版本的引用数
         rangModuleVersMap = {},  //非固化版本信息：对应的固化版本
-        moduleInfo = null;
+        moduleInfo = null, tmp;
         
     var NAMEREG = /\"?(@?[^\@]+)\@/,
         VERSIONREG = /\s*version "([^"]*)"/,
@@ -101,7 +102,18 @@ function parseYarnLockfile(filepath, dir, cbk){
         // 模块结束, 一个依赖块可能没有子依赖直接结束
         } else if(_.trim(line).length == 0){
             // 空行代表一个依赖块的结束 
-            toplevelModules[moduleInfo.name] = solidModuleVersMap[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
+            if(toplevelModules[moduleInfo.name] || conflictModules[moduleInfo.name]){
+                tmp = (conflictModules[moduleInfo.name] = conflictModules[moduleInfo.name] || {});
+                tmp[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
+                if(toplevelModules[moduleInfo.name]){
+                    tmp[toplevelModules[moduleInfo.name].name + '@' + toplevelModules[moduleInfo.name].version] = toplevelModules[moduleInfo.name];
+                    toplevelModules[moduleInfo.name] = null;
+                    delete toplevelModules[moduleInfo.name];
+                }
+            }else{
+                toplevelModules[moduleInfo.name] = moduleInfo;
+            }
+            solidModuleVersMap[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
             moduleInfo = null;
         // 模块信息，只取关注的信息
         }else {
@@ -137,46 +149,46 @@ function parseYarnLockfile(filepath, dir, cbk){
     }).on('close', function(){
         // 文件结束后moduleInfo应该未空，未为空的场景下需要添加到dependenceArr
         if(moduleInfo){
-            toplevelModules[moduleInfo.name] = solidModuleVersMap[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
+            if(toplevelModules[moduleInfo.name] || conflictModules[moduleInfo.name]){
+                tmp = (conflictModules[moduleInfo.name] = conflictModules[moduleInfo.name] || {});
+                tmp[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
+                if(toplevelModules[moduleInfo.name]){
+                    tmp[toplevelModules[moduleInfo.name].name + '@' + toplevelModules[moduleInfo.name].version] = toplevelModules[moduleInfo.name];
+                    toplevelModules[moduleInfo.name] = null;
+                    delete toplevelModules[moduleInfo.name];
+                }
+            }else{
+                toplevelModules[moduleInfo.name] = moduleInfo;
+            }
+            solidModuleVersMap[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
             moduleInfo = null;
         }
-
+        
         // 构建整体依赖树，最终生成toplevelModules，此时dependencies固化后没有处理子依赖
         _.forEach(solidModuleVersMap, function(mi){
             buildDependencies(mi);
         });
-        
-        // 处理toplevelModules dependencies的子依赖
-        _.forEach(toplevelModules, function(v, k){
-            buildTopLevelDependencies(v);
+        // 不改变原有依赖层级，因为存在peerDependencies，有关联绑定的模块存在
+        // 处理多版本模块，构建至topLevelModules
+        _.forEach(conflictModules, function(v,k){
+            buildConflictModules(v, k);
         });
 
-        checkUtils.yarnLockCheck(dir, {
+        // 根据top层构建依赖树
+        _.forEach(toplevelModules, function(v,k){
+            v && buildTopModules(v, k, '');
+        });
+        
+        checkUtils.yarnLockCheck(pkgJson, {
             dependencies: toplevelModules
         });
+
         cbk(null, _.cloneDeep(toplevelModules));
     });
 
-    // 设置模块依赖入口和模块各版本控制，version为具体版本，非区间版本
-    function setTopLevelModules(moduleName, version){
-        var mversion = [moduleName, version].join('@'),
-            mi = solidModuleVersMap[mversion],
-            tmi = toplevelModulesVersion[moduleName] = toplevelModulesVersion[moduleName] || { max: 0 };
-        mi.count++;
-        if(mi.count > tmi.max){
-            toplevelModules[moduleName] = {
-                version: mi.version,
-                dependencies: mi.dependencies,
-                from: mi.from
-            };
-            tmi.max = mi.count;
-            tmi.version = version;
-        }
-    }
-
     // 完善固化版本的依赖，并生成toplevelModules
     function buildDependencies(mi){
-        var dependencies = mi.dependencies;
+        var dependencies = mi.dependencies, tmp, name, index;
         _.forEach(dependencies, function(v, k){
             dependencies[v.name] = {
                 name: v.name,
@@ -185,27 +197,79 @@ function parseYarnLockfile(filepath, dir, cbk){
             };
             dependencies[k] = null;
             delete dependencies[k];
-            setTopLevelModules(v.name, rangModuleVersMap[k]);
-        });
-    }
 
-    // 处理toplevelModules dependencies的子依赖
-    function buildTopLevelDependencies(mi){
-        var dependencies = {}, tmp;
-        _.forEach(mi.dependencies || {}, function(v, k){
-            if(!toplevelModulesVersion[v.name] || toplevelModulesVersion[v.name].version != v.version){
-                tmp = solidModuleVersMap[[v.name, v.version].join('@')];
-                v = dependencies[v.name] = {
-                    version: tmp.version,
-                    from: tmp.from,
-                    dependencies: tmp.dependencies
-                };
-                if(v.dependencies){
-                    buildTopLevelDependencies(v);
+            name = v.name + '@' + rangModuleVersMap[k];
+            tmp = conflictModules[v.name];
+            //处理有多版本依赖的模块，记住依赖关系，方便后续操作删除
+            if(tmp && tmp[name]){
+                (tmp[name].requires = tmp[name].requires || []).push(dependencies);
+            }else{
+                //如果依赖是在第一层，则删除该依赖引用
+                tmp = toplevelModules[v.name];
+                if(tmp){
+                    index = tmp.ranges.indexOf(v.version) || -1;
+                    if(tmp.version == rangModuleVersMap[k]){
+                        (tmp.requires = tmp.requires || []).push(dependencies);
+                        dependencies[v.name] = null;
+                        delete dependencies[v.name];
+                    }
+                    if(index != -1){
+                        tmp.ranges.splice(index, 1);
+                    }
                 }
             }
         });
-        mi.dependencies = dependencies;
+    }
+
+    // 多版本模块决定哪个版本在顶部
+    function buildConflictModules(moduleInfo, moduleName){
+        var max = {count:0, top: null}, count;
+        _.forEach(moduleInfo, function(v, k){
+            count = v.requires && v.requires.length || 0;
+            if(count == 0 || v.ranges.indexOf([moduleName, pkgJson.dependencies[moduleName] || pkgJson.devDependencies[moduleName]].join('@')) != -1){
+                max.top = v;
+            }else if(count > max.count){
+                max.count = count;
+                max.module = v;
+            }
+        });
+        //top代表本身就是第一层，否则将最多引用次数版本放入toplevelModules，并删除该模块需求的引用
+        if(max.top){
+            toplevelModules[max.top.name] = max.top;
+        }else{
+            toplevelModules[max.module.name] = max.module;
+            _.forEach(max.module.requires, function(v){
+                v[max.module.name] = null;
+                delete v[max.module.name];
+            });
+        }
+    }
+
+    // 替换top层的依赖，modulesPath用于判断递归路径中是否存在循环，由于是解析固化后的文件，所以不考虑
+    // 儿子层级和孙子层级出现重复的版本模块
+    function buildTopModules(moduleInfo, moduleName, modulesPath){
+        var dependencies = moduleInfo.dependencies;
+        if(!_.isEmpty(dependencies)){
+            var tmp;
+            _.forEach(dependencies, function(v, k){
+                tmp = k + '@' + v.version;
+                if(modulesPath.indexOf(tmp) != -1){
+                    dependencies[k] = null;
+                    delete dependencies[k];
+                    return;
+                }
+                dependencies[k] = solidModuleVersMap[tmp];
+                buildTopModules(dependencies[k], k, [modulesPath, tmp].join('|'));
+            });
+        }
+        
+        if((moduleInfo.requires || []).length == 1 && moduleInfo.ranges.length == 1 && 
+                modulesPath.length == 0 && !pkgJson.dependencies[moduleName] && 
+                !(pkgJson.devDependencies && pkgJson.devDependencies[moduleName])){
+            moduleInfo.requires[0][moduleName] = moduleInfo;
+            // toplevelModules[moduleName] = null;
+            // delete toplevelModules[moduleName];
+        }
     }
 }
 

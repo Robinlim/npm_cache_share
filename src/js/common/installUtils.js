@@ -426,16 +426,16 @@ module.exports = {
                 rmNotVersionModules.push(mnPath);
             }
             if(shellUtils.test('-d', mnPath)){
+                var srcSouce, targetPath;
                 // 先删除原有的目录
                 shellUtils.rm('-rf', tmp);
                 console.debug('cp -rf', mnPath, tmp);
                 shellUtils.cp('-rf', mnPath, tmp);
                 // 查看是否有bin
                 packageInfo = fsExtra.readJsonSync(path.resolve(tmp, 'package.json'));
-                if(packageInfo.bin){
-                    var srcSouce, targetPath;
+                if(typeof packageInfo.bin != 'undefined'){
                     if(typeof packageInfo.bin == 'string'){
-                        srcSouce = path.resolve(pmp, '.bin', mn);
+                        srcSouce = path.resolve(pmp, '.bin', packageInfo.name);
                         targetPath = path.resolve(tmp, packageInfo.bin);
                         console.info('建立软链:' + srcSouce + ',' + targetPath);
                         fsExtra.ensureSymlinkSync(targetPath, srcSouce);
@@ -447,6 +447,16 @@ module.exports = {
                             fsExtra.ensureSymlinkSync(targetPath, srcSouce);
                         });
                     }
+                }else if(packageInfo.directories && packageInfo.directories.bin){
+                    //directories里也会描述bin文件所在，其下的文件都属于软链范围
+                    var binDirect = path.resolve(tmp, packageInfo.directories.bin),
+                        files = fs.readdirSync(binDirect);
+                    _.forEach(files, function(file){
+                        srcSouce = path.resolve(pmp, '.bin', file);
+                        targetPath = path.resolve(binDirect, file);
+                        console.info('建立软链:' + srcSouce + ',' + targetPath);
+                        fsExtra.ensureSymlinkSync(targetPath, srcSouce);
+                    });
                 }
             } else {
                 // 错误模块保留现场
