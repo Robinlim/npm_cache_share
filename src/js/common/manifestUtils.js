@@ -75,13 +75,13 @@ function parseYarnLockfile(filepath, pkgJson, cbk){
         conflictModules = {},    //第一层有重复的模块，每个模块里都有多个版本，且有max属性，表示该模块里最大引用数的版本
         solidModuleVersMap = {}, //固化版本信息，每个里面都有count属性，代表该模块版本的引用数
         rangModuleVersMap = {},  //非固化版本信息：对应的固化版本
-        moduleInfo = null, tmp;
+        moduleInfo = null;
         
     var NAMEREG = /\"?(@?[^\@]+)\@/,
         VERSIONREG = /\s*version "([^"]*)"/,
         DEPENDREG = /\s*dependencies:/,
         KVREG = /\s*"?([^\s"]*)"?\s*"([^"]*)"/;
-    
+    debugger;
     var rl = readline.createInterface({
             input: fs.createReadStream(filepath)
     }).on('line', function(line){
@@ -102,18 +102,32 @@ function parseYarnLockfile(filepath, pkgJson, cbk){
         // 模块结束, 一个依赖块可能没有子依赖直接结束
         } else if(_.trim(line).length == 0){
             // 空行代表一个依赖块的结束 
+            var name = moduleInfo.name + '@' + moduleInfo.version;
             if(toplevelModules[moduleInfo.name] || conflictModules[moduleInfo.name]){
-                tmp = (conflictModules[moduleInfo.name] = conflictModules[moduleInfo.name] || {});
-                tmp[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
-                if(toplevelModules[moduleInfo.name]){
-                    tmp[toplevelModules[moduleInfo.name].name + '@' + toplevelModules[moduleInfo.name].version] = toplevelModules[moduleInfo.name];
-                    toplevelModules[moduleInfo.name] = null;
-                    delete toplevelModules[moduleInfo.name];
+                //如果存在重复的版本模块，有以版本号或者链接存在的场景下，比如package.json里直接引用和模块本身依赖引用场景
+                var ranges, tmp;
+                if(toplevelModules[moduleInfo.name] && toplevelModules[moduleInfo.name].version == moduleInfo.version){
+                    ranges = toplevelModules[moduleInfo.name].ranges;
+                    moduleInfo.ranges.push.apply(moduleInfo.ranges, ranges);
+                    toplevelModules[moduleInfo.name] =  moduleInfo
+                }else{
+                    tmp = (conflictModules[moduleInfo.name] = conflictModules[moduleInfo.name] || {});
+                    if(tmp[name]){
+                        ranges = tmp[name].ranges;
+                        ranges.push.apply(ranges, moduleInfo.ranges);
+                    }else{
+                        tmp[name] = moduleInfo;
+                    }
+                    if(toplevelModules[moduleInfo.name]){
+                        tmp[toplevelModules[moduleInfo.name].name + '@' + toplevelModules[moduleInfo.name].version] = toplevelModules[moduleInfo.name];
+                        toplevelModules[moduleInfo.name] = null;
+                        delete toplevelModules[moduleInfo.name];
+                    }
                 }
             }else{
                 toplevelModules[moduleInfo.name] = moduleInfo;
             }
-            solidModuleVersMap[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
+            solidModuleVersMap[name] = moduleInfo;
             moduleInfo = null;
         // 模块信息，只取关注的信息
         }else {
@@ -149,18 +163,32 @@ function parseYarnLockfile(filepath, pkgJson, cbk){
     }).on('close', function(){
         // 文件结束后moduleInfo应该未空，未为空的场景下需要添加到dependenceArr
         if(moduleInfo){
+            var name = moduleInfo.name + '@' + moduleInfo.version;
             if(toplevelModules[moduleInfo.name] || conflictModules[moduleInfo.name]){
-                tmp = (conflictModules[moduleInfo.name] = conflictModules[moduleInfo.name] || {});
-                tmp[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
-                if(toplevelModules[moduleInfo.name]){
-                    tmp[toplevelModules[moduleInfo.name].name + '@' + toplevelModules[moduleInfo.name].version] = toplevelModules[moduleInfo.name];
-                    toplevelModules[moduleInfo.name] = null;
-                    delete toplevelModules[moduleInfo.name];
+                //如果存在重复的版本模块，有以版本号或者链接存在的场景下，比如package.json里直接引用和模块本身依赖引用场景
+                var ranges, tmp;
+                if(toplevelModules[moduleInfo.name] && toplevelModules[moduleInfo.name].version == moduleInfo.version){
+                    ranges = toplevelModules[moduleInfo.name].ranges;
+                    moduleInfo.ranges.push.apply(moduleInfo.ranges, ranges);
+                    toplevelModules[moduleInfo.name] =  moduleInfo
+                }else{
+                    tmp = (conflictModules[moduleInfo.name] = conflictModules[moduleInfo.name] || {});
+                    if(tmp[name]){
+                        ranges = tmp[name].ranges;
+                        ranges.push.apply(ranges, moduleInfo.ranges);
+                    }else{
+                        tmp[name] = moduleInfo;
+                    }
+                    if(toplevelModules[moduleInfo.name]){
+                        tmp[toplevelModules[moduleInfo.name].name + '@' + toplevelModules[moduleInfo.name].version] = toplevelModules[moduleInfo.name];
+                        toplevelModules[moduleInfo.name] = null;
+                        delete toplevelModules[moduleInfo.name];
+                    }
                 }
             }else{
                 toplevelModules[moduleInfo.name] = moduleInfo;
             }
-            solidModuleVersMap[moduleInfo.name + '@' + moduleInfo.version] = moduleInfo;
+            solidModuleVersMap[name] = moduleInfo;
             moduleInfo = null;
         }
         
