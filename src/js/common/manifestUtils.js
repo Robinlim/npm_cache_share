@@ -26,7 +26,11 @@ module.exports = {
         var npmShrinkwrapPath = path.resolve(base, NPMSHRINKWRAP),
             packageLockPath = path.resolve(base, PACKAGELOCK),
             yarnLockfilePath = path.resolve(base, YARNLOCKFILE),
-            pkgJson = fsExtra.readJsonSync(path.resolve(base, 'package.json'));
+            pckPath = path.resolve(base, 'package.json'),
+            pkgJson;
+        if(fs.existsSync(pckPath)){
+            pkgJson = fsExtra.readJsonSync(pckPath);
+        }
         // 未指定依赖时尝试用npm-shrinkwrap.json或yarn.lock
         if(!name){
             if(fs.existsSync(npmShrinkwrapPath)){
@@ -75,7 +79,10 @@ function parseYarnLockfile(filepath, pkgJson, cbk){
         conflictModules = {},    //第一层有重复的模块，每个模块里都有多个版本，且有max属性，表示该模块里最大引用数的版本
         solidModuleVersMap = {}, //固化版本信息，每个里面都有count属性，代表该模块版本的引用数
         rangModuleVersMap = {},  //非固化版本信息：对应的固化版本
-        moduleInfo = null;
+        moduleInfo = null,
+        packageJson = pkgJson || {};
+    packageJson.dependencies = packageJson.dependencies || {};
+    packageJson.devDependencies = packageJson.devDependencies || {};
         
     var NAMEREG = /\"?(@?[^\@]+)\@/,
         VERSIONREG = /\s*version "([^"]*)"/,
@@ -254,7 +261,7 @@ function parseYarnLockfile(filepath, pkgJson, cbk){
         var max = {count:0, top: null}, count;
         _.forEach(moduleInfo, function(v, k){
             count = v.requires && v.requires.length || 0;
-            if(count == 0 || v.ranges.indexOf([moduleName, pkgJson.dependencies[moduleName] || pkgJson.devDependencies[moduleName]].join('@')) != -1){
+            if(count == 0 || v.ranges.indexOf([moduleName, packageJson.dependencies[moduleName] || packageJson.devDependencies[moduleName]].join('@')) != -1){
                 max.top = v;
             }else if(count > max.count){
                 max.count = count;
@@ -292,8 +299,8 @@ function parseYarnLockfile(filepath, pkgJson, cbk){
         }
         
         if((moduleInfo.requires || []).length == 1 && moduleInfo.ranges.length == 1 && 
-                modulesPath.length == 0 && !pkgJson.dependencies[moduleName] && 
-                !(pkgJson.devDependencies && pkgJson.devDependencies[moduleName])){
+                modulesPath.length == 0 && !packageJson.dependencies[moduleName] && 
+                !(packageJson.devDependencies && packageJson.devDependencies[moduleName])){
             moduleInfo.requires[0][moduleName] = moduleInfo;
             // toplevelModules[moduleName] = null;
             // delete toplevelModules[moduleName];
