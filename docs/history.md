@@ -1,4 +1,6 @@
 # 历史版本
+1.1.16
+  - 安装node_modules下bin路径为相对路径 
 
 1.1.15
   - 解决没有忽略package.json不存在的情况

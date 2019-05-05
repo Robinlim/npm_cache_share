@@ -385,6 +385,7 @@ module.exports = {
         console.info('开始打包模块');
         //project module path
         var pmp = path.resolve(this.base, LIBNAME),
+            binPath = path.resolve(pmp, '.bin'),
             cache = utils.lsDirectory(__cache),
             postinstall = this.postinstall, 
             rebuilds = this.rebuilds,
@@ -435,14 +436,14 @@ module.exports = {
                 packageInfo = fsExtra.readJsonSync(path.resolve(tmp, 'package.json'));
                 if(typeof packageInfo.bin != 'undefined'){
                     if(typeof packageInfo.bin == 'string'){
-                        srcSouce = path.resolve(pmp, '.bin', packageInfo.name);
-                        targetPath = path.resolve(tmp, packageInfo.bin);
+                        srcSouce = path.resolve(binPath, packageInfo.name);
+                        targetPath = path.relative(binPath, path.resolve(tmp, packageInfo.bin));
                         console.info('建立软链:' + srcSouce + ',' + targetPath);
                         fsExtra.ensureSymlinkSync(targetPath, srcSouce);
                     }else{
                         _.map(packageInfo.bin, function(v, k){
-                            srcSouce = path.resolve(pmp, '.bin', k);
-                            targetPath = path.resolve(tmp, v);
+                            srcSouce = path.resolve(binPath, k);
+                            targetPath = path.relative(binPath, path.resolve(tmp, v));
                             console.info('建立软链:' + srcSouce + ',' + targetPath);
                             fsExtra.ensureSymlinkSync(targetPath, srcSouce);
                         });
@@ -452,8 +453,8 @@ module.exports = {
                     var binDirect = path.resolve(tmp, packageInfo.directories.bin),
                         files = fs.readdirSync(binDirect);
                     _.forEach(files, function(file){
-                        srcSouce = path.resolve(pmp, '.bin', file);
-                        targetPath = path.resolve(binDirect, file);
+                        srcSouce = path.resolve(binPath, file);
+                        targetPath = path.relative(binPath, path.resolve(binDirect, file));
                         console.info('建立软链:' + srcSouce + ',' + targetPath);
                         fsExtra.ensureSymlinkSync(targetPath, srcSouce);
                     });
