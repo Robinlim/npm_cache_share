@@ -24,8 +24,8 @@ var shellUtils = require('./shellUtils'),
     //http://npmrepo.corp.qunar.com/unicode-5.2.0/-/unicode-5.2.0-0.7.5.tgz
     //http://npmrepo.corp.qunar.com/async/-/async-2.0.0-rc.5.tgz
     //http://npmrepo.corp.qunar.com/double-ended-queue/-/double-ended-queue-2.1.0-0.tgz
-    NPMVERSIONREG = /([0-9]+\.[0-9]+\.[^.]+(?:\.[^.]+)??)(\.tgz|$)/;
-
+    // update: 0.0.1-beta.DZS-52350-20200416-objectUnion.42,  3.1.3-beta.PT-43399-trace.33,
+    NPMVERSIONREG = /([0-9]+\.[0-9]+\..+(?:\.[^.]+)??)(\.tgz|$)/;
 var utils = module.exports = {
     /**
      * 获取缓存的路径
