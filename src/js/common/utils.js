@@ -21,9 +21,9 @@ var shellUtils = require('./shellUtils'),
     platform = process.platform,
     v8 = /[0-9]+\.[0-9]+/.exec(process.versions.v8)[0],
     //除支持x.x.x的版本之外，兼容以下格式的版本提取
-    //http://npmrepo.corp.qunar.com/unicode-5.2.0/-/unicode-5.2.0-0.7.5.tgz
-    //http://npmrepo.corp.qunar.com/async/-/async-2.0.0-rc.5.tgz
-    //http://npmrepo.corp.qunar.com/double-ended-queue/-/double-ended-queue-2.1.0-0.tgz
+    //http://xxx.xxx.com/unicode-5.2.0/-/unicode-5.2.0-0.7.5.tgz
+    //http://xxx.xxx.com/async/-/async-2.0.0-rc.5.tgz
+    //http://xxx.xxx.com/double-ended-queue/-/double-ended-queue-2.1.0-0.tgz
     // update: 0.0.1-beta.DZS-52350-20200416-objectUnion.42,  3.1.3-beta.PT-43399-trace.33,
     NPMVERSIONREG = /([0-9]+\.[0-9]+\..+(?:\.[^.]+)??)(\.tgz|$)/;
 var utils = module.exports = {

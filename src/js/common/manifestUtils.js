@@ -324,7 +324,7 @@ function regVersion(shrinkwrap){
         var ver = utils.hasNpmVersion(v.version);
         if(!ver){
             //所有不识别的版本都进行输出，作为新模块进行安装，如
-            //git+ssh://git@gitlab.corp.qunar.com:qrn/qrn-web.git#e365ff30053d0a790e172d379f4eb1338e752461
+            //git+ssh://git@gitlab.xxx.com:qrn/qrn-web.git#e365ff30053d0a790e172d379f4eb1338e752461
             //http://xxx.com/xxx.tar.gz
             //file:../xx
             console.info(k + "@" + v.version + " is not a supported format, but still be installed!!!");
